@@ -1,0 +1,16 @@
+{
+    "name": "liar",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev:backend": "bun run --cwd apps/backend dev",
+        "dev:frontend": "bun run --cwd apps/frontend dev",
+        "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    }
+}
