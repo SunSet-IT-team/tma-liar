@@ -1,3 +1,4 @@
+import { BackArrow } from './components/backArrow/BackArrow';
 import { CustomButton } from './components/button/CustomButton';
 import Typography from './components/connectFont/Typography';
 import { TextInput } from './components/input/TextInput';
@@ -18,6 +19,7 @@ function App() {
       </CustomButton>
       <TextInput placeholder='Task' />
       <TextInput placeholder='Вылизываем кота !' className={cl.inputStyle} />
+      <BackArrow />
     </div>
   );
 }
