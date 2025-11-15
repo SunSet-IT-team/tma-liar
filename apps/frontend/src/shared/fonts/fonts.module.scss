@@ -10,8 +10,8 @@
 
 .fontFamily {
     font-family: 'CodeProBoldLC';
-}
-
-.typographyTestStyle {
-	color: rgb(35, 93, 5);
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	gap: 30px;
 }

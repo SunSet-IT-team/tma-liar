@@ -1,3 +1,18 @@
 .color {
   color: green;
 }
+
+.typographyTestStyle {
+	color: rgb(35, 93, 5);
+}
+
+.inputStyle {
+  width: 100%;
+  max-width: unset;
+}
+
+.inputStyle :global(.input) {
+  width: 100%;
+  max-width: unset;
+  font-size: 14px;
+}
