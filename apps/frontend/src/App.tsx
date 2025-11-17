@@ -3,12 +3,14 @@ import { BackArrow } from './components/backArrow/BackArrow';
 import { CustomButton } from './components/button/CustomButton';
 import Typography from './components/connectFont/Typography';
 import { TextInput } from './components/input/TextInput';
+import { Range } from './components/range/Range';
 import { ValueScroller } from './components/ValueScroller/ValueScroller';
 import fonts from './shared/fonts/fonts.module.scss'
 import cl from './shared/UI/Aboba/index.module.scss'
 
 function App() {
   const [activeValue, setActiveValue] = useState<number>(0);
+  const [value, setValue] = useState<number>(20);
   
   return (
     <div className={fonts.fontFamily}>
@@ -25,6 +27,7 @@ function App() {
       <TextInput placeholder='Вылизываем кота !' className={cl.inputStyle} />
       <BackArrow />
       <ValueScroller min={5} max={60} step={5} onChange={(value) => setActiveValue(value)} />
+      <Range step={1} defaultValue={20} onChange={setValue} />
     </div>
   );
 }

@@ -5,17 +5,17 @@ import type { Swiper as SwiperType } from "swiper";
 import 'swiper/css';
 import './style/scroller.scss';
 
-type Props = {
-  min: number;
-  max: number;
-  step: number;
+type ScrollerProps = {
+  min?: number;
+  max?: number;
+  step?: number;
   loop?: boolean;
   onChange?: (value: number) => void;
 }
 
-export const ValueScroller = ({ min, max, step, loop = true, onChange }: Props) => {
+export const ValueScroller = ({ min = 1, max = 100, step = 1, loop = true, onChange }: ScrollerProps) => {
   const [values, setValues] = useState<number[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
 
   useEffect(() => {
