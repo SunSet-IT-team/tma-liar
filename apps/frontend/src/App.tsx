@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BackArrow } from './components/backArrow/BackArrow';
 import { CustomButton } from './components/button/CustomButton';
 import Typography from './components/connectFont/Typography';
+import { CustomCheckbox } from './components/CustomCheckbox/CustomCheckbox';
 import { TextInput } from './components/input/TextInput';
 import { Range } from './components/range/Range';
 import { ValueScroller } from './components/ValueScroller/ValueScroller';
@@ -28,6 +29,7 @@ function App() {
       <BackArrow />
       <ValueScroller min={5} max={60} step={5} onChange={(value) => setActiveValue(value)} />
       <Range step={1} defaultValue={20} onChange={setValue} />
+      <CustomCheckbox />
     </div>
   );
 }
