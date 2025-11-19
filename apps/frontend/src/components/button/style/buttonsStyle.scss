@@ -1,0 +1,26 @@
+.buttonUnderline {
+    cursor: pointer;
+    position: relative;
+    font-family: 'CodeProBoldLC';
+    font-size: 28px;
+    color: #121212;
+}
+
+.buttonUnderline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -10px;
+    width: 100%;
+    height: 10px;
+    background: #E42336;
+
+    clip-path: ellipse(50% 40% at 50% 50%);
+}
+
+.buttonText {
+    cursor: pointer;
+    font-family: 'CodeProBoldLC';
+    font-size: 28px;
+    color: #121212;
+}
