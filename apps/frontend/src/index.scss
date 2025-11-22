@@ -1,0 +1,29 @@
+:root {
+  --red-color: #E42336;
+  --red-text-color: #E62235;
+  --white-main-color: #F8F9FD;
+  --white-color: #fff;
+  --black-main-color: #121212;
+  --black-text-color: #10090B;
+  --black-color: #000;
+}
+
+body {
+  background-color: (--white-color);
+  box-sizing: border-box;
+  font-family: 'CodeProBoldLC';
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+button {
+  background-color: transparent;
+  border: none;
+}
+
+h1,h2,h3,h4,h5,h6,p,ul {
+  margin: 0;
+  padding: 0;
+}
