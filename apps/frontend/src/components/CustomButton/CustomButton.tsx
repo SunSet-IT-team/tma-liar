@@ -13,7 +13,7 @@ export interface BtnProps {
   className?: string;
 }
 
-export const CustomButton: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, }: BtnProps) => {
+export const CustomButton: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, }) => {
   return (
     <Component className={clsx(
       styles.buttonBase,
