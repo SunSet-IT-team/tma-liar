@@ -1,32 +1,41 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
-import './App.css';
-import Aboba from './shared/UI/Aboba';
+import { useEffect, useState } from 'react';
+import { BackArrow } from './components/backArrow/BackArrow';
+import { CustomButton } from './components/CustomButton/CustomButton';
+import { Typography } from './components/Typography/Typography';
+import { CustomCheckbox } from './components/CustomCheckbox/CustomCheckbox';
+import { TextInput } from './components/TextInput/TextInput';
+import { Range } from './components/range/Range';
+import { ValueScroller } from './components/ValueScroller/ValueScroller';
+import fonts from './shared/fonts/fonts.module.scss'
+import cl from './App.module.scss'
+import { Provider } from 'react-redux';
+import { store } from './store';
 
 function App() {
-  const [count, setCount] = useState(0);
-
+  const [activeValue, setActiveValue] = useState<number>(0);
+  const [value, setValue] = useState<number>(20);
+  
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Provider store={store}>
+      <div className={cl.container}>
+        <Typography variant='caption' className={cl.typographyTestStyle}>
+          Какой-то текст
+        </Typography>
+        <CustomButton variant='buttonUnderline'>
+          <span>Кнопка с подчеркиванием</span>
+        </CustomButton>
+        <CustomButton >
+          <span>Кнопка без подчеркивания</span>
+        </CustomButton>
+        <TextInput placeholder='Task' />
+        <TextInput placeholder='Вылизываем кота !' className={cl.wrapperStyle} inputClassName={cl.inputStyle}/>
+        <BackArrow />
+        <ValueScroller min={5} max={60} step={5} onChange={(value) => setActiveValue(value)} />
+        <Range step={1} onChange={setValue} />
+        <CustomCheckbox />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-      <Aboba />
-    </>
+    </Provider>
+    
   );
 }
 
