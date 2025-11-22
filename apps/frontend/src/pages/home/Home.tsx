@@ -5,10 +5,12 @@ import { Settings } from "../../components/settings/Settings"
 import homeLogo from '../../assets/icons/homeIcon-lzhets.svg'
 import { CustomButton } from "../../components/CustomButton/CustomButton"
 import bgIcon from '../../assets/icons/homeIcon-bg.svg'
+import glob from '../../App.module.scss'
+import clsx from "clsx"
 
 export const Home: FC = () => {
   return (
-    <div className={styles.container}>
+    <div className={clsx(glob.container, styles.container)}>
       <img className={styles.circleIcon} src={homeCircle} alt="" />
       <Settings className={styles.settingsBtn} />
       <img src={homeLogo} alt="" className={styles.logo} />

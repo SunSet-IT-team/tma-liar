@@ -1,21 +1,7 @@
 .container {
     display: flex;
-	align-items: center;
-	flex-direction: column;
-	gap: 30px;
-}
-
-.typographyTestStyle {
-	color: rgb(35, 93, 5);
-}
-
-.wrapperStyle {
-  width: 100%;
-  max-width: unset;
-}
-
-.inputStyle {
-  width: 100%;
-  max-width: unset;
-  font-size: 14px;
+    align-items: center;
+    flex-direction: column;
+    padding: 10px;
+    height: 100vh;
 }
