@@ -1,0 +1,34 @@
+.container {
+    position: relative;
+    overflow: hidden;
+}
+
+.settingsBtn {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.circleIcon {
+    width: 360px;
+    height: 360px;
+    position: absolute;
+    top: -26%;
+    left: -22%;
+}
+
+.logo {
+    width: 413px;
+    height: 189px;
+    margin-bottom: 40px;
+    margin-top: 30px;
+}
+
+.homeBtn {
+    margin-bottom: 20px;
+}
+
+.bgImage {
+    width: 400px;
+    height: 439px;
+}
