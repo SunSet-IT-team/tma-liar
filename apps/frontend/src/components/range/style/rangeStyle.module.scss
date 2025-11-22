@@ -1,50 +1,50 @@
-.range-slider {
+.rangeSlider {
     position: relative;
     width: 100%;
     max-width: 400px;
     padding: 15px 10px;
-    background-color: #000;
+    background-color: var(--black-main-color);
     border-radius: 10px;
   }
   
-  .range-slider__track {
+  .rangeSlider__track {
     position: relative;
     height: 4px;
     pointer-events: none; 
   }
   
-  .range-slider__track-bg {
+  .rangeSlider__trackBg {
     position: absolute;
     top: 50%;
     left: 0;
     right: 0;
     height: 4px;
-    background-color: #e1ecef;
+    background-color: var(--white-main-color);
     transform: translateY(-50%);
     pointer-events: none;
   }
   
-  .range-slider__track-fill {
+  .rangeSlider__trackFill {
     position: absolute;
     top: 50%;
     left: 0;
     height: 4px;
-    background-color: #e42336;
+    background-color: var(--red-color);
     transform: translateY(-50%);
     pointer-events: none;
   }
   
-  .range-slider__thumb {
+  .rangeSlider__thumb {
     position: absolute;
     top: 50%;
     width: 4px;
     height: 18px;
-    background-color: #ffffff;
+    background-color: var(--white-color);
     transform: translate(-50%, -50%);
     pointer-events: none;
   }
   
-  .range-slider__input {
+  .rangeSlider__input {
     position: absolute;
     left: 0;
     right: 0;
@@ -60,34 +60,34 @@
     cursor: pointer;
   }
   
-  .range-slider__input::-webkit-slider-thumb {
+  .rangeSlider__input::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 0;
     height: 0;
   }
   
-  .range-slider__input::-moz-range-thumb {
+  .rangeSlider__input::-moz-range-thumb {
     width: 0;
     height: 0;
     border: none;
     background: transparent;
   }
   
-  .range-slider__input::-ms-thumb {
+  .rangeSlider__input::-ms-thumb {
     width: 0;
     height: 0;
     border: none;
     background: transparent;
   }
   
-  .range-slider__input::-webkit-slider-runnable-track {
+  .rangeSlider__input::-webkit-slider-runnable-track {
     background: transparent;
   }
-  .range-slider__input::-moz-range-track {
+  .rangeSlider__input::-moz-range-track {
     background: transparent;
   }
-  .range-slider__input::-ms-track {
+  .rangeSlider__input::-ms-track {
     background: transparent;
     border-color: transparent;
     color: transparent;

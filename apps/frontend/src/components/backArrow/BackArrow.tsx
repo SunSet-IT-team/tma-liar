@@ -1,18 +1,20 @@
-import whiteArrow from '../../assets/whiteArrow.svg';
-import redArrow from '../../assets/redArrow.svg';
-import blackArrow from '../../assets/blackArrow.svg';
+import whiteArrow from '../../assets/icons/whiteArrow.svg';
+import redArrow from '../../assets/icons/redArrow.svg';
+import blackArrow from '../../assets/icons/blackArrow.svg';
 import './style/arrowStyle.scss'
+import { ButtonHTMLAttributes, FC } from 'react';
 
 type BackArrowVariant = 'white' | 'red' | 'black';
 
-type BackArrowProps = {
+type BackArrowProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: BackArrowVariant;  
   onClick?: () => void;
 };
 
-export const BackArrow = ({
+export const BackArrow: FC<BackArrowProps> = ({
   variant = 'black',
   onClick,
+  ...rest
 }: BackArrowProps) => {
   const srcMap: Record<BackArrowVariant, string> = {
     white: whiteArrow,
@@ -23,7 +25,7 @@ export const BackArrow = ({
   const src = srcMap[variant];
 
   return (
-    <button onClick={onClick}>
+    <button onClick={onClick} {...rest}>
       <img src={src} className='backArrow' />
     </button>
   );

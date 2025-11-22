@@ -1,26 +1,21 @@
-.buttonUnderline {
+.buttonBase {
     cursor: pointer;
-    position: relative;
     font-family: 'CodeProBoldLC';
     font-size: 28px;
-    color: #121212;
-}
-
-.buttonUnderline::after {
+    color: var(--black-main-color);
+  }
+  
+  .buttonUnderline {
+    position: relative;
+  }
+  
+  .buttonUnderline::after {
     content: "";
     position: absolute;
     left: -25px;
     right: -25px;
     bottom: -10px;
     height: 10px;
-    background: #E42336;
-
+    background: var(--red-color);
     clip-path: ellipse(50% 40% at 50% 50%);
-}
-
-.buttonText {
-    cursor: pointer;
-    font-family: 'CodeProBoldLC';
-    font-size: 28px;
-    color: #121212;
-}
+  }

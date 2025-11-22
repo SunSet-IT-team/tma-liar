@@ -1,17 +1,20 @@
-.color {
-  color: green;
+.container {
+    display: flex;
+	align-items: center;
+	flex-direction: column;
+	gap: 30px;
 }
 
 .typographyTestStyle {
 	color: rgb(35, 93, 5);
 }
 
-.inputStyle {
+.wrapperStyle {
   width: 100%;
   max-width: unset;
 }
 
-.inputStyle :global(.input) {
+.inputStyle {
   width: 100%;
   max-width: unset;
   font-size: 14px;

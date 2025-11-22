@@ -1,9 +1,21 @@
 :root {
-  background-color: #fff;
+  --red-color: #E42336;
+  --red-text-color: #E62235;
+  --white-main-color: #F8F9FD;
+  --white-color: #fff;
+  --black-main-color: #121212;
+  --black-text-color: #10090B;
+  --black-color: #000;
+}
+
+body {
+  background-color: (--white-color);
+  box-sizing: border-box;
+  font-family: 'CodeProBoldLC';
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  height: 100vh;
 }
 
 button {

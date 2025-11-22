@@ -12,13 +12,13 @@
     position: relative;
     font-family: 'CodeProBoldLC';
     font-size: 28px;
-    color: #121212;
+    color: var(--black-main-color);
     border: none;
     text-transform: uppercase;
 }
 
 .input::placeholder {
-    color: #121212;
+    color: var(--black-main-color);
     opacity: 1;
 }
 
@@ -29,6 +29,6 @@
     right: 0;
     bottom: -10px;
     height: 10px;
-    background: #E42336;
+    background: var(--red-color);
     clip-path: ellipse(50% 30% at 50% 50%);
 }

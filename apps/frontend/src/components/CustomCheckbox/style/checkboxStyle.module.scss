@@ -11,11 +11,11 @@
     display: inline-block;
     width: 58px;
     height: 58px;
-    outline: 3.5px solid #121212;
+    outline: 3.5px solid var(--black-main-color);
 }
 
-#checkbox__check:checked ~ .checkmark {
-	background-image: url('../../../assets/checkedIcon.svg');
+.check:checked + .checkmark {
+	background-image: url('../../../assets/icons/checkedIcon.svg');
 	background-repeat: no-repeat;
 	background-position: center center;
 }

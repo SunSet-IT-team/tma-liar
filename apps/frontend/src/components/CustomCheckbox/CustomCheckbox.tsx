@@ -1,14 +1,11 @@
-import './style/checkboxStyle.scss'
+import { FC } from 'react'
+import styles from './style/checkboxStyle.module.scss'
 
-type CheckboxProps = {
-  
-}
-
-export const CustomCheckbox = (props: CheckboxProps) => {
+export const CustomCheckbox: FC = () => {
   return (
-    <label className="content">
-      <input type="checkbox" id="checkbox__check" className="check" />
-      <span className="checkmark"></span>
+    <label className={styles.content}>
+      <input type="checkbox" className={styles.check} />
+      <span className={styles.checkmark}></span>
     </label>
   )
 }
