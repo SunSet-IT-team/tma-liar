@@ -1,0 +1,37 @@
+.container {
+    position: relative;
+    overflow: hidden;
+}
+
+.circleIcon {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    left: -7%;
+    top: -45%;
+    z-index: -1;
+}
+
+.header {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 150px;
+}
+
+.profilePhoto {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.profileInputWrapper {
+    margin-bottom: 50px;
+}
+
+.logo {
+    width: 413px;
+    height: 190px;
+}
