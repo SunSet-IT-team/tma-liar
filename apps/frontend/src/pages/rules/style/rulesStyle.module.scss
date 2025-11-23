@@ -1,0 +1,45 @@
+.container {
+    min-width: 480px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding-left: 20px;
+    background-color: var(--red-color);
+}
+
+.header {
+    padding-top: 10px;
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.title {
+    font-size: 87px;
+    color: var(--black-main-color);
+}
+
+.subtitle {
+    font-size: 48px;
+    color: var(--white-main-color);
+    margin-bottom: 50px;
+}
+
+.rulesText {
+    font-size: 28px;
+    color: var(--white-main-color);
+    margin-bottom: auto;
+}
+
+.rulesIconBlock {
+    padding-bottom: 40px;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.rulesIcon {
+    width: 250px;
+    height: 250px;
+}

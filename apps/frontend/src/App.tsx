@@ -6,11 +6,12 @@ import { Profile } from './pages/profile/Profile';
 import { Settings } from './pages/settings/Settings';
 import { CreateLobbi } from './pages/createLobbi/CreateLobbi';
 import { NotFound } from './pages/notFound/NotFound';
+import { Rules } from './pages/rules/Rules';
 
 function App() {
   return (
     <Provider store={store}>
-      <NotFound />
+      <Rules />
     </Provider>
     
   );
