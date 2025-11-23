@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { FC, ReactNode, useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from "swiper";
 
@@ -11,12 +11,15 @@ type ScrollerProps = {
   step?: number;
   loop?: boolean;
   onChange?: (value: number) => void;
+  children?: ReactNode;
+  defaultValue?: number;
 }
 
-export const ValueScroller = ({ min = 1, max = 100, step = 1, loop = true, onChange }: ScrollerProps) => {
+export const ValueScroller: FC<ScrollerProps> = ({ min = 1, max = 100, step = 1, loop = true, onChange, children, defaultValue = 30 }) => {
   const [values, setValues] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
+  const initialValue = (defaultValue - step) / step;
 
   useEffect(() => {
     const arr: number[] = [];
@@ -31,9 +34,11 @@ export const ValueScroller = ({ min = 1, max = 100, step = 1, loop = true, onCha
 
   
   return (
-    <Swiper
+    <div className="scrollerContent">
+      <Swiper
         direction={'vertical'}
-        className="swiper"
+        className="swiper scrollerSwiper"
+        initialSlide={initialValue}
         loop={loop}
         onSwiper={setSwiperInstance}
         onSlideChange={(swiper: SwiperType) => {
@@ -47,10 +52,12 @@ export const ValueScroller = ({ min = 1, max = 100, step = 1, loop = true, onCha
         }}
       >
         {values.map((value, i) => (
-          <SwiperSlide key={i} className="swiperSlide">
+          <SwiperSlide key={i} className="swiperSlide scrollerSwiperSlide">
             <span className="slideItem">{value}</span>  
           </SwiperSlide>
         ))}
       </Swiper>
+      {children}
+    </div>
   )
 }
