@@ -1,0 +1,53 @@
+.container {
+    position: relative;
+    overflow: hidden;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--black-main-color);
+    height: calc(100vh - 20px);
+}
+
+.header {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.errorBlock {
+    padding: 0 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.title {
+    font-size: 87px;
+    color: var(--white-main-color);
+}
+
+.errorText {
+    font-size: 28px;
+    color: var(--red-color);
+}
+
+.notFoundBlock {
+    padding-left: 30px;
+    padding-bottom: 30px;
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.notFoundText {
+    font-size: 28px;
+    color: var(--white-main-color);
+}
+
+.notFoundIcon {
+    width: 195px;
+    height: 145px;
+    position: absolute;
+    bottom: 0;
+    left: 30%;
+}
