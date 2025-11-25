@@ -1,29 +1,17 @@
 import { FC, useEffect, useState } from "react"
 import styles from './style/settingsStyle.module.scss'
 import clsx from "clsx"
-import { BackArrow } from "../../components/backArrow/BackArrow"
+import { BackArrow } from "../../shared/backArrow/BackArrow"
 import soundWhite from '../../assets/icons/soundWhite.svg'
 import musicWhite from '../../assets/icons/musicWhite.svg'
 import soundRed from '../../assets/icons/soundRed.svg'
 import musicRed from '../../assets/icons/musicRed.svg'
-import { CustomButton } from "../../components/CustomButton/CustomButton"
-import { Range } from "../../components/range/Range"
+import { CustomButton } from "../../shared/CustomButton/CustomButton"
+import { Range } from "../../shared/range/Range"
+import type { AppState } from "../../shared/range/Range"
 import settingsBg from '../../assets/icons/settings-bgIcon.svg'
 import { useDispatch, useSelector } from "react-redux"
 import appSlice, { setBackgroundMusicIsPlay, setSoundsChange } from "../../store/appSlice"
-
-export type AppState = {
-  appSlice: {
-    user: {
-      id: number,
-      photo: string;
-      name: string;
-    }
-    sounds: boolean;
-    backgroundMusic: boolean;
-    volume: number;
-  };
-}
 
 export const Settings: FC = () => {
   const isSounds = useSelector((state: AppState) => state.appSlice.sounds);

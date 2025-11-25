@@ -4,7 +4,7 @@ import blackArrow from '../../assets/icons/blackArrow.svg';
 import styles from './style/arrowStyle.module.scss'
 import { ButtonHTMLAttributes, FC } from 'react';
 
-type BackArrowVariant = 'white' | 'red' | 'black';
+export type BackArrowVariant = 'white' | 'red' | 'black';
 
 type BackArrowProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: BackArrowVariant;  

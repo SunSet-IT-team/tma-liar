@@ -1,0 +1,19 @@
+.lobbiStyle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.lobbiText {
+    font-size: 24px;
+    color: var(--black-main-color);
+}
+
+.questionsText {
+    max-width: 170px;
+}
+
+.scrollerType {
+    padding-bottom: 14px;
+}

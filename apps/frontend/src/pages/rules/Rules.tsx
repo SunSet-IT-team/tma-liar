@@ -1,16 +1,14 @@
 import { FC } from "react"
-import { BackArrow } from "../../components/backArrow/BackArrow"
-import { Settings } from "../../components/settings/Settings"
+import { BackArrow } from "../../shared/backArrow/BackArrow"
+import { Settings } from "../../shared/settings/Settings"
 import styles from './style/rulesStyle.module.scss'
 import rulesIcon from '../../assets/icons/rulesIcon.svg'
+import { Header } from "../../widgets/header/Header"
 
 export const Rules: FC = () => {
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <BackArrow />
-        <Settings variant="white" />
-      </div>
+      <Header variantSettings="white" className={styles.header} />
       <h1 className={styles.title}>
         Много
       </h1>

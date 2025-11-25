@@ -3,7 +3,7 @@ import styles from './style/settingsStyle.module.scss'
 import whiteSettings from '../../assets/icons/whiteSettings.svg'
 import blackSettings from '../../assets/icons/settingsIcon.svg'
 
-type SettingsVariant = 'black' | 'white'
+export type SettingsVariant = 'black' | 'white'
 
 type SettingsProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: SettingsVariant;

@@ -1,9 +1,9 @@
 import { FC } from "react"
 import styles from './style/homeStyle.module.scss'
 import homeCircle from '../../assets/icons/homeCircle.svg'
-import { Settings } from "../../components/settings/Settings"
+import { Settings } from "../../shared/settings/Settings"
 import homeLogo from '../../assets/icons/homeIcon-lzhets.svg'
-import { CustomButton } from "../../components/CustomButton/CustomButton"
+import { CustomButton } from "../../shared/CustomButton/CustomButton"
 import bgIcon from '../../assets/icons/homeIcon-bg.svg'
 import glob from '../../App.module.scss'
 import clsx from "clsx"

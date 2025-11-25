@@ -4,31 +4,14 @@
     padding: 10px 20px 50px 20px;
 }
 
-.lobbiStyle {
-    display: flex;
+.container .lobbiTitle {
     width: 100%;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.lobbiTitle {
-    display: flex;
-    width: 100%;
-    font-size: 87px;
     color: var(--red-color);
 }
 
 .lobbiText {
     font-size: 24px;
     color: var(--black-main-color);
-}
-
-.questionsText {
-    max-width: 170px;
-}
-
-.scrollerType {
-    padding-bottom: 14px;
 }
 
 .deckBlock {
