@@ -7,6 +7,9 @@ import { Typography } from "../../shared/Typography/Typography"
 import { Users } from "../../features/users/Users"
 import { TextInput } from "../../shared/TextInput/TextInput"
 
+/** 
+ * Экран ожидания игроков в лобби
+*/
 export const WaitingLobbi: FC = () => {
   return (
     <div className={clsx(glob.container, styles.container)}>

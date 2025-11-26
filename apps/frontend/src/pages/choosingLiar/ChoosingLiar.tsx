@@ -5,6 +5,10 @@ import styles from './style/choosingLiarStyle.module.scss'
 import glob from '../../App.module.scss'
 import clsx from "clsx"
 
+/**
+  * Страница с выбором вранья лжеца
+*/
+
 export const ChoosingLiar: FC = () => {
   return (
     <div className={clsx(styles.container, glob.container)}>

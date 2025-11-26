@@ -7,16 +7,20 @@ import type { SettingsVariant } from "../../shared/settings/Settings";
 import styles from './style/headerStyle.module.scss'
 
 type HeaderProps = {
+  /**
+    * варианты цветов стрелки (белый, красный, черный)
+  */
   variantArrow?: BackArrowVariant;
+  /**
+    * варианты цветов настроек (белый, черный)
+  */
   variantSettings?: SettingsVariant;
   className?: string;
 }
 
-export type ComponentProps = {
-  text: string;
-  className?: string;
-  count: number;
-}
+/** 
+ * Шапка для всех экранов
+*/
 
 export const Header: FC<HeaderProps> = ({ variantArrow, variantSettings, className }) => {
   return (

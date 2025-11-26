@@ -7,11 +7,21 @@ export type ButtonsVariant =
   | 'buttonText'
 
 export interface BtnProps {
+  /**
+    * варианты кнопок: с подчеркиванием или без
+  */
   variant?: ButtonsVariant;
+  /**
+    * отображаемый тег
+  */
   as?: keyof JSX.IntrinsicElements;
   children: ReactNode;
   className?: string;
 }
+
+/**
+  * компонент переиспользуемой кастомной кнопки
+*/
 
 export const CustomButton: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, }) => {
   return (

@@ -9,6 +9,9 @@ import { Header } from "../../widgets/header/Header"
 import { ChoiceParamsLobbi } from "../../widgets/choiceParamsLobbi/ChoiceParamsLobbi"
 import { Typography } from "../../shared/Typography/Typography"
 
+/** 
+ * Экран создания лобби
+*/
 export const CreateLobbi: FC = () => {
   return (
     <div className={clsx(glob.container, styles.container)}>
@@ -16,8 +19,8 @@ export const CreateLobbi: FC = () => {
       <Typography variant="titleLarge" as='h1' className={styles.lobbiTitle}>
         Лобби
       </Typography>
-      <ChoiceParamsLobbi min={10} max={200} step={5} defaultValue={20} choiceText='Кол-во вопросов' choiceType="В" />
-      <ChoiceParamsLobbi min={5} max={60} step={5} choiceText='Таймер' choiceType="С" />
+      <ChoiceParamsLobbi reusedValues={{ min: 10, max: 200, step: 5, defaultValue: 20 }}  choiceText='Кол-во вопросов' choiceType="В" />
+      <ChoiceParamsLobbi reusedValues={{ min: 5, max: 60, step: 5 }} choiceText='Таймер' choiceType="С" />
       <div className={styles.deckBlock}>
         <span className={clsx(styles.lobbiText, styles.deckText)}>Колода</span>
         <DecksBlock />

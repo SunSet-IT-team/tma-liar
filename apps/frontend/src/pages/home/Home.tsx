@@ -8,6 +8,9 @@ import bgIcon from '../../assets/icons/homeIcon-bg.svg'
 import glob from '../../App.module.scss'
 import clsx from "clsx"
 
+/** 
+ * Главная страница, при открытии приложения показывается именно она
+*/
 export const Home: FC = () => {
   return (
     <div className={clsx(glob.container, styles.container)}>

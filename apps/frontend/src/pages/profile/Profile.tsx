@@ -8,6 +8,9 @@ import { TextInput } from "../../shared/TextInput/TextInput"
 import logo from '../../assets/icons/homeIcon-lzhets.svg'
 import { Header } from "../../widgets/header/Header"
 
+/** 
+ * Страница профиля пользователя, можно изменить фото профиля или имя
+*/
 export const Profile: FC = () => {
   return (
     <div className={clsx(glob.container, styles.container)}>

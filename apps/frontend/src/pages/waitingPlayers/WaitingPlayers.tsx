@@ -7,6 +7,9 @@ import waitingIcon from '../../assets/icons/waitingIcon.svg'
 import waitingCircle from '../../assets/icons/waitingCircle.svg'
 import clsx from "clsx"
 
+/** 
+ * Показывается решало, когда лжец делает выбор
+*/
 export const WaitingPlayers: FC = () => {
   return (
     <div className={clsx(styles.container, glob.container)}>

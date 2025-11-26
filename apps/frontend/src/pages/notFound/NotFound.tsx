@@ -7,6 +7,9 @@ import { Settings } from "../../shared/settings/Settings"
 import notFoundIcon from '../../assets/icons/notFoundIcon.svg'
 import { Header } from "../../widgets/header/Header"
 
+/** 
+ * Экран 404, он будет показываться когда пользователь попадет на несуществующий путь (route)
+*/
 export const NotFound: FC = () => {
   return (
     <div className={clsx(glob.container, styles.container)}>

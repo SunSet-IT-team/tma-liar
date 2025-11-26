@@ -7,6 +7,9 @@ import rulesIcon from '../../assets/icons/rulesIcon.svg'
 import { Header } from "../../widgets/header/Header"
 import clsx from "clsx"
 
+/** 
+ * Страница с правилами игры
+*/
 export const Rules: FC = () => {
   return (
     <div className={clsx(styles.container, glob.container)}>
