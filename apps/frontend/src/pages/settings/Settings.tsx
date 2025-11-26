@@ -1,5 +1,6 @@
 import { FC, useEffect, useState } from "react"
 import styles from './style/settingsStyle.module.scss'
+import glob from '../../App.module.scss'
 import clsx from "clsx"
 import { BackArrow } from "../../shared/backArrow/BackArrow"
 import soundWhite from '../../assets/icons/soundWhite.svg'
@@ -28,12 +29,12 @@ export const Settings: FC = () => {
     dispatch(setBackgroundMusicIsPlay(isMusicPlay))
   }, [isMusicPlay])
   return (
-    <div className={styles.container}>
+    <div className={clsx(styles.container, glob.container)}>
       <div className={styles.header}>
         <BackArrow variant="red"  />
       </div>
-      <div className={styles.content}>
-         <div className={styles.sounds}>
+      <div className={clsx(styles.content, styles.contentStyle)}>
+         <div className={clsx(styles.sounds, styles.contentStyle)}>
             <button onClick={() => setIsSoundsPlay(!isSoundsPlay)}>
               <img src={isSoundsPlay ? soundRed : soundWhite} alt="" className={styles.soundImg} />
             </button>

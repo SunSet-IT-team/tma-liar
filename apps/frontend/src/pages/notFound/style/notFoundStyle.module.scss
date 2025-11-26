@@ -1,10 +1,8 @@
 .container {
     position: relative;
     overflow: hidden;
-    flex-direction: column;
     justify-content: space-between;
     background-color: var(--black-main-color);
-    height: calc(100vh - 20px);
 }
 
 .errorBlock {
@@ -22,14 +20,15 @@
 .errorText {
     font-size: 28px;
     color: var(--red-color);
+    text-align: center;
 }
 
 .notFoundBlock {
     padding-left: 30px;
     padding-bottom: 30px;
     display: flex;
+    justify-content: space-between;
     width: 100%;
-    justify-content: flex-start;
 }
 
 .notFoundText {
@@ -40,7 +39,21 @@
 .notFoundIcon {
     width: 195px;
     height: 145px;
-    position: absolute;
-    bottom: 0;
-    left: 30%;
+    margin-right: 120px;
+    margin-bottom: -50px;
+}
+
+@media (max-width: 460px) {
+    .notFoundBlock {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .notFoundText {
+        margin-bottom: 30px;
+    }
+
+    .notFoundIcon {
+        margin-right: 0;
+    }
 }

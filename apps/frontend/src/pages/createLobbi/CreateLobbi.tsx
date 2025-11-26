@@ -3,7 +3,7 @@ import { FC } from "react"
 import glob from '../../App.module.scss'
 import { CustomButton } from "../../shared/CustomButton/CustomButton"
 import styles from './style/createLobbiStyle.module.scss'
-import circleIcon from '../../assets/icons/homeCircle.svg'
+import lobbiCircle from '../../assets/icons/lobbiCircle.svg'
 import { DecksBlock } from "../../features/decksBlock/DecksBlock"
 import { Header } from "../../widgets/header/Header"
 import { ChoiceParamsLobbi } from "../../widgets/choiceParamsLobbi/ChoiceParamsLobbi"
@@ -24,7 +24,7 @@ export const CreateLobbi: FC = () => {
         <CustomButton>О колоде</CustomButton>
       </div>
       <CustomButton variant="buttonUnderline">Создать</CustomButton>
-      <img src={circleIcon} alt="" className={styles.lobbiCircle} />
+      <img src={lobbiCircle} alt="" className={styles.lobbiCircle} />
     </div>
   )
 }

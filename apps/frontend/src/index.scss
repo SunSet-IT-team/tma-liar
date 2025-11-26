@@ -8,13 +8,15 @@
   --black-color: #000;
 }
 
+#root {
+  display: flex;
+  justify-content: center;
+}
+
 body {
   background-color: (--white-color);
   box-sizing: border-box;
   font-family: 'CodeProBoldLC';
-  display: flex;
-  justify-content: center;
-  align-items: center;
   height: 100vh;
   margin: 0;
 }
@@ -23,6 +25,7 @@ button {
   background-color: transparent;
   border: none;
   cursor: pointer;
+  padding: 0;
 }
 
 h1,h2,h3,h4,h5,h6,p,ul {

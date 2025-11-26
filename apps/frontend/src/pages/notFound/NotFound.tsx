@@ -17,8 +17,9 @@ export const NotFound: FC = () => {
       </div>
       <div className={styles.notFoundBlock}>
         <span className={styles.notFoundText}>Ну а <br /> я что ?</span>
+        <img className={styles.notFoundIcon} src={notFoundIcon} alt="" />
+        <div className={styles.emptyBlock}></div>
       </div>
-      <img className={styles.notFoundIcon} src={notFoundIcon} alt="" />
     </div>
   )
 }

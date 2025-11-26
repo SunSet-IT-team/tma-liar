@@ -10,13 +10,16 @@ type TaimerProps = {
 export const Taimer: FC<TaimerProps> = ({ time }) => {
   return (
     <>
-      <img src={taimerCircle} alt="" />
-      <div className={styles.loaderWrapper}>
-        <div
-          className={styles.loader}
-          style={{ animationDuration: `${time}s` }}
-        />
-      </div>
+    <div className={styles.content}>
+      <img src={taimerCircle} alt="" className={styles.taimerIcon} />
+        <div className={styles.loaderWrapper}>
+          <div
+            className={styles.loader}
+            style={{ animationDuration: `${time}s` }}
+          />
+        </div>
+    </div>
+      
     </>
   )
 }

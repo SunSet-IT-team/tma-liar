@@ -1,7 +1,4 @@
 .container {
-    max-width: 480px;
-    padding: 0;
-    height: 100vh;
     justify-content: space-around;
 }
 
@@ -11,16 +8,18 @@
 
 .lobbiBlock {
     width: 100%;
-    position: relative; 
+    margin-bottom: 30px;
 }
 
 .lobbiTitle {
+    position: relative; 
+    display: inline-block;
     color: var(--red-color);
 }
 
 .lobbiCode {
     position: absolute;
-    left: 50%;
+    right: -20px;
 }
 
 .taskBlock {
@@ -33,6 +32,7 @@
     color: var(--red-color);
     margin-top: 70px;
     margin-bottom: 30px;
+    text-align: center;
 }
 
 .container .taskLoserWrapper {
@@ -53,4 +53,14 @@
 
 .readyBtn {
     color: var(--red-color);
+}
+
+@media(max-width: 370px) {
+    .readyBtn {
+        font-size: 48px;
+    }
+
+    .lobbiTitle {
+        font-size: 76px;
+    }
 }

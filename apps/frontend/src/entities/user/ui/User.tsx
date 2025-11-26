@@ -13,11 +13,12 @@ export type UserProps = {
   isLzhets: boolean;
   isYou: boolean;
   variant?: UserVariant;
+  className?: string;
 }
 
-export const User: FC<UserProps> = ({ photo, name, variant = 'default', isLzhets, isYou }) => {
+export const User: FC<UserProps> = ({ photo, name, variant = 'default', isLzhets, isYou, className }) => {
   return (
-    <div className={clsx(styles.content, styles[variant])}>
+    <div className={clsx(styles.content, styles[variant], className)}>
       <div className={styles.userPhotoBlock}>
         <img src={photo ? photo : noPhoto} alt="" className={clsx(styles.userPhoto, isYou && styles.userPhotoOutline)} />
         {isLzhets && 

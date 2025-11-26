@@ -1,14 +1,18 @@
 .container {
-    min-width: 480px;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    padding-left: 20px;
     background-color: var(--red-color);
+    align-items: flex-start;
 }
 
 .header {
     padding-top: 10px;
+}
+
+.content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: auto;
 }
 
 .title {
@@ -25,7 +29,6 @@
 .rulesText {
     font-size: 28px;
     color: var(--white-main-color);
-    margin-bottom: auto;
 }
 
 .rulesIconBlock {
@@ -38,4 +41,10 @@
 .rulesIcon {
     width: 250px;
     height: 250px;
+}
+
+@media (max-width: 370px) {
+    .title {
+        font-size: 76px;
+    }
 }

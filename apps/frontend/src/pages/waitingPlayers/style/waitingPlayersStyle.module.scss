@@ -1,11 +1,7 @@
 .container {
-    min-width: 480px;
     position: relative;
     overflow: hidden;
     background-color: var(--red-color);
-    padding: 0;
-    padding-left: 20px;
-    height: 100vh;
 }
 
 .header {
@@ -37,4 +33,20 @@
     right: 65px;
     color: var(--white-main-color);
     max-width: 120px;
+}
+
+@media (max-width: 470px) {
+    .waitingIcon {
+        width: 200px;
+        height: 332px;
+    }
+
+    .waitingCircle {
+        width: 133px;
+        height: 300px;
+    }
+
+    .waitingText {
+        right: 35px;
+    }
 }

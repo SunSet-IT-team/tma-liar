@@ -38,7 +38,7 @@ export const Users: FC<UsersProps> = ({ className }) => {
   return (
     <div className={clsx(styles.content, className)}>
       {testUsers.map((user: UserProps, i: number) => (
-        <User key={i} photo={user.photo} name={user.name} isLzhets={user.isLzhets} isYou={user.isYou} />
+        <User key={i} photo={user.photo} name={user.name} isLzhets={user.isLzhets} isYou={user.isYou} className={styles.userContent} />
       ))}
     </div>
   )

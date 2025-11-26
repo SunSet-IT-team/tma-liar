@@ -2,10 +2,12 @@ import { FC } from "react"
 import { CustomButton } from "../../shared/CustomButton/CustomButton"
 import { Taimer } from "../../shared/taimer/Taimer"
 import styles from './style/choosingLiarStyle.module.scss'
+import glob from '../../App.module.scss'
+import clsx from "clsx"
 
 export const ChoosingLiar: FC = () => {
   return (
-    <div className={styles.container}>
+    <div className={clsx(styles.container, glob.container)}>
       <div className={styles.content}>
         <h1 className={styles.title}>Будешь врать?</h1>
         <div className={styles.choosingBtns}>

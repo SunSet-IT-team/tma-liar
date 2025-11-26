@@ -4,3 +4,14 @@
     gap: 20px;
     justify-content: space-between;
 }
+
+.userContent:nth-child(2n) {
+    justify-content: flex-end;
+}
+
+@media(max-width: 370px) {
+    .content .userContent {
+        width: 100%;
+        justify-content: unset;
+    }
+}

@@ -1,9 +1,6 @@
 .container {
     position: relative;
     overflow: hidden;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
     justify-content: space-between;
 }
 
@@ -26,4 +23,10 @@
     display: flex;
     justify-content: space-between;
     padding: 0 40px;
+}
+
+@media (max-width: 400px) {
+    .title {
+        font-size: 76px;
+    }
 }

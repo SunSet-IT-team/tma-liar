@@ -14,10 +14,10 @@ export const WaitingLobbi: FC = () => {
       <div className={styles.lobbiBlock}>
         <Typography variant="titleLarge" as='h1' className={styles.lobbiTitle}>
           Лобби
-        </Typography>
         <Typography className={styles.lobbiCode}>#13HJ</Typography>
+        </Typography>
       </div>
-      <Users />
+      <Users className={styles.players} />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput placeholder="Task" className={styles.taskLoserWrapper} inputClassName={styles.taskLoserInput} />
