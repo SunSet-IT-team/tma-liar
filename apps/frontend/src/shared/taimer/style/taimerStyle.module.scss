@@ -1,0 +1,53 @@
+.content {
+  position: relative;
+}
+
+.coveringBlock {
+    position: absolute;
+    bottom: -31%;
+    left: -10px;
+}
+
+.taimerIcon {
+  max-width: 100%;
+}
+
+.loaderWrapper {
+    width: 100%;
+    aspect-ratio: 2 / 1; // ширина : высота = 2:1 (полукруг)
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    left: 0;     // обрезаем нижнюю часть
+  }
+
+@property --angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+  }
+  
+  .loader {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+  
+    /* начальное значение */
+    --angle: 0deg;
+  
+    background: conic-gradient(#fff var(--angle), #0000 0);
+
+    transform: rotate(230deg); // смещаем старт сверху -> влево
+
+    animation: fillProgress linear forwards;
+  }
+  
+  /* анимация — меняем только угол */
+  @keyframes fillProgress {
+    from {
+      --angle: 0deg;
+    }
+    to {
+      --angle: 230deg;
+    }
+  }

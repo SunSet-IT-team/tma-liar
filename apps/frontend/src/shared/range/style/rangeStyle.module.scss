@@ -1,0 +1,93 @@
+.rangeSlider {
+    position: relative;
+    width: 100%;
+    background-color: var(--black-main-color);
+    border-radius: 10px;
+  }
+  
+  .rangeSlider__track {
+    position: relative;
+    height: 4px;
+    pointer-events: none; 
+  }
+  
+  .rangeSlider__trackBg {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--white-main-color);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  
+  .rangeSlider__trackFill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 4px;
+    background-color: var(--red-color);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  
+  .rangeSlider__thumb {
+    position: absolute;
+    top: 50%;
+    width: 4px;
+    height: 18px;
+    background-color: var(--white-color);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  
+  .rangeSlider__input {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px; 
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    z-index: 2;
+    cursor: pointer;
+  }
+  
+  .rangeSlider__input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0;
+    height: 0;
+  }
+  
+  .rangeSlider__input::-moz-range-thumb {
+    width: 0;
+    height: 0;
+    border: none;
+    background: transparent;
+  }
+  
+  .rangeSlider__input::-ms-thumb {
+    width: 0;
+    height: 0;
+    border: none;
+    background: transparent;
+  }
+  
+  .rangeSlider__input::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .rangeSlider__input::-moz-range-track {
+    background: transparent;
+  }
+  .rangeSlider__input::-ms-track {
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+  }
+  

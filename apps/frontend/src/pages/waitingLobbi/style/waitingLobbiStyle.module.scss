@@ -1,0 +1,66 @@
+.container {
+    justify-content: space-around;
+}
+
+.header {
+    padding-top: 10px;
+}
+
+.lobbiBlock {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.lobbiTitle {
+    position: relative; 
+    display: inline-block;
+    color: var(--red-color);
+}
+
+.lobbiCode {
+    position: absolute;
+    right: -20px;
+}
+
+.taskBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.taskLoserText {
+    color: var(--red-color);
+    margin-top: 70px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.container .taskLoserWrapper {
+    width: 100%;
+    max-width: unset;
+    margin-bottom: 25px;
+}
+
+.container .taskLoserInput {
+    width: 100%;
+    font-size: 14px;
+    padding-bottom: 5px;
+}
+
+.connectedPlayers {
+    margin-bottom: 50px;
+}
+
+.readyBtn {
+    color: var(--red-color);
+}
+
+@media(max-width: 370px) {
+    .readyBtn {
+        font-size: 48px;
+    }
+
+    .lobbiTitle {
+        font-size: 76px;
+    }
+}

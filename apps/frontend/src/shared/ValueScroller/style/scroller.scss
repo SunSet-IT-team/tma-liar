@@ -1,0 +1,23 @@
+.scrollerContent {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.scrollerSwiper {
+  width: 100%;
+  height: 80px;
+}
+
+.scrollerContent .scrollerSwiperSlide {
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.slideItem {
+  font-size: 76px;
+  color: var(--black-main-color);
+}
