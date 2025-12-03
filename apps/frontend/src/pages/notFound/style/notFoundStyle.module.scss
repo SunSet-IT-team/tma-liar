@@ -1,6 +1,4 @@
 .container {
-    position: relative;
-    overflow: hidden;
     justify-content: space-between;
     background-color: var(--black-main-color);
 }
@@ -13,12 +11,10 @@
 }
 
 .title {
-    font-size: 87px;
     color: var(--white-main-color);
 }
 
 .errorText {
-    font-size: 28px;
     color: var(--red-color);
     text-align: center;
 }
@@ -32,7 +28,6 @@
 }
 
 .notFoundText {
-    font-size: 28px;
     color: var(--white-main-color);
 }
 

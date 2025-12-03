@@ -1,6 +1,4 @@
 .container {
-    position: relative;
-    overflow: hidden;
     background-color: var(--black-main-color);
 }
 
@@ -44,8 +42,7 @@
     margin-bottom: 60px;
 }
 
-.settingsText {
-    font-size: 28px;
+.content .settingsText {
     color: var(--white-main-color);
     z-index: 2;
 }

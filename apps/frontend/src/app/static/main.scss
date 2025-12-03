@@ -1,0 +1,45 @@
+:root {
+    --red-color: #E42336;
+    --red-text-color: #E62235;
+    --white-main-color: #F8F9FD;
+    --white-color: #fff;
+    --black-main-color: #121212;
+    --black-text-color: #10090B;
+    --black-color: #000;
+  }
+  
+  #root {
+    display: flex;
+    justify-content: center;
+  }
+  
+  body {
+    background-color: var(--white-color);
+    box-sizing: border-box;
+    font-family: 'CodeProBoldLC';
+    height: 100vh;
+    margin: 0;
+  }
+  
+  button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  h1,h2,h3,h4,h5,h6,p,ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 727px;
+    height: calc(100vh - 40px);
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+}
+  
