@@ -1,6 +1,4 @@
 .container {
-    position: relative;
-    overflow: hidden;
     justify-content: space-between;
 }
 
@@ -15,7 +13,6 @@
 
 .title {
     max-width: 400px;
-    font-size: 87px;
     color: var(--red-color);
 }
 
