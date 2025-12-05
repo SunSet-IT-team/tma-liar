@@ -1,0 +1,34 @@
+.content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.titleItem {
+    color: var(--red-color);
+}
+
+.liarPlayer {
+    margin-bottom: 30px;
+}
+
+.questionLiar {
+    margin-bottom: 170px;
+}
+
+.answersBtns {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 70px;
+}
+
+.answersBtn {
+    padding: 15px 48px;
+    border: 3px solid var(--black-main-color);
+    border-radius: 8px;
+}
+
+.fixAnswerBtn {
+    color: var(--red-color);
+    margin-bottom: auto;
+}
