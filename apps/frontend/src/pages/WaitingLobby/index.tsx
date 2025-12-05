@@ -2,7 +2,7 @@ import { FC } from "react"
 import styles from './style/waitingLobbyStyle.module.scss'
 import { Header } from "../../widgets/Header"
 import { Typography } from "../../shared/ui/Typography"
-import { Users } from "../../features/UsersBadge"
+import { LobbyUsersBadge } from "../../features/UsersBadge/ui/LobbyUsersBadge"
 import { TextInput } from "../../shared/ui/TextInput"
 import { Container } from "../../shared/ui/Container"
 
@@ -19,7 +19,7 @@ export const WaitingLobby: FC = () => {
         <Typography className={styles.lobbyCode}>#13HJ</Typography>
         </Typography>
       </div>
-      <Users className={styles.players} />
+      <LobbyUsersBadge className={styles.players} />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput placeholder="Task" className={styles.taskLoserWrapper} inputClassName={styles.taskLoserInput} />

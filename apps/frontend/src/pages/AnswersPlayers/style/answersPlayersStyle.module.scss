@@ -1,0 +1,23 @@
+.title {
+    color: var(--red-color);
+}
+
+.answersText {
+    margin-bottom: 30px;
+}
+
+.bottomBlock {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding-bottom: 30px;
+}
+
+.nextBtn {
+    color: var(--red-color);
+    padding-left: 60px;
+}
+
+.time {
+    padding-right: 60px;
+}

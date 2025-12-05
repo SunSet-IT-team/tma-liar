@@ -1,0 +1,41 @@
+.content {
+    display: flex;
+    gap: 20px;
+}
+
+.lobbyContent {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.answersContent {
+    width: 100%;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.userContent {
+    width: 38%;
+}
+
+.userContent:nth-child(2n) {
+    justify-content: flex-end;
+}
+
+.playerBlock {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.believeText {
+    color: var(--red-color);
+}
+
+@media(max-width: 370px) {
+    .lobbyContent .userContent {
+        width: 100%;
+        justify-content: unset;
+    }
+}

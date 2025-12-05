@@ -4,39 +4,17 @@ import noPhoto from '../../../../../public/icons/blackPhoto.svg'
 import { Typography } from "../../../../shared/ui/Typography";
 import clsx from "clsx";
 import hornsIcon from '../../../../../public/icons/hornsIcon.svg'
+import type { Player } from "../../model/types";
 
-export type UserVariant = | 'large' | 'medium' | 'default'
-
-export type UserProps = {
-  id: number;
-  /**
-    * Фото игрока
-  */
-  photo?: string;
-  /**
-    * Никнейм игрока
-  */
-  name: string;
-  /**
-    * Лжец ли игрок
-  */
-  isLzhets: boolean;
-  /**
-    * Текущий игрок (ты)
-  */
-  isYou: boolean;
-  /**
-    * Варианты размеров блока с игроком
-  */
-  variant?: UserVariant;
-  className?: string;
+type UserBadgeProps = Player & {
+  className?: string
 }
 
 /** 
  * Отображение блока с игроком (фото, имя)
  * Используется в компоненте показа подключившихся игроков
 */
-export const UserBadge: FC<UserProps> = ({ photo, name, variant = 'default', isLzhets, isYou, className }) => {
+export const UserBadge: FC<UserBadgeProps> = ({ photo, name, variant = 'default', isLzhets, isYou, className }) => {
   return (
     <div className={clsx(styles.content, styles[variant], className)}>
       <div className={styles.userPhotoBlock}>
