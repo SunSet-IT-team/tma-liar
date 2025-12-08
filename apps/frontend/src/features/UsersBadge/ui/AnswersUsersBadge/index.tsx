@@ -5,6 +5,9 @@ import { UserBadge } from "../../../../entities/user/ui/UserBadge"
 import { Typography } from "../../../../shared/ui/Typography"
 import styles from '../../style/usersBadgeStyle.module.scss'
 
+/** 
+ * Получаем ответы игроков
+*/
 export const AnswersUserBadge: FC = () => {
   const testUsers = [
     {
@@ -47,8 +50,8 @@ export const AnswersUserBadge: FC = () => {
   return (
     <div className={clsx(styles.content, styles.answersContent)}>
       {testUsers.map((user: Player) => (
-        <div className={styles.playerBlock}>
-          <UserBadge key={user.id} id={user.id} photo={user.photo} name={user.name} isBelieve={user.isBelieve} />
+        <div key={user.id} className={styles.playerBlock}>
+          <UserBadge id={user.id} photo={user.photo} name={user.name} isBelieve={user.isBelieve} />
           <Typography className={user.isBelieve ? styles.believeText : ''}>{user.isBelieve ? 'Верит' : 'Не верит'}</Typography>
         </div>
       ))}

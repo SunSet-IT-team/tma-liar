@@ -6,6 +6,9 @@ import { Typography } from "../../shared/ui/Typography"
 import { Header } from "../../widgets/Header"
 import styles from './style/answersPlayersStyle.module.scss'
 
+/** 
+ * Экран с ответами других игроков
+*/
 export const AnswersPlayers: FC = () => {
   return (
     <Container>

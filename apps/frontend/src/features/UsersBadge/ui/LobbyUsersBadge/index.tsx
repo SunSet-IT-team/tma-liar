@@ -9,7 +9,7 @@ type UsersProps = {
 }
 
 /** 
- * Получаем подключившихся игроков
+ * Получаем подключившихся игроков в лобби
 */
 export const LobbyUsersBadge: FC<UsersProps> = ({ className }) => {
   const testUsers = [

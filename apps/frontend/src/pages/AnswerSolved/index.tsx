@@ -7,6 +7,9 @@ import { Typography } from "../../shared/ui/Typography"
 import { Header } from "../../widgets/Header"
 import styles from './style/answerSolvedStyle.module.scss'
 
+/** 
+ * Экран с вариантами ответов для решало
+*/
 export const AnswerSolved: FC = () => {
   return (
     <Container>
