@@ -14,16 +14,16 @@ type UserBadgeProps = Player & {
  * Отображение блока с игроком (фото, имя)
  * Используется в компоненте показа подключившихся игроков
 */
-export const UserBadge: FC<UserBadgeProps> = ({ photo, name, variant = 'default', isLzhets, isYou, className }) => {
+export const UserBadge: FC<UserBadgeProps> = ({ photo, name, variant = 'default', isLzhets, currentPlayer, className }) => {
   return (
     <div className={clsx(styles.content, styles[variant], className)}>
       <div className={styles.userPhotoBlock}>
-        <img src={photo ? photo : noPhoto} alt="" className={clsx(styles.userPhoto, isYou && styles.userPhotoOutline)} />
+        <img src={photo ? photo : noPhoto} alt="" className={clsx(styles.userPhoto, currentPlayer && styles.userPhotoOutline)} />
         {isLzhets && 
-          <img src={hornsIcon} alt="" className={styles.hornsImg} />
+          <img src={hornsIcon} alt="" className={styles.hornsImg} />  
         }
       </div>
-      <Typography variant="caption" className={styles.username}>{name}</Typography>
+      <Typography variant="caption" className={clsx(styles.username, currentPlayer && styles.currentUser)}>{name}</Typography>
     </div>
   )
 }

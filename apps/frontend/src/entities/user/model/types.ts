@@ -11,7 +11,7 @@ export type Player = {
     photo?: string;
     name: string;
     isLzhets?: boolean;
-    isYou?: boolean;
+    currentPlayer?: boolean;
     variant?: PlayerSize;
     isBelieve?: boolean;
     isRated?: boolean;
