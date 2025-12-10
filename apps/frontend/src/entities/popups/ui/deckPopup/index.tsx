@@ -4,12 +4,18 @@ import { Typography } from "../../../../shared/ui/Typography"
 import styles from '../../style/popupsStyle.module.scss'
 
 type DeckPopupProps = {
+  /** 
+   * изменение показа попапа
+  */
   changeShow: (show: boolean) => void
 }
 
+/** 
+ * Попап информации о колоде
+*/
 export const DeckPopup: FC<DeckPopupProps> = ({ changeShow }) => {
   return (
-    <Popup changeShow={changeShow} className={styles.popupContent}>
+    <Popup changeShow={changeShow} className={styles.deckPopupContent}>
       <Typography variant="titleLarge" className={styles.title}>18+</Typography>
       <div className={styles.deckParams}>
         <Typography>Вопросов:</Typography>

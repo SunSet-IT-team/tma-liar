@@ -10,8 +10,12 @@ type BackArrowProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   /**
     * Варианты цветов стрелки (белый, красный, черный)
   */
-  variant?: BackArrowVariant;  
+  variant?: BackArrowVariant;
   onClick?: () => void;
+  /** 
+   * Изменение показа попапа лобби
+  */
+  leaveLobby: (value: boolean) => void;
 };
 
 /** 
@@ -28,11 +32,11 @@ const srcMap: Record<BackArrowVariant, string> = {
  * Кнопка назад, будет производить переход на предыдущую страницу
  * Чаще всего используется в шапке (header)
 */
-export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, ...rest }) => {
+export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, leaveLobby, ...rest }) => {
   const src = srcMap[variant];
 
   return (
-    <button onClick={onClick} {...rest}>
+    <button onClick={() => leaveLobby(true)} {...rest}>
       <img src={src} className={styles.backArrow} />
     </button>
   );

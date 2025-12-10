@@ -1,4 +1,5 @@
-import { FC } from "react"
+import { FC, useState } from "react"
+import { LeavePopup } from "../../entities/popups/ui/LeavePopup"
 import { UserBadge } from "../../entities/user/ui/UserBadge"
 import { Button } from "../../shared/ui/Button"
 import { Container } from "../../shared/ui/Container"
@@ -11,9 +12,11 @@ import styles from './style/answerSolvedStyle.module.scss'
  * Экран с вариантами ответов для решало
 */
 export const AnswerSolved: FC = () => {
+  const [leaveLobby, setLeaveLobbi] = useState<boolean>(false)
+
   return (
     <Container>
-      <Header className={styles.header} />
+      <Header className={styles.header} leaveLobby={(value: boolean) => setLeaveLobbi(value)} />
       <div className={styles.content}>
         <Typography as='h1' variant='titleLarge'>
           Лжец
@@ -29,6 +32,9 @@ export const AnswerSolved: FC = () => {
       </div>
       <Button className={styles.fixAnswerBtn}>Зафиксировать</Button>
       <Timer time={10} />
+      {leaveLobby &&
+        <LeavePopup changeShow={(show: boolean) => setLeaveLobbi(show)} popupStyle='red' />
+      }
     </Container>
   )
 }
