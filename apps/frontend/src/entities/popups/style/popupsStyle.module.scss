@@ -1,0 +1,21 @@
+.popupContent {
+    width: 380px;
+    height: 540px;
+    padding: 20px 50px;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    color: var(--red-color);
+    margin-bottom: 15px;
+}
+
+.deckParams {
+    display: flex;
+    gap: 10px;
+}
+
+.dataDeck {
+    margin-top: 60px;
+}
