@@ -2,6 +2,7 @@ import { FC } from "react"
 import { AnswersUserBadge } from "../../features/UsersBadge/ui/AnswersUsersBadge"
 import { Button } from "../../shared/ui/Button"
 import { Container } from "../../shared/ui/Container"
+import { RateTimer } from "../../shared/ui/RateTimer"
 import { Typography } from "../../shared/ui/Typography"
 import { Header } from "../../widgets/Header"
 import styles from './style/answersPlayersStyle.module.scss'
@@ -18,7 +19,7 @@ export const AnswersPlayers: FC = () => {
       <AnswersUserBadge />
       <div className={styles.bottomBlock}>
         <Button className={styles.nextBtn}>Далее</Button>
-        <Typography className={styles.time}>10 с</Typography>
+        <RateTimer time={10} className={styles.time} />
       </div>
     </Container>
   )

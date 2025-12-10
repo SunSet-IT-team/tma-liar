@@ -8,44 +8,46 @@ type UsersProps = {
   className?: string;
 }
 
-/** 
- * Получаем подключившихся игроков в лобби
-*/
-export const LobbyUsersBadge: FC<UsersProps> = ({ className }) => {
-  const testUsers = [
+const testUsers = [
     {
       id: 1,
       photo: '',
-      isLzhets: true,
+      isLiar: true,
       currentPlayer: true,
       name: 'Бешеный Татар',
     },
     {
       id: 2,
       photo: '',
-      isLzhets: false,
+      isLiar: false,
       currentPlayer: false,
       name: 'Лысый Татар',
     },
     {
       id: 3,
       photo: '',
-      isLzhets: false,
+      isLiar: false,
       currentPlayer: false,
       name: 'Крутой Татар',
     },
     {
       id: 4,
       photo: '',
-      isLzhets: false,
+      isLiar: false,
       currentPlayer: false,
       name: 'Бешеный Татар',
     },
   ]
+
+/** 
+ * Получаем подключившихся игроков в лобби
+*/
+export const LobbyUsersBadge: FC<UsersProps> = ({ className }) => {
+  
   return (
     <div className={clsx(styles.content, styles.lobbyContent)}>
       {testUsers.map((user: Player) => (
-        <UserBadge key={user.id} id={user.id} photo={user.photo} name={user.name} isLzhets={user.isLzhets} currentPlayer={user.currentPlayer} className={styles.userContent} />
+        <UserBadge key={user.id} id={user.id} photo={user.photo} name={user.name} isLiar={user.isLiar} currentPlayer={user.currentPlayer} className={styles.userContent} />
       ))}
     </div>
   )

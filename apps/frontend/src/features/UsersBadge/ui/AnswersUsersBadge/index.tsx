@@ -8,45 +8,50 @@ import styles from '../../style/usersBadgeStyle.module.scss'
 /** 
  * Получаем ответы игроков
 */
+
+const testUsers = [
+  {
+    id: 1,
+    photo: '',
+    name: 'Бешеный Татар',
+    isBelieve: true,
+  },
+  {
+    id: 2,
+    photo: '',
+    name: 'Лысый Татар',
+    isBelieve: false,
+  },
+  {
+    id: 3,
+    photo: '',
+    name: 'Крутой Татар',
+    isBelieve: false,
+  },
+  {
+    id: 4,
+    photo: '',
+    name: 'Бешеный Татар',
+    isBelieve: true,
+  },
+  {
+    id: 5,
+    photo: '',
+    name: 'Бешеный Татар',
+    isBelieve: false,
+  },
+  {
+    id: 6,
+    photo: '',
+    name: 'Лысый Татар',
+    isBelieve: true,
+  },
+]
+
+/** 
+ * Получаем ответы игроков
+*/
 export const AnswersUserBadge: FC = () => {
-  const testUsers = [
-    {
-      id: 1,
-      photo: '',
-      name: 'Бешеный Татар',
-      isBelieve: true,
-    },
-    {
-      id: 2,
-      photo: '',
-      name: 'Лысый Татар',
-      isBelieve: false,
-    },
-    {
-      id: 3,
-      photo: '',
-      name: 'Крутой Татар',
-      isBelieve: false,
-    },
-    {
-      id: 4,
-      photo: '',
-      name: 'Бешеный Татар',
-      isBelieve: true,
-    },
-    {
-      id: 5,
-      photo: '',
-      name: 'Бешеный Татар',
-      isBelieve: false,
-    },
-    {
-      id: 6,
-      photo: '',
-      name: 'Лысый Татар',
-      isBelieve: true,
-    },
-  ]
   return (
     <div className={clsx(styles.content, styles.answersContent)}>
       {testUsers.map((user: Player) => (

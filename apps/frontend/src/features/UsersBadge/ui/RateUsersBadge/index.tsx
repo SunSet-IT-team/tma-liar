@@ -5,52 +5,52 @@ import { UserBadge } from "../../../../entities/user/ui/UserBadge";
 import clsx from "clsx";
 import { Checkbox } from "../../../../shared/ui/Checkbox";
 
-type Props = {}
-
-/** 
- * Получаем оценки игроков
-*/
-export const RateUsersBadge: FC = (props: Props) => {
-  const [rated, setRated] = useState<boolean>(false)
-  
-  const testUsers = [
+const testUsers = [
     {
       id: 1,
       photo: '',
       name: 'Бешеный Татар',
-      isRated: rated,
+      isRated: false,
     },
     {
       id: 2,
       photo: '',
       name: 'Лысый Татар',
-      isRated: rated,
+      isRated: false,
     },
     {
       id: 3,
       photo: '',
       name: 'Крутой Татар',
-      isRated: rated,
+      isRated: false,
     },
     {
       id: 4,
       photo: '',
       name: 'Бешеный Татар',
-      isRated: rated,
+      isRated: false,
     },
     {
       id: 5,
       photo: '',
       name: 'Бешеный Татар',
-      isRated: rated,
+      isRated: false,
     },
     {
       id: 6,
       photo: '',
       name: 'Лысый Татар',
-      isRated: rated,
+      isRated: false,
     },
   ]
+
+/** 
+ * Получаем оценки игроков
+*/
+export const RateUsersBadge: FC = () => {
+  const [rated, setRated] = useState<boolean>(false)
+  
+  
   return (
     <div className={clsx(styles.content, styles.answersContent)}>
       {testUsers.map((user: Player) => (

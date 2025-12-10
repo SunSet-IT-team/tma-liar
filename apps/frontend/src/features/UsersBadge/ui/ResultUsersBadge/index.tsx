@@ -9,14 +9,7 @@ import { RESULT_ANIMATION_CONFIG } from "../../config/resultAnimationConfig";
 import drumSound from "../../../../shared/assets/sounds/drumroll.mp3";
 import { Button } from "../../../../shared/ui/Button";
 
-/** 
- * Отображение мест игроков с анимацией
-*/
-export const ResultUsersBadge: FC<{ onRevealTask: (task: string) => void }> = ({ onRevealTask }) => {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [task, setTask] = useState<string>("Здесь будет задание...");
-  const testUsers = [
+const testUsers = [
     {
       id: 1,
       photo: '',
@@ -82,6 +75,15 @@ export const ResultUsersBadge: FC<{ onRevealTask: (task: string) => void }> = ({
       task: 'Пустить бутерброд по кругу'
     },
   ]
+
+/** 
+ * Отображение мест игроков с анимацией
+*/
+export const ResultUsersBadge: FC<{ onRevealTask: (task: string) => void }> = ({ onRevealTask }) => {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [task, setTask] = useState<string>("Здесь будет задание...");
+  
 
   const sortedUsers = [...testUsers].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
 
