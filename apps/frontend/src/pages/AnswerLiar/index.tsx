@@ -5,6 +5,9 @@ import { Typography } from "../../shared/ui/Typography"
 import { Header } from "../../widgets/Header"
 import styles from './style/answerLiarStyle.module.scss'
 
+/** 
+ * Экран с вопросом для лжеца
+*/
 export const AnswerLiar: FC = () => {
   return (
     <Container>
@@ -16,7 +19,6 @@ export const AnswerLiar: FC = () => {
         </Typography>
         <Typography>Здесь будет вопрос...</Typography>
       </div>
-      
       <Timer time={10} />
     </Container>
   )
