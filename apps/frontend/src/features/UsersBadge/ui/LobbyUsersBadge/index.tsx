@@ -47,7 +47,15 @@ export const LobbyUsersBadge: FC<UsersProps> = ({ className }) => {
   return (
     <div className={clsx(styles.content, styles.lobbyContent)}>
       {testUsers.map((user: Player) => (
-        <UserBadge key={user.id} id={user.id} photo={user.photo} name={user.name} isLiar={user.isLiar} currentPlayer={user.currentPlayer} className={styles.userContent} />
+        <UserBadge 
+          key={user.id} 
+          id={user.id} 
+          photo={user.photo} 
+          name={user.name} 
+          isLiar={user.isLiar} 
+          currentPlayer={user.currentPlayer} 
+          className={clsx(styles.userContent, className)} 
+        />
       ))}
     </div>
   )
