@@ -16,15 +16,19 @@ type HeaderProps = {
   */
   variantSettings?: SettingsVariant;
   className?: string;
+  /** 
+   * Изменение показа попапа лобби
+  */
+  leaveLobby: (value: boolean) => void;
 }
 
 /** 
  * Шапка для всех экранов
 */
-export const Header: FC<HeaderProps> = ({ variantArrow, variantSettings, className }) => {
+export const Header: FC<HeaderProps> = ({ variantArrow, variantSettings, className, leaveLobby }) => {
   return (
     <div className={clsx(styles.header, className)}>
-      <BackArrow variant={variantArrow} />
+      <BackArrow variant={variantArrow} leaveLobby={leaveLobby} />
       <SettingIcon variant={variantSettings} />
     </div>
   )
