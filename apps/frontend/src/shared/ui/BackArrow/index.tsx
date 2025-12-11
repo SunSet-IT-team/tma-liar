@@ -15,7 +15,7 @@ type BackArrowProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   /** 
    * Изменение показа попапа лобби
   */
-  leaveLobby: (value: boolean) => void;
+  leaveLobby?: (value: boolean) => void;
 };
 
 /** 
@@ -34,9 +34,14 @@ const srcMap: Record<BackArrowVariant, string> = {
 */
 export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, leaveLobby, ...rest }) => {
   const src = srcMap[variant];
+  const toLeave = (value: boolean) => {
+    if (leaveLobby) {
+      leaveLobby(value)
+    }
+  }
 
   return (
-    <button onClick={() => leaveLobby(true)} {...rest}>
+    <button onClick={() => toLeave(true)} {...rest}>
       <img src={src} className={styles.backArrow} />
     </button>
   );

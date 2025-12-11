@@ -19,7 +19,7 @@ type HeaderProps = {
   /** 
    * Изменение показа попапа лобби
   */
-  leaveLobby: (value: boolean) => void;
+  leaveLobby?: (value: boolean) => void;
 }
 
 /** 
