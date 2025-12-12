@@ -1,0 +1,26 @@
+.title {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: flex-start;
+    color: var(--red-color);
+    margin-bottom: 110px;
+}
+
+.lobbyInput {
+    margin-bottom: 40px;
+}
+
+.connectBtn {
+    margin-bottom: 100px;
+}
+
+.circleIcon {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    left: 0;
+    bottom: 0;
+    z-index: -1;
+    transform: rotate(180deg);
+}
