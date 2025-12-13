@@ -17,18 +17,20 @@ export interface BtnProps {
   as?: keyof JSX.IntrinsicElements;
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 /**
   * Компонент переиспользуемой кастомной кнопки
 */
-export const Button: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, }) => {
+export const Button: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, onClick }) => {
   return (
     <Component className={clsx(
       styles.buttonBase,
       styles[variant],
       className,
-    )}>
+      )} 
+      onClick={onClick}>
       {children}
     </Component>
   )

@@ -23,6 +23,7 @@
 }
 
 .taskBlock {
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -53,6 +54,7 @@
 
 .readyBtn {
     color: var(--red-color);
+    font-size: 87px;
 }
 
 @media(max-width: 370px) {

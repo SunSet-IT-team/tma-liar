@@ -52,7 +52,7 @@ export const DecksBlock: FC<DecksProps> = ({ count = 10, loop = true }) => {
           <SwiperSlide key={i} className="swiperSlide deckSwiperSlide">
             <div className="deckSlideItem">
               <img src={deckIcon} alt="" className="deckIcon" />  
-            </div>  
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>

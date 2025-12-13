@@ -1,20 +1,19 @@
 import { FC } from "react"
 import styles from './style/taimerStyle.module.scss'
 import taimerCircle from '../../../../public/icons/taimerCircle.svg'
+import { useAppSelector } from "../../../app/store/hook";
 
 type TaimerProps = {
-  /**
-    * Время, за которое будет действовать анимация
-  */
-  time: number;
+  
 }
 
 /**
   * Отображение анимации исчезновения картинки с учетом времени (time)
   * Используется на странице выбора вранья лжеца
-  * @see ChoosingLiar
 */
-export const Timer: FC<TaimerProps> = ({ time }) => {
+export const Timer: FC<TaimerProps> = ({}) => {
+  const time = useAppSelector((state) => state.timer.time);
+
   return (
     <div className={styles.content}>
       <img src={taimerCircle} alt="" className={styles.taimerIcon} />
