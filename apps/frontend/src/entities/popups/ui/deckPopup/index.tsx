@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { Popup } from "../../../../shared/ui/popup"
+import { Popup } from "../../../../shared/ui/Popup"
 import { Typography } from "../../../../shared/ui/Typography"
 import styles from '../../style/popupsStyle.module.scss'
 

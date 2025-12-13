@@ -5,7 +5,6 @@ import type { Swiper as SwiperType } from "swiper";
 import deckIcon from '../../../public/icons/blackPhoto.svg'
 
 import 'swiper/css';
-import { DeckPopup } from "../../entities/popups/ui/deckPopup";
 
 type DecksProps = {
   /**
@@ -24,7 +23,6 @@ type DecksProps = {
 */
 export const DecksBlock: FC<DecksProps> = ({ count = 10, loop = true }) => {
   const [decksArr, setDecksArr] = useState<number[]>([]);
-  const [showDeck, setShowDeck] = useState<boolean>(false);
 
   // useEffect тут нужен, чтобы цикл производился один раз на момент создания компонента
   useEffect(() => {
@@ -52,15 +50,12 @@ export const DecksBlock: FC<DecksProps> = ({ count = 10, loop = true }) => {
       >
         {decksArr.map((value, i) => (
           <SwiperSlide key={i} className="swiperSlide deckSwiperSlide">
-            <div className="deckSlideItem" onClick={() => setShowDeck(true)}>
+            <div className="deckSlideItem">
               <img src={deckIcon} alt="" className="deckIcon" />  
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
-      {showDeck &&
-        <DeckPopup changeShow={(show: boolean) => setShowDeck(show)} />  
-      }
     </div>
       
   )

@@ -23,6 +23,5 @@ export const Popup: FC<PopupProps> = ({ className, children, changeShow }) => {
       </div>
       <div className={styles.closedPlace} onClick={() => changeShow(false)}></div>
     </div>
-    
   )
 }

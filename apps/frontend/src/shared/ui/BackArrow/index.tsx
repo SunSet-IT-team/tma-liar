@@ -3,6 +3,7 @@ import redArrow from '../../../shared/ui/icons/redArrow.svg';
 import blackArrow from '../../../shared/ui/icons/blackArrow.svg';
 import styles from './style/arrowStyle.module.scss'
 import { ButtonHTMLAttributes, FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export type BackArrowVariant = 'white' | 'red' | 'black';
 
@@ -16,6 +17,10 @@ type BackArrowProps = ButtonHTMLAttributes<HTMLButtonElement> & {
    * Изменение показа попапа лобби
   */
   leaveLobby?: (value: boolean) => void;
+  /** 
+   * Находится ли в игре игрок
+  */
+  inGame?: boolean;
 };
 
 /** 
@@ -32,11 +37,14 @@ const srcMap: Record<BackArrowVariant, string> = {
  * Кнопка назад, будет производить переход на предыдущую страницу
  * Чаще всего используется в шапке (header)
 */
-export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, leaveLobby, ...rest }) => {
+export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, leaveLobby, inGame, ...rest }) => {
+  const navigate = useNavigate();
   const src = srcMap[variant];
   const toLeave = (value: boolean) => {
-    if (leaveLobby) {
+    if (leaveLobby && inGame) {
       leaveLobby(value)
+    } else {
+      navigate(-1);
     }
   }
 

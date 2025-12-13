@@ -2,14 +2,18 @@ import fonts from '../shared/assets/fonts/fonts.module.scss'
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { Static } from './static/Static';
-import { ResultGame } from '../pages/ResultGame';
+import { AppRouter } from './routes/AppRouter';
+import { BrowserRouter } from 'react-router-dom';
 
 function App() {
   return (
-    <Provider store={store}>
-      <Static />
-      <ResultGame />
-    </Provider>
+    <BrowserRouter>
+      <Provider store={store}>
+        <Static />
+        <AppRouter />
+      </Provider>
+    </BrowserRouter>
+    
     
   );
 }

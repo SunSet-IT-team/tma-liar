@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { FC } from "react"
+import { useNavigate } from "react-router-dom";
 import styles from './style/linkStyle.module.scss'
 
 type LinkProps = {
@@ -18,9 +19,11 @@ type LinkProps = {
  * Ссылка для перехода страниц
 */
 export const Link: FC<LinkProps> = ({ icon, route, className }) => {
+  const navigate = useNavigate();
+
   return (
-    <a href="#" className={clsx(styles.link, className)}>
+    <button className={clsx(styles.link, className)} onClick={() => navigate(route)}>
       <img src={icon} alt="" />
-    </a>
+    </button>
   )
 }

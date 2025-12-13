@@ -2,6 +2,8 @@ import { ButtonHTMLAttributes, FC } from "react"
 import styles from './style/settingsStyle.module.scss'
 import whiteSettings from '../icons/whiteSettings.svg'
 import blackSettings from '../icons/settingsIcon.svg'
+import { useNavigate } from "react-router-dom"
+import { PageRoutes } from "../../../app/routes/pages"
 
 export type SettingsVariant = 'black' | 'white'
 
@@ -18,6 +20,7 @@ type SettingsProps = ButtonHTMLAttributes<HTMLButtonElement> & {
  * Чаще всего используется в шапке (header)
 */
 export const SettingIcon: FC<SettingsProps> = ({ variant = 'black', onClick, ...rest }) => {
+  const navigate = useNavigate();
   const srcMap: Record<SettingsVariant, string> = {
     white: whiteSettings,
     black: blackSettings,
@@ -25,8 +28,13 @@ export const SettingIcon: FC<SettingsProps> = ({ variant = 'black', onClick, ...
 
   const src = srcMap[variant];
 
+  const onSetting = () => {
+    navigate(`/${PageRoutes.SETTINGS}`)
+    if (onClick) onClick()
+  }
+
   return (
-    <button onClick={onClick} {...rest}>
+    <button onClick={onSetting} {...rest}>
       <img src={src} alt="" className={styles.settingsIcon} />
     </button>
   )

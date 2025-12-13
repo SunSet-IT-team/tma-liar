@@ -1,6 +1,7 @@
-import { FC, useState } from "react"
-import { LeavePopup } from "../../entities/popups/ui/LeavePopup"
+import { FC } from "react"
+import { PageRoutes } from "../../app/routes/pages"
 import { UserBadge } from "../../entities/user/ui/UserBadge"
+import { GameProcess } from "../../features/GameProcess"
 import { Button } from "../../shared/ui/Button"
 import { Container } from "../../shared/ui/Container"
 import { Timer } from "../../shared/ui/Timer"
@@ -12,11 +13,9 @@ import styles from './style/answerSolvedStyle.module.scss'
  * Экран с вариантами ответов для решало
 */
 export const AnswerSolved: FC = () => {
-  const [leaveLobby, setLeaveLobbi] = useState<boolean>(false)
-
   return (
     <Container>
-      <Header className={styles.header} leaveLobby={(value: boolean) => setLeaveLobbi(value)} />
+      <Header className={styles.header} inGame />
       <div className={styles.content}>
         <Typography as='h1' variant='titleLarge'>
           Лжец
@@ -31,10 +30,8 @@ export const AnswerSolved: FC = () => {
         <Button className={styles.answersBtn}>Верю</Button>
       </div>
       <Button className={styles.fixAnswerBtn}>Зафиксировать</Button>
-      <Timer time={10} />
-      {leaveLobby &&
-        <LeavePopup changeShow={(show: boolean) => setLeaveLobbi(show)} popupStyle='red' />
-      }
+      <Timer />
+      <GameProcess route={`/${PageRoutes.RATE_PLAYERS}`} />
     </Container>
   )
 }

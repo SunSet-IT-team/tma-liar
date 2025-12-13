@@ -79,7 +79,7 @@ const testUsers = [
 /** 
  * Отображение мест игроков с анимацией
 */
-export const ResultUsersBadge: FC<{ onRevealTask: (task: string) => void }> = ({ onRevealTask }) => {
+export const ResultUsersBadge: FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [task, setTask] = useState<string>("Здесь будет задание...");

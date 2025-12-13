@@ -40,7 +40,6 @@ type ScrollerProps = {
 /** 
  * Отображение вертикального выбора
  * Используется для задачи параметров при создании лобби
- * @see CreateLobby 
 */
 export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max = 100, step = 1, defaultValue = 30 }, loop = true, onChange, children, }) => {
   const [values, setValues] = useState<number[]>([]);

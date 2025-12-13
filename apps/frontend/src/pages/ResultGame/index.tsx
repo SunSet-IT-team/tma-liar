@@ -1,20 +1,19 @@
-import { FC, useState } from "react"
+import { FC } from "react"
+import { PageRoutes } from "../../app/routes/pages"
+import { GameProcess } from "../../features/GameProcess"
 import { ResultUsersBadge } from "../../features/UsersBadge/ui/ResultUsersBadge"
-import { Button } from "../../shared/ui/Button"
 import { Container } from "../../shared/ui/Container"
 import { Header } from "../../widgets/Header"
-import styles from './style/resultGameStyle.module.scss'
 
 /** 
  * Экран, отображение результатов игры
 */
 export const ResultGame: FC = () => {
-  const [task, setTask] = useState<string>("Здесь будет задание...");
-
   return (
     <Container>
-      <Header />
-      <ResultUsersBadge onRevealTask={setTask} />
+      <Header inGame />
+      <ResultUsersBadge />
+      <GameProcess route={`/${PageRoutes.END_GAME}`} />
     </Container>
   )
 }
