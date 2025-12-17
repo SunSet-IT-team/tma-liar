@@ -54,3 +54,33 @@
     justify-content: space-between;
 }
 
+.developer {
+    width: 430px;
+    height: 480px;
+    padding: 45px 26px;
+}
+
+.developerBlock {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.developerIcon {
+    margin-right: 25px;
+    border-radius: 10px;
+}
+
+.developerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.developerDescr {
+    margin-bottom: 20px;
+}
+
+.developerLink {
+    font-size: 14px;
+}
