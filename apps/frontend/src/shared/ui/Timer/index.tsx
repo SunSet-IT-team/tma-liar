@@ -3,15 +3,11 @@ import styles from './style/taimerStyle.module.scss'
 import taimerCircle from '../../../../public/icons/taimerCircle.svg'
 import { useAppSelector } from "../../../app/store/hook";
 
-type TaimerProps = {
-  
-}
-
 /**
   * Отображение анимации исчезновения картинки с учетом времени (time)
   * Используется на странице выбора вранья лжеца
 */
-export const Timer: FC<TaimerProps> = ({}) => {
+export const Timer: FC = () => {
   const time = useAppSelector((state) => state.timer.time);
 
   return (

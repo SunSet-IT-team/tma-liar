@@ -4,6 +4,7 @@ import whiteSettings from '../icons/whiteSettings.svg'
 import blackSettings from '../icons/settingsIcon.svg'
 import { useNavigate } from "react-router-dom"
 import { PageRoutes } from "../../../app/routes/pages"
+import { usePlaySound } from "../../lib/sound/usePlaySound"
 
 export type SettingsVariant = 'black' | 'white'
 
@@ -27,8 +28,10 @@ export const SettingIcon: FC<SettingsProps> = ({ variant = 'black', onClick, ...
   };
 
   const src = srcMap[variant];
+  const playSound = usePlaySound();
 
   const onSetting = () => {
+    playSound();
     navigate(`/${PageRoutes.SETTINGS}`)
     if (onClick) onClick()
   }

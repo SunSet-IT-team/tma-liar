@@ -4,6 +4,7 @@ import blackArrow from '../../../shared/ui/icons/blackArrow.svg';
 import styles from './style/arrowStyle.module.scss'
 import { ButtonHTMLAttributes, FC } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePlaySound } from '../../lib/sound/usePlaySound';
 
 export type BackArrowVariant = 'white' | 'red' | 'black';
 
@@ -40,7 +41,9 @@ const srcMap: Record<BackArrowVariant, string> = {
 export const BackArrow: FC<BackArrowProps> = ({ variant = 'black', onClick, leaveLobby, inGame, ...rest }) => {
   const navigate = useNavigate();
   const src = srcMap[variant];
+  const playSound = usePlaySound();
   const toLeave = (value: boolean) => {
+    playSound();
     if (leaveLobby && inGame) {
       leaveLobby(value)
     } else {

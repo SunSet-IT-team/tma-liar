@@ -1,6 +1,7 @@
 import { FC, JSX, ReactNode } from 'react';
 import clsx from 'clsx';
 import styles from './style/buttonsStyle.module.scss';
+import { usePlaySound } from '../../lib/sound/usePlaySound';
 
 export type ButtonsVariant = 
   | 'buttonUnderline'
@@ -24,13 +25,20 @@ export interface BtnProps {
   * Компонент переиспользуемой кастомной кнопки
 */
 export const Button: FC<BtnProps> = ({ className, variant = 'buttonText', as: Component = 'button', children, onClick }) => {
+  const playSound = usePlaySound();
+
+  const handleClick = () => {
+    playSound();
+    onClick?.();
+  };
+
   return (
     <Component className={clsx(
       styles.buttonBase,
       styles[variant],
       className,
       )} 
-      onClick={onClick}>
+      onClick={handleClick}>
       {children}
     </Component>
   )

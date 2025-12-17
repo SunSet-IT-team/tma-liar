@@ -17,8 +17,11 @@ import { LobbyAdmin } from "../../pages/Lobby/LobbyAdmin"
 import { WaitingPlayers } from "../../pages/WaitingPlayers"
 import { PageRoutes } from "./pages"
 import { LobbyPlayer } from "../../pages/Lobby/LobbyPlayer"
+import { useBackgroundMusic } from "../providers/BackgroundMusicProvider"
 
 export const AppRouter = () => {  
+  useBackgroundMusic();
+
   return (
       <Routes>
         <Route path="/" element={<Home />} />

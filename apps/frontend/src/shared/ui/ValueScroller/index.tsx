@@ -4,6 +4,7 @@ import type { Swiper as SwiperType } from "swiper";
 
 import 'swiper/css';
 import './style/scroller.scss';
+import { usePlaySound } from "../../lib/sound/usePlaySound";
 
 export type ReusedScrollerValues = {
   /**
@@ -59,6 +60,7 @@ export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max 
     setCurrentIndex(minIndex >= 0 ? minIndex : 0);
   }, [min, max, step]);
 
+  const playSound = usePlaySound();
   
   return (
     <div className="scrollerContent">
@@ -71,6 +73,7 @@ export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max 
         onSlideChange={(swiper: SwiperType) => {
           const index = swiper.realIndex;
           onChange?.(values[index]); // realIndex — индекс с учётом loop
+          playSound();
         }}
         onClick={() => {
           if (swiperInstance) {

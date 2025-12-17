@@ -2,6 +2,7 @@ import { ChangeEvent, FC, useRef, useState } from "react"
 import styles from './style/loadAvatarStyle.module.scss'
 import noPhoto from '../../../../public/icons/blackPhoto.svg'
 import { Typography } from "../Typography";
+import { usePlaySound } from "../../lib/sound/usePlaySound";
 
 type LoadAvatarProps = {
   onChange?: (file: File | null) => void;
@@ -18,8 +19,10 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const playSound = usePlaySound();
 
   const handleClick = () => {
+    playSound();
     fileInputRef.current?.click(); // Открываем диалог выбора файла
   };
 

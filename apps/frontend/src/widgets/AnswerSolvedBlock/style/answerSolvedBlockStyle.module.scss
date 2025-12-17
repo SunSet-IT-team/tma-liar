@@ -1,0 +1,22 @@
+.answersBtns {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 70px;
+}
+
+.answersBtn {
+    padding: 15px 48px;
+    border: 3px solid var(--black-main-color);
+    border-radius: 8px;
+    transition: color .3s ease-in-out, background-color .3s ease-in-out;
+}
+
+.answersBtnActive {
+    background-color: var(--black-main-color);
+    color: var(--white-main-color);
+}
+
+.fixAnswerBtn {
+    color: var(--red-color);
+    margin-bottom: auto;
+}

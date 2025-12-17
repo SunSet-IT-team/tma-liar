@@ -9,12 +9,19 @@ import { UserBadge } from "../../entities/user/ui/UserBadge"
 import circleIcon from '../../../public/icons/profileCircle.svg'
 import { useNavigate } from "react-router-dom"
 import { PageRoutes } from "../../app/routes/pages"
+import { usePlaySound } from "../../shared/lib/sound/usePlaySound"
 
 /** 
   * Экран присоединения к лобби
 */
 export const ConnectLobby: FC = () => {
   const navigate = useNavigate();
+  const playSound = usePlaySound();
+
+  const player = () => {
+    playSound();
+    navigate(`/${PageRoutes.PROFILE}`)
+  }
 
   return (
     <Container>
@@ -27,7 +34,7 @@ export const ConnectLobby: FC = () => {
       </Typography>
       <TextInput placeholder="task" className={styles.lobbyInput} />
       <Button className={styles.connectBtn} onClick={() => navigate(`/${PageRoutes.LOBBY_PLAYER}`)}>Присоедениться</Button>
-      <button onClick={() => navigate(`/${PageRoutes.PROFILE}`)}>
+      <button onClick={player}>
         <UserBadge variant="large" id={1} name='Бешеный татар' />
       </button>
       <img src={circleIcon} alt="" className={styles.circleIcon} />

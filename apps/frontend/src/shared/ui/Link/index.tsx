@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { FC } from "react"
 import { useNavigate } from "react-router-dom";
+import { usePlaySound } from "../../lib/sound/usePlaySound";
 import styles from './style/linkStyle.module.scss'
 
 type LinkProps = {
@@ -20,9 +21,15 @@ type LinkProps = {
 */
 export const Link: FC<LinkProps> = ({ icon, route, className }) => {
   const navigate = useNavigate();
+  const playSound = usePlaySound();
+
+  const onLink = () => {
+    playSound()
+    navigate(route)
+  }
 
   return (
-    <button className={clsx(styles.link, className)} onClick={() => navigate(route)}>
+    <button className={clsx(styles.link, className)} onClick={onLink}>
       <img src={icon} alt="" />
     </button>
   )
