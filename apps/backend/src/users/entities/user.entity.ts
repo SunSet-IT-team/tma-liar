@@ -1,8 +1,13 @@
+import { Types } from "mongoose";
+
 /**
  * Cущность 'Пользователь'
  */
 export interface User {
-  id: number;
+  _id: Types.ObjectId;
   nickname: string;
-  profileImg: string;
+  telegramId: string;
+  profileImg?: string;
+  passwordHash?: string;
+  token?: string;
 }

@@ -6,6 +6,8 @@ import type {
   UserApiDeleteUserParams,
 } from './user.params';
 import type { User } from './entities/user.entity';
+import { ApiError } from '../common/response';
+import { UserModel } from './user.modal';
 
 /**
  * Интерфейс для API пользователей
@@ -22,91 +24,50 @@ export interface UserApiMethods {
  * API для пользователей
  */
 export class UserApi implements UserApiMethods {
-  users = new Map<number, User>();
-
+  
   public async findUser(param?: UserApiFindUserParams): Promise<User | null> {
-    return new Promise((resolve, reject) => {
-      // Поиск по id
-      if (param?.id) {
-        try {
-          resolve(this.users.get(param.id) || null);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve(null);
-    });
+    if(!param?.telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+
+    return UserModel.findOne({ telegramId: param.telegramId }).lean();
   }
 
-  public findUsers(param?: UserApiFindUsersParams): Promise<User[] | []> {
-    return new Promise((resolve, reject) => {
-      if (param?.ids) {
-        const userIds = param.ids;
-        let usersArray: User[] = [];
-        try {
-          for (let key of userIds) {
-            const user = this.users.get(key);
-            if (user) {
-              usersArray.push(user);
-            }
-          }
-          resolve(usersArray);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve([]);
-    });
+  public async findUsers(param?: UserApiFindUsersParams): Promise<User[] | []> {
+    if(!param?.telegramIds || param.telegramIds.length == 0) throw new ApiError(404, "USER_IDS_NOT_SET");
+    
+    return UserModel.find({ telegramId: { $in: param.telegramIds } }).lean();
   }
 
-  public createUser(param: UserApiCreateUserParams): Promise<User> {
-    return new Promise((resolve, reject) => {
-      try {
-        const newUserId = this.users.size + 1;
-        this.users.set(newUserId, { id: newUserId, ...param } as User);
-        resolve(this.users.get(newUserId)!);
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async createUser(param: UserApiCreateUserParams): Promise<User> {
+    if(!param.telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+
+    if(!param.nickname) throw new ApiError(404, "NICKNAME_NOT_SET");
+
+    return (await UserModel.create(param)).toObject();
   }
 
-  public updateUser(param: UserApiUpdateUserParams): Promise<User> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.users.get(param?.id)) {
-          const userToUpdate = this.users.get(param.id);
-          if (userToUpdate) {
-            this.users.set(param.id, { ...userToUpdate, ...(param as User) });
-          } else {
-            reject('USER_NOT_EXIST');
-          }
-          resolve(this.users.get(param.id)!);
-        } else {
-          reject('USER_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async updateUser(param: UserApiUpdateUserParams): Promise<User> {
+    if(!param.telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+
+    const { telegramId, ...updateFields } = param; 
+
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { telegramId },
+      { $set: updateFields}, 
+      { new: true },
+    ).lean();
+
+    if(!updatedUser) throw new ApiError(404, "USER_NOT_FOUND");
+
+    return updatedUser;
   }
 
-  public deleteUser(param: UserApiDeleteUserParams): Promise<User> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.users.get(param?.id)) {
-          const userToDelete = this.users.get(param?.id);
-          if (this.users.delete(param.id)) {
-            resolve(userToDelete!);
-          } else {
-            reject('USER_NOT_EXIST');
-          }
-        } else {
-          reject('USER_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
+  public async deleteUser(param: UserApiDeleteUserParams): Promise<User> {
+    if (!param.telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+
+    const deletedUser = await UserModel.findOneAndDelete({ telegramId: param.telegramId }).lean();
+
+    if (!deletedUser) throw new ApiError(404, "USER_NOT_FOUND");
+
+    return deletedUser;
+  }  
 }
