@@ -1,23 +1,21 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useState } from "react"
 import { Button } from "../../shared/ui/Button"
 import styles from './style/createLobbyStyle.module.scss'
 import lobbyCircle from '../../../public/icons/lobbyCircle.svg'
-import { DecksBlock } from "../../features/DecksBlock"
 import { Header } from "../../widgets/Header"
 import { ChoiceParamsLobby } from "../../widgets/ChoiceParamsLobby"
 import { Typography } from "../../shared/ui/Typography"
 import { Container } from "../../shared/ui/Container"
-import { DeckPopup } from "../../entities/popups/ui/DeckPopup"
 import { useNavigate } from "react-router-dom"
 import { PageRoutes } from "../../app/routes/pages"
 import { useAppDispatch } from "../../app/store/hook"
 import { startTimer } from "../../entities/game/model/timerSlice"
+import { LobbyDeck } from "../../widgets/LobbyDeck"
 
 /** 
  * Экран создания лобби
 */
 export const CreateLobby: FC = () => {
-  const [showDeck, setShowDeck] = useState<boolean>(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [activeValue, setActiveValue] = useState<number>(20);
@@ -44,16 +42,9 @@ export const CreateLobby: FC = () => {
         choiceType="С" 
         onChangeValue={(value: number) => setActiveValue(value)}
       />
-      <div className={styles.deckBlock}>
-        <Typography className={styles.deckText}>Колода</Typography>
-        <DecksBlock />
-        <Button onClick={() => setShowDeck(true)}>О колоде</Button>
-      </div>
+      <LobbyDeck />
       <Button variant="buttonUnderline" onClick={createLobby}>Создать</Button>
       <img src={lobbyCircle} alt="" className={styles.lobbyCircle} />
-      {showDeck &&
-        <DeckPopup changeShow={(show: boolean) => setShowDeck(show)} />  
-      }
     </Container>
   )
 }

@@ -5,25 +5,35 @@ import styles from '../../style/popupsStyle.module.scss'
 
 type DeckPopupProps = {
   /** 
-   * изменение показа попапа
+   * Изменение показа попапа
   */
-  changeShow: (show: boolean) => void
+  changeShow: (show: boolean) => void;
+  /** 
+   * Колода
+  */
+  deck: {
+    ageLimit: number;
+    questions: string[];
+    categories: string[];
+  };
 }
 
 /** 
  * Попап информации о колоде
 */
-export const DeckPopup: FC<DeckPopupProps> = ({ changeShow }) => {
+export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
   return (
     <Popup changeShow={changeShow} className={styles.deckPopupContent}>
-      <Typography variant="titleLarge" className={styles.title}>18+</Typography>
+      <Typography variant="titleLarge" className={styles.title}>{deck.ageLimit}+</Typography>
       <div className={styles.deckParams}>
         <Typography>Вопросов:</Typography>
-        <Typography>200</Typography>
+        <Typography>{deck.questions.length}</Typography>
       </div>
       <div className={styles.deckParams}>
         <Typography>Категории:</Typography>
-        <Typography>демография, взрослое</Typography>
+          {deck.categories.map((category: string) => (
+            <Typography>{category}</Typography>
+          ))}
       </div>
       <Typography className={styles.dataDeck}>
         О колоде о колоде О колоде о колоде О колоде о колоде О колоде о колоде

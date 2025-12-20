@@ -1,5 +1,4 @@
-import clsx from "clsx";
-import { FC, useState } from "react"
+import { FC } from "react"
 import { ValueScroller } from "../../shared/ui/ValueScroller";
 import type { ReusedScrollerValues } from "../../shared/ui/ValueScroller";
 import styles from './style/choiceStyle.module.scss'
@@ -26,8 +25,6 @@ type ChoiceProps = {
 */
 export const ChoiceParamsLobby: FC<ChoiceProps> = ({ reusedValues, choiceText, choiceType, onChangeValue }) => {
   
-
-
   return (
     <div className={styles.lobbyStyle}>
       <Typography className={styles.questionsText}>{choiceText}</Typography>
