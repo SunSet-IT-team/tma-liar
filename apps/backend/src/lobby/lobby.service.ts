@@ -10,6 +10,7 @@ import type {
 import type { Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
 import { LobbyModel } from './lobby.modal';
+import type { Player } from './entities/player.entity';
 
 /**
  * Интерфейс для API лобби
@@ -110,5 +111,23 @@ export class LobbyApi implements LobbyApiMethods {
     }
 
     return deletedLobby;
+  }
+
+  public async joinLobby(lobbyCode: string, player: Player): Promise<Lobby> {
+    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!player) throw new ApiError(400, 'PLAYER_NOT_SET');
+
+    const lobby = await LobbyModel.findOne({ lobbyCode });
+
+    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
+
+    const exists = lobby.players.find(p => p.telegramId === player.telegramId);
+    if (exists) throw new ApiError(400, 'PLAYER_ALREADY_IN_LOBBY');
+
+    (lobby.players as Player[]).push(player);
+
+    await lobby.save();
+
+    return lobby.toObject();
   }
 }
