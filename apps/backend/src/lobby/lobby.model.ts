@@ -19,16 +19,14 @@ const LobbySchema = new Schema<Lobby>(
       default: 'waiting',
     },
 
-    currentScreen: {
+    stage: {
       type: String,
       enum: [
         'lobby',
-        'question',
-        'answer',
+        'liar_chooses',
+        'question_to_liar',
         'liar_results',
-        'waiting',
         'results',
-        'score',
         'end',
       ],
       required: true,

@@ -96,3 +96,16 @@ lobbyController.put('/:lobbyCode/player-ready', asyncHandler(async (req: Request
 
   return res.status(200).json(success(updatedLobby));
 }));
+
+lobbyController.post('/:lobbyCode/start-game', asyncHandler(async (req: Request, res: Response) => {
+  const { lobbyCode } = req.params;
+  const { telegramId, loserTask } = req.body;
+
+  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+  if (!telegramId) throw new ApiError(400, "PLAYER_ID_NOT_SET");
+  if (!loserTask) throw new ApiError(400, "LOSER_TASK_NOT_SET");
+
+  const lobbyStartGame = await lobbyApi.startGame({ lobbyCode, telegramId, loserTask });
+
+  return res.status(200).json(success(lobbyStartGame));
+}));

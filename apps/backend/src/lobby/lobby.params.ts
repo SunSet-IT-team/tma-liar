@@ -37,3 +37,9 @@ export interface LobbyApiToggleReadyParams {
   telegramId: string;
   loserTask?: string;
 }
+
+export interface LobbyApiStartGameParams {
+  lobbyCode: string;
+  telegramId: string;
+  loserTask: string;
+}

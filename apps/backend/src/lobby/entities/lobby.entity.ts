@@ -13,13 +13,11 @@ export interface Lobby {
   settings: Settings;
   questionHistory: Question[];
   activeQuestion?: Question;
-  currentScreen:
+  stage:
     | 'lobby'
-    | 'question'
-    | 'answer'
+    | 'liar_chooses'
+    | 'question_to_liar'
     | 'liar_results'
-    | 'waiting'
-    | 'results'
-    | 'score'
+    | 'game_results'
     | 'end';
 }

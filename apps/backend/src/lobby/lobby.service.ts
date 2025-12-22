@@ -7,12 +7,13 @@ import type {
   LobbyApiDeleteLobbyParams,
   LobbyApiJoinParams,
   LobbyApiToggleReadyParams,
+  LobbyApiStartGameParams,
 
 } from './lobby.params';
 
 import type { Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
-import { LobbyModel } from './lobby.modal';
+import { LobbyModel } from './lobby.model';
 import type { Player } from './entities/player.entity';
 
 /**
@@ -26,6 +27,7 @@ export interface LobbyApiMethods {
   deleteLobby: (param: LobbyApiDeleteLobbyParams) => Promise<Lobby>;
   joinLobby: (param: LobbyApiJoinParams) => Promise<Lobby>;
   togglePlayerReady: (param: LobbyApiToggleReadyParams) => Promise<Lobby>;
+  startGame: (param: LobbyApiStartGameParams) => Promise<Lobby>;
 }
 
 const nanoid6 = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
@@ -70,7 +72,7 @@ export class LobbyApi implements LobbyApiMethods {
     const lobby: Lobby = {
       lobbyCode,
       status: 'waiting',
-      currentScreen: 'lobby',
+      stage: 'lobby',
       players: players,
       adminId: adminId,
       questionHistory: [],
@@ -164,4 +166,33 @@ export class LobbyApi implements LobbyApiMethods {
     const updatedLobby = await lobby.save();
     return updatedLobby.toObject();
   }  
+
+  public async startGame(param: LobbyApiStartGameParams): Promise<Lobby> {
+    const { lobbyCode, telegramId, loserTask } = param;
+
+    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!telegramId) throw new ApiError(400, 'ADMIN_ID_NOT_SET');
+    if (!loserTask) throw new ApiError(400, 'LOSER_TASK_NOT_SET');
+
+    const lobby = await LobbyModel.findOne({ lobbyCode });
+    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
+
+    if (lobby.adminId !== telegramId) throw new ApiError(403, 'ONLY_ADMIN_CAN_START_GAME');
+
+    if (!lobby.players || lobby.players.length === 0) throw new ApiError(400, 'LOBBY_EMPTY');
+
+    const notReadyPlayer = lobby.players.find(p => !p.isReady);
+    if (notReadyPlayer) throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
+
+    const admin = lobby.players.find(p => p.telegramId == telegramId);
+    if(!admin) throw new ApiError(404, 'ADMIN_NOT_IN_LOBBY');
+
+    admin.loserTask = loserTask;
+
+    lobby.status = 'game';
+
+    const updatedLobby = await lobby.save();
+    return updatedLobby.toObject();
+  }
+
 }
