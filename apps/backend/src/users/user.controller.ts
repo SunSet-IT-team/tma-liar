@@ -14,9 +14,7 @@ userController.get('/:telegramId', asyncHandler(async (req: Request, res: Respon
 
   const user = await userApi.findUser({ telegramId });
 
-  if (!user) {
-    throw new ApiError(404, "USER_NOT_FOUND");
-  }
+  if (!user) throw new ApiError(404, "USER_NOT_FOUND");
 
   return res.status(200).json(success(user));
 }));
@@ -24,9 +22,7 @@ userController.get('/:telegramId', asyncHandler(async (req: Request, res: Respon
 userController.get('/', asyncHandler(async (req: Request, res: Response) => {
   const telegramIds = req.query.telegramIds;
 
-  if (!telegramIds) {
-    throw new ApiError(400, "USER_IDS_NOT_SET");
-  }
+  if (!telegramIds) throw new ApiError(400, "USER_IDS_NOT_SET");
 
   const ids: string[] = Array.isArray(telegramIds)
     ? telegramIds.map(id => String(id))

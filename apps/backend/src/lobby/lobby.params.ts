@@ -2,28 +2,27 @@ import type { Player } from './entities/player.entity';
 import type { Settings } from './entities/settings.entity';
 
 export interface LobbyApiFindLobbyParams {
-  id?: number;
   lobbyCode: string;
 }
 
 export interface LobbyApiFindLobbiesParams {
-  ids: number[];
+  lobbyCodes: string[];
 }
 
 export interface LobbyApiCreateLobbyParams {
-  status: 'waiting';
-  players?: Player[];
-  admin?: number;
+  players: Player[] | [];
+  adminId: string;
   settings: Settings;
-  currentScreen: 'lobby';
 }
 
 export interface LobbyApiUpdateLobbyParams {
-  id: number;
-  nickname?: string;
-  profileImg?: string;
+  lobbyCode: string;
+  players?: Player[];
+  settings?: Settings;
+  status?: 'waiting' | 'started' | 'finished';
+  currentScreen?: 'lobby' | 'game' | 'result';
 }
 
 export interface LobbyApiDeleteLobbyParams {
-  id: number;
+  lobbyCode?: string;
 }

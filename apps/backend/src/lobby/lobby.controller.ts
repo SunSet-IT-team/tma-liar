@@ -1,118 +1,70 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-
 import { LobbyApi } from './lobby.service';
-import type {
-  LobbyApiFindLobbyParams,
-  LobbyApiFindLobbiesParams,
-  LobbyApiCreateLobbyParams,
-  LobbyApiUpdateLobbyParams,
-  LobbyApiDeleteLobbyParams,
-} from './lobby.params';
+import { ApiError, success } from '../common/response';
+import { asyncHandler } from '../middlewares/asyncHandler.middleware';
 
 export const lobbyController = Router();
 const lobbyApi = new LobbyApi();
 
-lobbyController.get('/lobby', async (req: Request, res: Response) => {
-  try {
-    const { id, lobbyCode } = req.body;
-    if (id) {
-      const lobby = await lobbyApi.findLobby({ id } as LobbyApiFindLobbyParams);
-      res.json(lobby);
-      res.status(200).end();
-    } else {
-      if (lobbyCode) {
-        const lobby = await lobbyApi.findLobby({ lobbyCode } as LobbyApiFindLobbyParams);
-        res.json(lobby);
-        res.status(200).end();
-      } else {
-        res.send('ID_OR_LOBBYCODE_NOT_SET');
-        res.status(400).end();
-      }
-    }
-  } catch (err) {
-    res.send('INTERNAL_ERROR');
-    res.status(500).end();
-  }
-});
+lobbyController.get('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
+  const { lobbyCode } = req.params;
 
-lobbyController.get('/lobbies', async (req: Request, res: Response) => {
-  try {
-    const query = req.body;
-    if (Object.keys(query).length > 0) {
-      const lobbies = await lobbyApi.findLobbies(query as LobbyApiFindLobbiesParams);
-      res.json(lobbies);
-      res.status(200).end();
-    } else {
-      res.send('IDS_NOT_SET');
-      res.status(400).end();
-    }
-  } catch (err) {
-    res.send('INTERNAL_ERROR');
-    res.status(500).end();
-  }
-});
+  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
 
-lobbyController.post('/new-lobby', async (req: Request, res: Response) => {
-  try {
-    const data = req.body;
-    const newLobby = await lobbyApi.createLobby(data as LobbyApiCreateLobbyParams);
-    res.json(newLobby);
-    res.status(201).end();
-  } catch (err) {
-    res.send('INTERNAL_ERROR');
-    res.status(500).end();
-  }
-});
+  const lobby = await lobbyApi.findLobby({ lobbyCode });
 
-lobbyController.put('/update-lobby/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const data = req.body;
-    const updatedLobby = await lobbyApi.updateLobby({
-      ...data,
-      id,
-    } as LobbyApiUpdateLobbyParams);
-    res.json(updatedLobby);
-    res.status(201).end();
-  } catch (err) {
-    switch (err) {
-      case 'LOBBY_NOT_EXIST':
-        res.send('LOBBY_NOT_EXIST');
-        res.status(400).end();
-        break;
-      case 'LOBBY_ID_NOT_SET':
-        res.send('LOBBY_ID_NOT_SET');
-        res.status(400).end();
-        break;
-      default:
-        res.send('INTERNAL_ERROR');
-        res.status(500).end();
-    }
-  }
-});
+  if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
-lobbyController.delete('/update-lobby/:id', async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    if (id) {
-      const deletedLobby = await lobbyApi.deleteLobby({ id } as LobbyApiDeleteLobbyParams);
-      res.json(deletedLobby);
-      res.status(201).end();
-    }
-  } catch (err) {
-    switch (err) {
-      case 'LOBBY_NOT_EXIST':
-        res.send('LOBBY_NOT_EXIST');
-        res.status(400).end();
-        break;
-      case 'LOBBY_ID_NOT_SET':
-        res.send('LOBBY_ID_NOT_SET');
-        res.status(400).end();
-        break;
-      default:
-        res.send('INTERNAL_ERROR');
-        res.status(500).end();
-    }
-  }
-});
+  return res.status(200).json(success(lobby));
+}));
+
+lobbyController.get('/', asyncHandler(async (req: Request, res: Response) => {
+  const lobbyCodes = req.query.lobbyCodes;
+
+  if (!lobbyCodes) throw new ApiError(400, 'LOBBY_CODES_NOT_SET');
+
+  const codes: string[] = Array.isArray(lobbyCodes)
+    ? lobbyCodes.map(c => String(c))
+    : String(lobbyCodes).split(',');
+
+  const lobbies = await lobbyApi.findLobbies({ lobbyCodes: codes });
+
+  return res.status(200).json(success(lobbies));
+}));
+
+lobbyController.post('/', asyncHandler(async (req: Request, res: Response) => {
+  const { adminId, players, settings } = req.body;
+
+  const lobby = await lobbyApi.createLobby({
+    adminId,
+    players,
+    settings,
+  });
+
+  return res.status(201).json(success(lobby));
+}));
+
+lobbyController.put('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
+  const { lobbyCode } = req.params;
+  const updateFields = req.body;
+
+  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+
+  const updatedLobby = await lobbyApi.updateLobby({
+    lobbyCode,
+    ...updateFields,
+  });
+
+  return res.status(200).json(success(updatedLobby));
+}));
+
+lobbyController.delete('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
+  const { lobbyCode } = req.params;
+
+  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+
+  const deletedLobby = await lobbyApi.deleteLobby({ lobbyCode });
+
+  return res.status(200).json(success(deletedLobby));
+}));

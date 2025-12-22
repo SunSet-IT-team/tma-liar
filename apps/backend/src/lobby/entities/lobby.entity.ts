@@ -6,14 +6,13 @@ import type { Settings } from './settings.entity';
  * Сущность "Лобби"
  */
 export interface Lobby {
-  id: number;
   status: 'waiting' | 'game' | 'end';
-  players: Player[];
+  players: Player[] | [];
   lobbyCode: string;
-  admin: number | null;
+  adminId: string;
   settings: Settings;
   questionHistory: Question[];
-  activeQuestion: Question;
+  activeQuestion?: Question;
   currentScreen:
     | 'lobby'
     | 'question'

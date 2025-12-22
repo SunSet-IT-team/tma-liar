@@ -1,5 +1,4 @@
-import { nanoid } from 'nanoid';
-
+import { customAlphabet } from 'nanoid';
 import type {
   LobbyApiFindLobbyParams,
   LobbyApiFindLobbiesParams,
@@ -7,130 +6,109 @@ import type {
   LobbyApiUpdateLobbyParams,
   LobbyApiDeleteLobbyParams,
 } from './lobby.params';
+
 import type { Lobby } from './entities/lobby.entity';
+import { ApiError } from '../common/response';
+import { LobbyModel } from './lobby.modal';
 
 /**
  * Интерфейс для API лобби
  */
 export interface LobbyApiMethods {
-  findLobby: (param: LobbyApiFindLobbyParams) => Promise<Lobby | null>;
+  findLobby: (param?: LobbyApiFindLobbyParams) => Promise<Lobby | null>;
   findLobbies: (param?: LobbyApiFindLobbiesParams) => Promise<Lobby[] | []>;
-  createLobby: (param: LobbyApiCreateLobbyParams) => Promise<Lobby | null>;
-  updateLobby: (param: LobbyApiUpdateLobbyParams) => Promise<Lobby | null>;
+  createLobby: (param: LobbyApiCreateLobbyParams) => Promise<Lobby>;
+  updateLobby: (param: LobbyApiUpdateLobbyParams) => Promise<Lobby>;
   deleteLobby: (param: LobbyApiDeleteLobbyParams) => Promise<Lobby>;
 }
+
+const nanoid6 = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
 
 /**
  * API для лобби
  */
 export class LobbyApi implements LobbyApiMethods {
-  lobbies = new Map<number, Lobby>();
 
   public async findLobby(param?: LobbyApiFindLobbyParams): Promise<Lobby | null> {
-    return new Promise((resolve, reject) => {
-      // Поиск по id
-      if (param?.id) {
-        try {
-          resolve(this.lobbies.get(param.id) || null);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      // Поиск по lobbyCode
-      if (param?.lobbyCode) {
-        try {
-          for (let [key, value] of this.lobbies) {
-            if (value.lobbyCode && value.lobbyCode == param.lobbyCode) {
-              resolve({ ...value } as Lobby);
-            }
-          }
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve(null);
-    });
+    if (!param?.lobbyCode && !param?.lobbyCode) {
+      throw new ApiError(400, 'LOBBY_ID_OR_CODE_NOT_SET');
+    }
+
+    return LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
   }
 
-  public findLobbies(param?: LobbyApiFindLobbiesParams): Promise<Lobby[] | []> {
-    return new Promise((resolve, reject) => {
-      // поиск колод по id
-      if (param?.ids) {
-        const lobbyIds = param.ids;
-        let lobbiesArray: Lobby[] = [];
-        try {
-          for (let key of lobbyIds) {
-            const lobby = this.lobbies.get(key);
-            if (lobby) {
-              lobbiesArray.push(lobby);
-            }
-          }
-          resolve(lobbiesArray);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve([]);
-    });
+  public async findLobbies(param?: LobbyApiFindLobbiesParams): Promise<Lobby[] | []> {
+    if (!param?.lobbyCodes || param.lobbyCodes.length === 0) throw new ApiError(404, 'LOBBY_CODES_NOT_SET');
+
+    return LobbyModel.find({ lobbyCode: { $in: param.lobbyCodes } }).lean();
   }
 
-  public createLobby(param: LobbyApiCreateLobbyParams): Promise<Lobby | null> {
-    return new Promise((resolve, reject) => {
-      try {
-        const newLobbyId = this.lobbies.size + 1;
-        this.lobbies.set(newLobbyId, {
-          id: newLobbyId,
-          ...param,
-          status: 'waiting',
-          currentScreen: 'lobby',
-          lobbyCode: nanoid(6),
-        } as Lobby);
-        resolve(this.lobbies.get(newLobbyId) || null);
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async createLobby( param: LobbyApiCreateLobbyParams): Promise<Lobby> {
+    if (!param.settings) {
+      throw new ApiError(400, "SETTINGS_NOT_SET");
+    }
+
+    if (!param.adminId) {
+      throw new ApiError(400, "ADMIN_NOT_SET");
+    }
+
+    const { adminId, players, settings } = param;
+
+    let lobbyCode: string;
+    let exists: Lobby | null;
+    do {
+      lobbyCode = nanoid6();
+      exists = await LobbyModel.findOne({ lobbyCode }).lean();
+    } while (exists);
+
+    const lobby: Lobby = {
+      lobbyCode,
+      status: 'waiting',
+      currentScreen: 'lobby',
+      players: players,
+      adminId: adminId,
+      questionHistory: [],
+      activeQuestion: undefined,
+      settings: settings
+    };
+
+    return (await LobbyModel.create(lobby)).toObject();
   }
 
-  public updateLobby(param?: LobbyApiUpdateLobbyParams): Promise<Lobby | null> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.lobbies.get(param?.id)) {
-          const lobbyToUpdate = this.lobbies.get(param.id);
-          if (lobbyToUpdate) {
-            this.lobbies.set(param.id, {
-              ...lobbyToUpdate,
-              ...(param as Lobby),
-            });
-          } else {
-            reject('LOBBY_NOT_EXIST');
-          }
-          resolve(this.lobbies.get(param.id) || null);
-        } else {
-          reject('LOBBY_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+
+  public async updateLobby(param: LobbyApiUpdateLobbyParams): Promise<Lobby> {
+    if (!param?.lobbyCode) {
+      throw new ApiError(400, 'LOBBY_ID_OR_CODE_NOT_SET');
+    }
+
+    const { lobbyCode, ...updateFields } = param;
+
+    const updatedLobby = await LobbyModel.findOneAndUpdate(
+      { lobbyCode },
+      { $set: updateFields },
+      { new: true }
+    ).lean();
+
+    if (!updatedLobby) {
+      throw new ApiError(400, 'LOBBY_NOT_EXIST');
+    }
+
+    return updatedLobby;
   }
 
-  public deleteLobby(param?: LobbyApiDeleteLobbyParams): Promise<Lobby> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.lobbies.get(param?.id)) {
-          const lobbyToDelete = this.lobbies.get(param?.id);
-          if (this.lobbies.delete(param.id)) {
-            resolve(lobbyToDelete!);
-          } else {
-            reject('LOBBY_NOT_EXIST');
-          }
-        } else {
-          reject('LOBBY_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async deleteLobby(param: LobbyApiDeleteLobbyParams): Promise<Lobby> {
+    if (!param?.lobbyCode) {
+      throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    }
+
+    const deletedLobby = await LobbyModel
+      .findOneAndDelete({ lobbyCode: param.lobbyCode })
+      .lean();
+
+    if (!deletedLobby) {
+      throw new ApiError(400, 'LOBBY_NOT_EXIST');
+    }
+
+    return deletedLobby;
   }
 }
