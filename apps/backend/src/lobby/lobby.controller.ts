@@ -76,7 +76,23 @@ lobbyController.post('/:lobbyCode/join', asyncHandler(async (req: Request, res: 
   if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
   if (!player || !player.telegramId) throw new ApiError(400, 'PLAYER_NOT_SET');
 
-  const updatedLobby = await lobbyApi.joinLobby(lobbyCode, player);
+  const updatedLobby = await lobbyApi.joinLobby({ lobbyCode, player });
+
+  return res.status(200).json(success(updatedLobby));
+}));
+
+lobbyController.put('/:lobbyCode/player-ready', asyncHandler(async (req: Request, res: Response) => {
+  const { lobbyCode } = req.params;
+  const { telegramId, loserTask } = req.body;
+
+  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+  if (!telegramId) throw new ApiError(400, "PLAYER_ID_NOT_SET");
+
+  const updatedLobby = await lobbyApi.togglePlayerReady({
+    lobbyCode,
+    telegramId,
+    loserTask
+  });
 
   return res.status(200).json(success(updatedLobby));
 }));

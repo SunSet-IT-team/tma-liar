@@ -22,7 +22,18 @@ export interface LobbyApiUpdateLobbyParams {
   status?: 'waiting' | 'started' | 'finished';
   currentScreen?: 'lobby' | 'game' | 'result';
 }
-
+ 
 export interface LobbyApiDeleteLobbyParams {
   lobbyCode?: string;
+}
+
+export interface LobbyApiJoinParams { 
+  lobbyCode: string;
+  player: Player;
+}
+
+export interface LobbyApiToggleReadyParams {
+  lobbyCode: string;
+  telegramId: string;
+  loserTask?: string;
 }

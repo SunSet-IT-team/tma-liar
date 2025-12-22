@@ -5,6 +5,9 @@ import type {
   LobbyApiCreateLobbyParams,
   LobbyApiUpdateLobbyParams,
   LobbyApiDeleteLobbyParams,
+  LobbyApiJoinParams,
+  LobbyApiToggleReadyParams,
+
 } from './lobby.params';
 
 import type { Lobby } from './entities/lobby.entity';
@@ -21,6 +24,8 @@ export interface LobbyApiMethods {
   createLobby: (param: LobbyApiCreateLobbyParams) => Promise<Lobby>;
   updateLobby: (param: LobbyApiUpdateLobbyParams) => Promise<Lobby>;
   deleteLobby: (param: LobbyApiDeleteLobbyParams) => Promise<Lobby>;
+  joinLobby: (param: LobbyApiJoinParams) => Promise<Lobby>;
+  togglePlayerReady: (param: LobbyApiToggleReadyParams) => Promise<Lobby>;
 }
 
 const nanoid6 = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
@@ -113,21 +118,50 @@ export class LobbyApi implements LobbyApiMethods {
     return deletedLobby;
   }
 
-  public async joinLobby(lobbyCode: string, player: Player): Promise<Lobby> {
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-    if (!player) throw new ApiError(400, 'PLAYER_NOT_SET');
+  public async joinLobby(param: LobbyApiJoinParams): Promise<Lobby> {
+    if (!param.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!param.player) throw new ApiError(400, 'PLAYER_NOT_SET');
 
-    const lobby = await LobbyModel.findOne({ lobbyCode });
+    param.player.isReady = false; 
+    param.player.loserTask = null;
+
+    const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode });
 
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
-    const exists = lobby.players.find(p => p.telegramId === player.telegramId);
+    const exists = lobby.players.find(p => p.telegramId === param.player.telegramId);
     if (exists) throw new ApiError(400, 'PLAYER_ALREADY_IN_LOBBY');
 
-    (lobby.players as Player[]).push(player);
+    (lobby.players as Player[]).push(param.player);
 
     await lobby.save();
 
     return lobby.toObject();
   }
+
+  public async togglePlayerReady(param: LobbyApiToggleReadyParams): Promise<Lobby> {    
+    const { lobbyCode, telegramId, loserTask } = param;
+
+    const lobby = await LobbyModel.findOne({ lobbyCode });
+    if (!lobby) throw new ApiError(404, "LOBBY_NOT_FOUND");
+
+    const player = lobby.players?.find(p => p.telegramId === telegramId);
+
+    if(!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
+
+    if (player.isReady) {
+      player.isReady = false;
+      player.loserTask = undefined;
+    } else {
+      if (!loserTask) throw new ApiError(400, "LOSER_TASK_NOT_SET");
+
+      player.isReady = true;
+      player.loserTask = loserTask;
+    }
+
+    lobby.markModified('players');
+
+    const updatedLobby = await lobby.save();
+    return updatedLobby.toObject();
+  }  
 }
