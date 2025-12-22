@@ -5,16 +5,19 @@ import type {
   DeckApiUpdateDeckParams,
   DeckApiDeleteDeckParams,
 } from './deck.params';
+
 import type { Deck } from './entities/deck.entity';
+import { ApiError } from '../common/response';
+import { DeckModel } from './deck.model';
 
 /**
  * Интерфейс для API колод
  */
 export interface DeckApiMethods {
-  findDeck: (param: DeckApiFindDeckParams) => Promise<Deck | null>;
+  findDeck: (param?: DeckApiFindDeckParams) => Promise<Deck | null>;
   findDecks: (param?: DeckApiFindDecksParams) => Promise<Deck[] | []>;
-  createDeck: (param: DeckApiCreateDeckParams) => Promise<Deck | null>;
-  updateDeck: (param: DeckApiUpdateDeckParams) => Promise<Deck | null>;
+  createDeck: (param: DeckApiCreateDeckParams) => Promise<Deck>;
+  updateDeck: (param: DeckApiUpdateDeckParams) => Promise<Deck>;
   deleteDeck: (param: DeckApiDeleteDeckParams) => Promise<Deck>;
 }
 
@@ -22,92 +25,66 @@ export interface DeckApiMethods {
  * API для колод
  */
 export class DeckApi implements DeckApiMethods {
-  decks = new Map<number, Deck>();
-
   public async findDeck(param?: DeckApiFindDeckParams): Promise<Deck | null> {
-    return new Promise((resolve, reject) => {
-      // Поиск по id
-      if (param?.id) {
-        try {
-          resolve(this.decks.get(param.id) || null);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve(null);
-    });
+    if (!param?.id) {
+      throw new ApiError(400, 'DECK_ID_NOT_SET');
+    }
+
+    return DeckModel.findOne({ _id: param.id }).lean();
   }
 
-  public findDecks(param?: DeckApiFindDecksParams): Promise<Deck[] | []> {
-    return new Promise((resolve, reject) => {
-      // поиск колод по id
-      if (param?.ids) {
-        const deckIds = param.ids;
-        let decksArray: Deck[] = [];
-        try {
-          for (let key of deckIds) {
-            const deck = this.decks.get(key);
-            if (deck) {
-              decksArray.push(deck);
-            }
-          }
-          resolve(decksArray);
-        } catch (err) {
-          reject(err);
-        }
-      }
-      resolve([]);
-    });
+  public async findDecks(param?: DeckApiFindDecksParams): Promise<Deck[] | []> {
+    if (!param?.ids || param.ids.length === 0) {
+      throw new ApiError(400, 'DECK_IDS_NOT_SET');
+    }
+
+    return DeckModel.find({ _id: { $in: param.ids } }).lean();
   }
 
-  public createDeck(param: DeckApiCreateDeckParams): Promise<Deck | null> {
-    return new Promise((resolve, reject) => {
-      try {
-        const newDeckId = this.decks.size + 1;
-        this.decks.set(newDeckId, { id: newDeckId, ...param } as Deck);
-        resolve(this.decks.get(newDeckId) || null);
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async createDeck(param: DeckApiCreateDeckParams): Promise<Deck> {
+    if (!param.name) {
+      throw new ApiError(400, 'DECK_NAME_NOT_SET');
+    }
+
+    if (!param.questions) {
+      throw new ApiError(400, 'QUESTIONS_NOT_SET');
+    }
+
+    return (await DeckModel.create(param)).toObject();
   }
 
-  public updateDeck(param?: DeckApiUpdateDeckParams): Promise<Deck | null> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.decks.get(param?.id)) {
-          const deckToUpdate = this.decks.get(param.id);
-          if (deckToUpdate) {
-            this.decks.set(param.id, { ...deckToUpdate, ...(param as Deck) });
-          } else {
-            reject('DECK_NOT_EXIST');
-          }
-          resolve(this.decks.get(param.id) || null);
-        } else {
-          reject('DECK_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+  public async updateDeck(param: DeckApiUpdateDeckParams): Promise<Deck> {
+    if (!param.id) {
+      throw new ApiError(400, 'DECK_ID_NOT_SET');
+    }
+
+    const { id, ...updateFields } = param;
+
+    const updatedDeck = await DeckModel.findOneAndUpdate(
+      { _id: id },
+      { $set: updateFields },
+      { new: true }
+    ).lean();
+
+    if (!updatedDeck) {
+      throw new ApiError(404, 'DECK_NOT_FOUND');
+    }
+
+    return updatedDeck;
   }
 
-  public deleteDeck(param?: DeckApiDeleteDeckParams): Promise<Deck> {
-    return new Promise((resolve, reject) => {
-      try {
-        if (param?.id && this.decks.get(param?.id)) {
-          const deckToDelete = this.decks.get(param?.id);
-          if (this.decks.delete(param.id)) {
-            resolve(deckToDelete!);
-          } else {
-            reject('DECK_NOT_EXIST');
-          }
-        } else {
-          reject('DECK_ID_NOT_SET');
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+  /** Удалить колоду */
+  public async deleteDeck(param: DeckApiDeleteDeckParams): Promise<Deck> {
+    if (!param.id) {
+      throw new ApiError(400, 'DECK_ID_NOT_SET');
+    }
+
+    const deletedDeck = await DeckModel.findOneAndDelete({ _id: param.id }).lean();
+
+    if (!deletedDeck) {
+      throw new ApiError(404, 'DECK_NOT_FOUND');
+    }
+
+    return deletedDeck;
   }
 }
