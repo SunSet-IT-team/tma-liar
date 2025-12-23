@@ -8,4 +8,6 @@ export interface Player extends User {
   question: Question;
   score: number;
   liarProbability: number;
+  isReady?: boolean;
+  loserTask?: string | null; 
 }

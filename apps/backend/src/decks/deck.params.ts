@@ -1,9 +1,9 @@
 export interface DeckApiFindDeckParams {
-  id?: number;
+  id?: string;
 }
 
 export interface DeckApiFindDecksParams {
-  ids?: number[];
+  ids?: string[];
   names?: string[];
 }
 
@@ -15,7 +15,7 @@ export interface DeckApiCreateDeckParams {
 }
 
 export interface DeckApiUpdateDeckParams {
-  id: number;
+  id: string;
   name?: string;
   questionsCount?: number;
   cover?: string;
@@ -23,5 +23,5 @@ export interface DeckApiUpdateDeckParams {
 }
 
 export interface DeckApiDeleteDeckParams {
-  id: number;
+  id: string;
 }

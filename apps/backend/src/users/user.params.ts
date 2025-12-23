@@ -1,22 +1,25 @@
 export interface UserApiFindUserParams {
-  id: number;
+  telegramId: string;
 }
 
 export interface UserApiFindUsersParams {
-  ids: number[];
+  telegramIds: string[];
 }
-
+  
 export interface UserApiCreateUserParams {
+  telegramId: string;
   nickname: string;
-  profileImg: string;
+  profileImg?: string;
+  passwordHash?: string;
 }
 
 export interface UserApiUpdateUserParams {
-  id: number;
+  telegramId: string;
   nickname?: string;
   profileImg?: string;
+  passwordHash?: string;
 }
 
 export interface UserApiDeleteUserParams {
-  id: number;
+  telegramId: string;
 }
