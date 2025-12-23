@@ -4,7 +4,6 @@ import type { Question } from './question.entity';
  * Сущность ""
  */
 export interface Deck {
-  id: number;
   name: string;
   questionsCount: number;
   cover: string;
