@@ -1,4 +1,4 @@
-import { FC } from "react"
+import { FC, useState } from "react"
 import styles from './style/settingsStyle.module.scss'
 import clsx from "clsx"
 import { BackArrow } from "../../shared/ui/BackArrow"
@@ -9,11 +9,14 @@ import { SettingsTouches } from "../../features/SettingsSounds/ui/SettingsTouche
 import { SettingsMusic } from "../../features/SettingsSounds/ui/SettingsMusic"
 import { Container } from "../../shared/ui/Container"
 import { Typography } from "../../shared/ui/Typography"
+import { DevelopersPopup } from "../../entities/popups/ui/DevelopersPopup"
 
 /** 
  * Страница настроек игры
 */
 export const Settings: FC = () => {
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+
   return (
     <Container className={styles.container}>
       <div className={styles.header}>
@@ -37,11 +40,14 @@ export const Settings: FC = () => {
           <Button className={clsx(styles.settingsText, styles.helpBtn)}>
             Тех. Поддержка
           </Button>
-          <Button className={styles.settingsText}>
+          <Button className={styles.settingsText} onClick={() => setShowPopup(true)}>
             Разработчики
           </Button>
       </div>
       <img src={settingsBg} alt="" className={styles.settingsBg} />
+      {showPopup && 
+        <DevelopersPopup changeShow={(show: boolean) => setShowPopup(show)} />
+      }
     </Container>
   )
 }

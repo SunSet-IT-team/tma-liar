@@ -3,19 +3,6 @@
     color: var(--red-color);
 }
 
-.deckBlock {
-    max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 35px;
-    margin-bottom: 120px;
-}
-
-.deckText {
-    color: var(--red-color);
-}
-
 .lobbyCircle {
     position: absolute;
     width: 100px;

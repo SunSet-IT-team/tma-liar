@@ -1,0 +1,29 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 10px;
+  }
+  
+  .input {
+    display: none;
+  }
+  
+  .avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: 0.2s;
+  
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+  
+  .error {
+    color: var(--red-color);
+    text-align: center;
+  }

@@ -18,6 +18,16 @@ export const Rules: FC = () => {
         <Typography className={styles.rulesText}>
           Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
           Integer posuere erat a ante.
+          Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Integer posuere erat a ante.
+          Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Integer posuere erat a ante.
+          Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Integer posuere erat a ante.
+          Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Integer posuere erat a ante.
+          Здесь будут правила. <br /> Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Integer posuere erat a ante.
         </Typography>
       </div>
       <div className={styles.rulesIconBlock}>

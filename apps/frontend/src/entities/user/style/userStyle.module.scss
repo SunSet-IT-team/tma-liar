@@ -1,5 +1,4 @@
 .content {
-    width: 38%;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -27,6 +26,10 @@
 
 .userPhotoOutline {
     outline: 3px solid var(--red-color);
+}
+
+.content .currentUser {
+    color: var(--red-color);
 }
 
 .hornsImg {
