@@ -1,0 +1,88 @@
+services:
+  mongodb:
+    image: mongo:8.2.3
+    container_name: tma-liar-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-liar}
+    volumes:
+      - mongodb_data_dev:/data/db
+      - mongodb_config_dev:/data/configdb
+    networks:
+      - tma-liar-network-dev
+    healthcheck:
+      test: ['CMD-SHELL', 'mongosh --eval ''db.runCommand("ping").ok'' --quiet || exit 1']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Backend сервис для разработки
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.dev
+    container_name: tma-liar-backend-dev
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_CONN_STRING: ${DB_CONN_STRING:-mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin}
+      DB_NAME: ${DB_NAME:-liar}
+      SECRET: ${SECRET:-dev-secret-key}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - tma-liar-network-dev
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages/shared:/app/packages/shared
+      - /app/node_modules
+      - /app/apps/backend/node_modules
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z localhost 3000 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile.dev
+    container_name: tma-liar-frontend-dev
+    restart: unless-stopped
+    ports:
+      - '5173:5173'
+    environment:
+      NODE_ENV: development
+    networks:
+      - tma-liar-network-dev
+    volumes:
+      - ./apps/frontend:/app/apps/frontend
+      - ./packages/shared:/app/packages/shared
+      - /app/node_modules
+      - /app/apps/frontend/node_modules
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z localhost 5173 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mongodb_data_dev:
+    driver: local
+  mongodb_config_dev:
+    driver: local
+
+networks:
+  tma-liar-network-dev:
+    driver: bridge

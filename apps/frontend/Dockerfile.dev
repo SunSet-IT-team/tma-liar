@@ -1,0 +1,25 @@
+FROM oven/bun:1.3.5-alpine
+
+# Устанавливаем netcat-openbsd для health checks
+RUN apk add --no-cache netcat-openbsd
+
+WORKDIR /app
+
+# Устанавливаем зависимости (копируем только package.json для кеширования)
+COPY package.json bun.lock* ./
+COPY tsconfig.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared ./packages/shared
+
+# Устанавливаем зависимости
+RUN bun install
+
+EXPOSE 5173
+
+ENV NODE_ENV=development
+
+# Запуск Vite dev server
+WORKDIR /app/apps/frontend
+CMD ["bun", "run", "dev", "--host"]
+
