@@ -77,6 +77,28 @@ services:
       retries: 3
       start_period: 10s
 
+  # Ngrok для создания HTTPS туннеля к frontend
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: tma-liar-ngrok-dev
+    restart: unless-stopped
+    ports:
+      - '4040:4040'
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command:
+      - start
+      - --all
+      - --config
+      - /etc/ngrok.yml
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml:ro
+    networks:
+      - tma-liar-network-dev
+    depends_on:
+      frontend:
+        condition: service_started
+
 volumes:
   mongodb_data_dev:
     driver: local
