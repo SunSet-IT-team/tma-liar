@@ -1,10 +1,32 @@
 import express from 'express';
 import cors from 'cors';
-import { connectToDatabase } from './database/database.service';
+import { connectToDatabase } from './database/database';
+import { userController } from './users/user.controller';
+import { errorMiddleware } from './middlewares/errorHandler.middleware';
+import { authMiddleware } from './middlewares/auth.middleware';
+import { authController } from './auth/auth.controller';
+import { lobbyController } from './lobby/lobby.controller';
+import { deckController } from './decks/deck.controller';
+import { gameController } from './game/game.controller';
 
 const app = express();
+
 app.use(cors());
-app.get('/api/hello', (_, res) => res.json({ message: 'Hello from backend!' }));
+app.use(express.json()); 
+
+app.get('/api/hello', (_, res) => res.status(200).json({ message: 'Hello from backend!' }));
+
+app.use('/api/auth', authController);
+
+app.use('/api/users', userController, authMiddleware);
+
+app.use('/api/lobbies', lobbyController);
+
+app.use('/api/decks', deckController);
+
+app.use('/api/game', gameController);
+
+app.use(errorMiddleware);
 
 /**
  * Функция для запуска сервера

@@ -7,7 +7,7 @@ export interface Deck {
   name: string;
   questionsCount: number;
   cover: string;
-  questions: number;
+  questions: Question[];
 }
 
 export interface DeckExt extends Deck {
