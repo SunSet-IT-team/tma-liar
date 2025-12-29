@@ -1,5 +1,8 @@
 import { Schema, model } from 'mongoose';
 import type { Lobby } from './entities/lobby.entity';
+import { GameStages } from './entities/lobby.entity';
+import { PlayerSchema } from './player.model';
+import { QuestionSchema } from '../decks/question.model';
 
 /**
  * Сущность "Лобби"
@@ -21,24 +24,18 @@ const LobbySchema = new Schema<Lobby>(
 
     stage: {
       type: String,
-      enum: [
-        'lobby',
-        'liar_chooses',
-        'question_to_liar',
-        'liar_results',
-        'results',
-        'end',
-      ],
+      enum: Object.values(GameStages),
       required: true,
-      default: 'lobby',
+      default: GameStages.LOBBY,
     },
 
     adminId: {
-      type: String
+      type: String,
+      required: true,
     },
 
     players: {
-      type: [Object], 
+      type: [PlayerSchema], 
       default: [],
     },
 
@@ -46,15 +43,46 @@ const LobbySchema = new Schema<Lobby>(
       type: Object, 
       required: true,
     },
+  
+    liarId: { 
+      type: String,
+      default: null,
+    },
 
     questionHistory: {
-      type: [Object],
+      type: [String],
       default: [],
     },
 
     activeQuestion: {
-      type: Object,
+      type: QuestionSchema,
+      default: null
     },
+
+    timerId: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+
+    doLie: { 
+      type: Boolean, 
+      default: null,
+    },
+
+    loserTask: { 
+      type: String, 
+      default: null,
+    },
+
+    winnerId: {
+      type: String, 
+      default: null,
+    }, 
+
+    loserId: {
+      type: String, 
+      default: null,
+    }
   },
   {
     timestamps: true,
