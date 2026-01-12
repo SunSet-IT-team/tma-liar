@@ -50,11 +50,15 @@ export class UserApi implements UserApiMethods {
 
     const { telegramId, ...updateFields } = param; 
 
-    const updatedUser = await UserModel.findOneAndUpdate(
+    if(Object.keys(updateFields).length == 0) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
+
+    if(updateFields) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
+
+    let updatedUser = await UserModel.findOneAndUpdate(
       { telegramId },
-      { $set: updateFields}, 
+      { $set: updateFields }, 
       { new: true },
-    ).lean();
+    );
 
     if(!updatedUser) throw new ApiError(400, "USER_NOT_FOUND");
 

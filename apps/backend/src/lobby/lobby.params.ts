@@ -1,5 +1,6 @@
 import type { Player } from './entities/player.entity';
 import type { Settings } from './entities/settings.entity';
+import { GameStages } from './entities/lobby.entity';
 
 export interface LobbyApiFindLobbyParams {
   lobbyCode: string;
