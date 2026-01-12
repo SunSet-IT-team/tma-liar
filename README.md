@@ -37,6 +37,10 @@ DB_CONN_STRING=mongodb://admin:password@mongodb:27017/?authSource=admin
 
 # JWT Secret Key
 SECRET=secret
+
+# Ngrok
+# Получите токен на https://dashboard.ngrok.com/get-started/your-authtoken
+NGROK_AUTHTOKEN=
 ```
 
 ### Режим разработки (Dev)
@@ -62,6 +66,17 @@ docker compose down
 - **Frontend (веб-интерфейс)**: http://localhost:5173 — откройте в браузере (Vite dev server с hot-reload)
 - **Backend API**: http://localhost:3000 — REST API для разработки
 - **MongoDB**: localhost:27017 — подключение к базе данных
+- **Ngrok Web UI**: http://localhost:4040 — веб-интерфейс для управления туннелями (если настроен NGROK_AUTHTOKEN)
+
+**Ngrok для Telegram Mini Apps:**
+
+Если вы настроили `NGROK_AUTHTOKEN` в `.env`, ngrok автоматически создаст HTTPS туннель к frontend.
+
+1. После запуска `docker compose up`, откройте http://localhost:4040
+2. Скопируйте HTTPS URL (например, `https://abc123.ngrok-free.app`)
+3. Используйте этот URL для настройки Telegram Mini App
+
+**ВАЖНО:** Без `NGROK_AUTHTOKEN` ngrok будет работать в ограниченном режиме (сессии по 2 часа).
 
 ### Production режим
 
