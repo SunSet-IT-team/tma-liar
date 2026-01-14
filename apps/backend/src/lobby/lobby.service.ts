@@ -8,13 +8,14 @@ import type {
   LobbyApiJoinParams,
   LobbyApiToggleReadyParams,
   LobbyApiStartGameParams,
-
 } from './lobby.params';
 
 import type { Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
 import { LobbyModel } from './lobby.model';
 import type { Player } from './entities/player.entity';
+import { GameStages } from './entities/lobby.entity';
+import { Game } from '../game/game.service';
 
 /**
  * Интерфейс для API лобби
@@ -31,12 +32,13 @@ export interface LobbyApiMethods {
 }
 
 const nanoid6 = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
+const game = new Game();
 
 /**
  * API для лобби
  */
 export class LobbyApi implements LobbyApiMethods {
-
+   
   public async findLobby(param?: LobbyApiFindLobbyParams): Promise<Lobby | null> {
     if (!param?.lobbyCode && !param?.lobbyCode) {
       throw new ApiError(400, 'LOBBY_ID_OR_CODE_NOT_SET');
@@ -72,12 +74,18 @@ export class LobbyApi implements LobbyApiMethods {
     const lobby: Lobby = {
       lobbyCode,
       status: 'waiting',
-      stage: 'lobby',
+      stage: GameStages.LOBBY,
       players: players,
       adminId: adminId,
       questionHistory: [],
       activeQuestion: undefined,
-      settings: settings
+      settings: settings,
+      liarId: null,
+      doLie: null, 
+      timerId: null, 
+      loserTask: null,
+      winnerId: null, 
+      loserId: null
     };
 
     return (await LobbyModel.create(lobby)).toObject();
@@ -120,9 +128,9 @@ export class LobbyApi implements LobbyApiMethods {
     return deletedLobby;
   }
 
-  public async joinLobby(param: LobbyApiJoinParams): Promise<Lobby> {
-    if (!param.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-    if (!param.player) throw new ApiError(400, 'PLAYER_NOT_SET');
+  public async joinLobby(param?: LobbyApiJoinParams): Promise<Lobby> {
+    if (!param?.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!param?.player) throw new ApiError(400, 'PLAYER_NOT_SET');
 
     param.player.isReady = false; 
     param.player.loserTask = null;
@@ -141,7 +149,11 @@ export class LobbyApi implements LobbyApiMethods {
     return lobby.toObject();
   }
 
-  public async togglePlayerReady(param: LobbyApiToggleReadyParams): Promise<Lobby> {    
+  public async togglePlayerReady(param?: LobbyApiToggleReadyParams): Promise<Lobby> {    
+    if (!param?.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!param?.telegramId) throw new ApiError(400, 'ADMIN_ID_NOT_SET');
+    if (!param?.loserTask) throw new ApiError(400, 'LOSER_TASK_NOT_SET');
+
     const { lobbyCode, telegramId, loserTask } = param;
 
     const lobby = await LobbyModel.findOne({ lobbyCode });
@@ -153,7 +165,8 @@ export class LobbyApi implements LobbyApiMethods {
 
     if (player.isReady) {
       player.isReady = false;
-      player.loserTask = undefined;
+      player.loserTask = null;
+      player.wasLiar = 0;
     } else {
       if (!loserTask) throw new ApiError(400, "LOSER_TASK_NOT_SET");
 
@@ -167,12 +180,12 @@ export class LobbyApi implements LobbyApiMethods {
     return updatedLobby.toObject();
   }  
 
-  public async startGame(param: LobbyApiStartGameParams): Promise<Lobby> {
-    const { lobbyCode, telegramId, loserTask } = param;
+  public async startGame(param?: LobbyApiStartGameParams): Promise<Lobby> {
+    if (!param?.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    if (!param?.telegramId) throw new ApiError(400, 'ADMIN_ID_NOT_SET');
+    if (!param?.loserTask) throw new ApiError(400, 'LOSER_TASK_NOT_SET');
 
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-    if (!telegramId) throw new ApiError(400, 'ADMIN_ID_NOT_SET');
-    if (!loserTask) throw new ApiError(400, 'LOSER_TASK_NOT_SET');
+    const { lobbyCode, telegramId, loserTask } = param;
 
     const lobby = await LobbyModel.findOne({ lobbyCode });
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
@@ -191,8 +204,11 @@ export class LobbyApi implements LobbyApiMethods {
 
     lobby.status = 'game';
 
+    lobby.markModified('players');
     const updatedLobby = await lobby.save();
+
+    game.nextStage({ lobbyCode: lobbyCode });
+
     return updatedLobby.toObject();
   }
-
 }
