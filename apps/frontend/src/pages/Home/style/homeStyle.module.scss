@@ -1,0 +1,45 @@
+.settingsBtn {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.circleIcon {
+    width: 270px;
+    height: 130px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.logo {
+    max-width: 413px;
+    max-height: 189px;
+    margin-bottom: 40px;
+    margin-top: 30px;
+}
+
+.homeBtn {
+    margin-bottom: 20px;
+}
+
+.bgImage {
+    max-width: 400px;
+    max-height: 439px;
+}
+
+.bgBlock {
+    position: relative;
+}
+
+.profileLink {
+    width: 50px;
+    height: 57px;
+    top: 160px;
+}
+
+.rulesLink {
+    bottom: 120px;
+    width: 48px;
+    height: 60px;
+}

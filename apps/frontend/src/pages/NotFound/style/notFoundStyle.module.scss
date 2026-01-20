@@ -1,0 +1,54 @@
+.container {
+    justify-content: space-between;
+    background-color: var(--black-main-color);
+}
+
+.errorBlock {
+    padding: 0 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.title {
+    color: var(--white-main-color);
+}
+
+.errorText {
+    color: var(--red-color);
+    text-align: center;
+}
+
+.notFoundBlock {
+    padding-left: 30px;
+    padding-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.notFoundText {
+    color: var(--white-main-color);
+}
+
+.notFoundIcon {
+    width: 195px;
+    height: 145px;
+    margin-right: 120px;
+    margin-bottom: -50px;
+}
+
+@media (max-width: 460px) {
+    .notFoundBlock {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .notFoundText {
+        margin-bottom: 30px;
+    }
+
+    .notFoundIcon {
+        margin-right: 0;
+    }
+}

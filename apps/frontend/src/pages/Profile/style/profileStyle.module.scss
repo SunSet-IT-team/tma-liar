@@ -1,0 +1,28 @@
+.circleIcon {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    left: 0;
+    top: 0;
+    z-index: -1;
+}
+
+.header {
+    margin-bottom: 150px;
+}
+
+.profilePhoto {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.profileInputWrapper {
+    margin-bottom: 50px;
+}
+
+.logo {
+    max-width: 413px;
+    max-height: 190px;
+}
