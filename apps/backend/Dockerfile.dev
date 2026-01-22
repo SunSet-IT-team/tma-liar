@@ -15,3 +15,6 @@ RUN bun install
 
 EXPOSE 3000
 
+# Запуск в dev режиме с watch
+WORKDIR /app/apps/backend
+CMD ["bun", "--watch", "src/index.ts"]

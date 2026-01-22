@@ -14,3 +14,6 @@ RUN bun install
 
 EXPOSE 5173
 
+# Запуск Vite dev server
+WORKDIR /app/apps/frontend
+CMD ["bun", "run", "dev", "--host"]

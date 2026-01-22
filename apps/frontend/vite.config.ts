@@ -9,5 +9,15 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: ['localhost', '.ngrok-free.dev', '.ngrok.io', '.ngrok.app', '.ngrok-free.app'],
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
+    hmr: process.env.HMR_HOST
+      ? {
+          host: process.env.HMR_HOST.replace(/^https?:\/\//, ''), // убираем https://
+          protocol: process.env.HMR_HOST.includes('ngrok') ? 'wss' : 'ws',
+        }
+      : undefined,
   },
 });

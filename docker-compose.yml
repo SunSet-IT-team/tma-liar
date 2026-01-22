@@ -39,7 +39,6 @@ services:
       - ./packages/shared:/app/packages/shared
       - /app/node_modules
       - /app/apps/backend/node_modules
-    command: bun run dev
 
   frontend:
     build:
@@ -58,7 +57,6 @@ services:
       - ./packages/shared:/app/packages/shared
       - /app/node_modules
       - /app/apps/frontend/node_modules
-    command: bun run dev
 
   # Ngrok для создания HTTPS туннеля к frontend
   ngrok:

@@ -27,7 +27,7 @@ export const Home: FC = () => {
         className={styles.homeBtn}
         onClick={() => navigate(`/${PageRoutes.CREATE_LOBBY}`)}
       >
-        Создать
+        Создатьzz2
       </Button>
       <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
         Присоедениться
