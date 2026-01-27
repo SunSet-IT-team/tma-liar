@@ -36,10 +36,11 @@
   .container {
     width: 100%;
     max-width: 727px;
-    height: calc(100vh - 4vh);
+    height: calc((100vh - 2vh) - var(--tg-top-inset, 20px));
     display: flex;
     align-items: center;
     flex-direction: column;
     padding: 2vh;
+    padding-top: var(--tg-top-inset, 20px);
 }
   

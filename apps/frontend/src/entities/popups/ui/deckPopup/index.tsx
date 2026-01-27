@@ -36,7 +36,7 @@ export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
           ))}
       </div>
       <Typography className={styles.dataDeck}>
-        О колоде о колоде О колоде о колоде О колоде о колоде О колоде о колоде
+        О колоде о колоде О колоде о колоде О колоде
       </Typography>
     </Popup>
   )
