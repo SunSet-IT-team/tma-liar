@@ -33,7 +33,7 @@ export const AnswersPlayers: FC = () => {
       <Header inGame />
       <Typography as="h1" variant="titleLarge" className={styles.title}>Игроки</Typography>
       <Typography className={styles.answersText}>и их ответы</Typography>
-      <AnswersUserBadge />
+      <AnswersUserBadge className={styles.answersPlayers} />
       <div className={styles.bottomBlock}>
         <Button className={styles.nextBtn} onClick={further}>Далее</Button>
         <AnswersTimer className={styles.time} />

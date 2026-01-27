@@ -6,6 +6,22 @@
     margin-bottom: 30px;
 }
 
+.answersPlayers {
+    height: 100%;
+    overflow: scroll;
+
+    /* Скрыть скроллбар для Chrome, Safari, Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Скрыть скроллбар для Firefox */
+    scrollbar-width: none;
+
+    /* Скрыть скроллбар для IE, Edge */
+    -ms-overflow-style: none;
+}
+
 .bottomBlock {
     display: flex;
     width: 100%;

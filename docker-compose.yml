@@ -84,6 +84,8 @@ services:
     restart: unless-stopped
     ports:
       - '4040:4040'
+    env_file:
+      - .env
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
     command:

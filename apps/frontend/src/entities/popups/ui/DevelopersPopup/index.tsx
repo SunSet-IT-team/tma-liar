@@ -22,7 +22,7 @@ export const DevelopersPopup: FC<DevelopersPopupProps> = ({ changeShow }) => {
       <div className={styles.developerBlock}>
         <img src={developerIcon} alt="" className={styles.developerIcon} />
         <div className={styles.developerContent}>
-          <Typography as="h2">Александр Антоненко</Typography>
+          <Typography as="h2">Александр Антоненко</Typography>
           <Typography variant="caption" className={styles.developerDescr}>КТО-ТО ВАЖНЫЙ</Typography>
           <Button className={styles.developerLink}>Ссылка на одноклассники</Button>
         </div>
@@ -30,7 +30,7 @@ export const DevelopersPopup: FC<DevelopersPopupProps> = ({ changeShow }) => {
       <div className={styles.developerBlock}>
         <img src={developerIcon} alt="" className={styles.developerIcon} />
         <div className={styles.developerContent}>
-          <Typography as="h2">Артём Пономарёв</Typography>
+          <Typography as="h2">Артём Пономарёв</Typography>
           <Typography variant="caption" className={styles.developerDescr}>ВСЕ СОБРАВ</Typography>
           <Button className={styles.developerLink}>ссылка на фишинговый сайт</Button>
         </div>
@@ -38,7 +38,7 @@ export const DevelopersPopup: FC<DevelopersPopupProps> = ({ changeShow }) => {
       <div className={styles.developerBlock}>
         <img src={developerIcon} alt="" className={styles.developerIcon} />
         <div className={styles.developerContent}>
-          <Typography as="h2">СТАРЫЙ ДЕД </Typography>
+          <Typography as="h2">СТАРЫЙ ДЕД</Typography>
           <Typography variant="caption" className={styles.developerDescr}>ВИНОВЕН В КОНЕЧНОМ ВИЗУАЛЬНОМ ОФОРМЛЕНИИ</Typography>
           <Button className={styles.developerLink}>ССЫЛКА НА ONLY FANS</Button>
         </div>

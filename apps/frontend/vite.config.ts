@@ -9,5 +9,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: ['localhost', '.ngrok-free.dev', '.ngrok.io', '.ngrok.app', '.ngrok-free.app'],
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
   },
 });

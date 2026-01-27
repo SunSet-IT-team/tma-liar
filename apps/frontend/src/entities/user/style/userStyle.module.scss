@@ -1,7 +1,7 @@
 .content {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 2vh;
 }
 
 .userPhotoBlock {
@@ -9,9 +9,9 @@
 }
 
 .userPhoto, .default .userPhoto {
-    width: 55px;
-    height: 55px;
-    border-radius: 10px;
+    width: 7vh;
+    height: 7vh;
+    border-radius: 1.3vh;
 }
 
 .large .userPhoto {
@@ -25,7 +25,7 @@
 }
 
 .userPhotoOutline {
-    outline: 3px solid var(--red-color);
+    outline: 0.4vh solid var(--red-color);
 }
 
 .content .currentUser {
@@ -42,7 +42,13 @@
 }
 
 .large .username {
-    font-size: 28px;
+    font-size: 4vh;
+}
+
+@media (min-height: 700px) {
+    .large .username {
+        font-size: 3vh;
+    }
 }
 
 .medium .username {

@@ -11,6 +11,7 @@ import rulesIcon from '../../shared/ui/icons/rulesIcon.svg'
 import profileIcon from '../../shared/ui/icons/profileIcon.svg'
 import { PageRoutes } from "../../app/routes/pages"
 import { useNavigate } from "react-router-dom"
+import clsx from "clsx"
 
 /** 
  * Главная страница, при открытии приложения показывается именно она
@@ -25,7 +26,9 @@ export const Home: FC = () => {
         <Button variant="buttonUnderline" className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CREATE_LOBBY}`)}>
           Создать
         </Button>
-        <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>Присоедениться</Button>
+        <Button className={clsx(styles.homeBtn, styles.connectBtn)} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
+          Присоедениться
+        </Button>
         <div className={styles.bgBlock}>
           <img src={bgIcon} alt="" className={styles.bgImage} />
           <Link icon={profileIcon} route={`/${PageRoutes.PROFILE}`} className={styles.profileLink} />

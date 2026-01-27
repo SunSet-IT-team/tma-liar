@@ -24,7 +24,7 @@ type DeckPopupProps = {
 export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
   return (
     <Popup changeShow={changeShow} className={styles.deckPopupContent}>
-      <Typography variant="titleLarge" className={styles.title}>{deck.ageLimit}+</Typography>
+      <Typography as="span" variant="titleLarge" className={styles.title}>{deck.ageLimit}+</Typography>
       <div className={styles.deckParams}>
         <Typography>Вопросов:</Typography>
         <Typography>{deck.questions.length}</Typography>

@@ -140,26 +140,28 @@ export const ResultUsersBadge: FC = () => {
 
   return (
     <div className={clsx(styles.content, styles.answersContent, styles.resultsContent)}>
-      {sortedUsers.map((user: Player, index) => (
-        <div 
-          className={clsx(
-            styles.playerBlock, 
-            styles.resultsBlock, 
-            index < visibleCount && styles.show   // класс для анимации
-          )} 
-          key={user.id}
-        >
-          <Typography className={styles.resultPlace} variant={getTypographyVariant(index)}>{index + 1}</Typography>
-          <UserBadge 
-            id={user.id} 
-            photo={user.photo} 
-            name={user.name}
-            variant={getSizeByPlace(index)}
-            points={user.points} 
-            currentPlayer={user.currentPlayer} 
-          />
-        </div>
-      ))}
+      <div className={clsx(styles.resultPlayers, styles.limitedBlock)}>
+        {sortedUsers.map((user: Player, index) => (
+          <div 
+            className={clsx(
+              styles.playerBlock, 
+              styles.resultsBlock, 
+              index < visibleCount && styles.show   // класс для анимации
+            )} 
+            key={user.id}
+          >
+            <Typography className={styles.resultPlace} variant={getTypographyVariant(index)}>{index + 1}</Typography>
+            <UserBadge 
+              id={user.id} 
+              photo={user.photo} 
+              name={user.name}
+              variant={getSizeByPlace(index)}
+              points={user.points} 
+              currentPlayer={user.currentPlayer} 
+            />
+          </div>
+        ))}
+      </div>
       {finished && (
         <Button
           variant="buttonUnderline"

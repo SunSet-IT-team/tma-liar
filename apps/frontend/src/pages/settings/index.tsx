@@ -34,7 +34,7 @@ export const Settings: FC = () => {
             </Button>
           </div>
           <div className={styles.volume}>
-            <Typography className={styles.settingsText}>Язык</Typography>
+            <Typography className={styles.settingsText}>Звук</Typography>
             <Range />
           </div>
           <Button className={clsx(styles.settingsText, styles.helpBtn)}>

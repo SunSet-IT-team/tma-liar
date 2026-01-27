@@ -52,7 +52,7 @@ export const RateUsersBadge: FC = () => {
   
   
   return (
-    <div className={clsx(styles.content, styles.answersContent)}>
+    <div className={clsx(styles.content, styles.answersContent, styles.limitedBlock, styles.ratePlayers)}>
       {testUsers.map((user: Player) => (
         <div className={styles.playerBlock} key={user.id}>
           <UserBadge id={user.id} photo={user.photo} name={user.name} className={styles.userContent} isRated={user.isRated} />

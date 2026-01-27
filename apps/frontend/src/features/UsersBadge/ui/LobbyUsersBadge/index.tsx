@@ -6,6 +6,7 @@ import styles from '../../style/usersBadgeStyle.module.scss'
 
 type UsersProps = {
   className?: string;
+  playersClassName?: string;
 }
 
 const testUsers = [
@@ -42,10 +43,10 @@ const testUsers = [
 /** 
  * Получаем подключившихся игроков в лобби
 */
-export const LobbyUsersBadge: FC<UsersProps> = ({ className }) => {
+export const LobbyUsersBadge: FC<UsersProps> = ({ className, playersClassName }) => {
   
   return (
-    <div className={clsx(styles.content, styles.lobbyContent)}>
+    <div className={clsx(styles.content, styles.lobbyContent, playersClassName)}>
       {testUsers.map((user: Player) => (
         <UserBadge 
           key={user.id} 

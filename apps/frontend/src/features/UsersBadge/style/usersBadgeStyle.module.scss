@@ -16,10 +16,34 @@
 
 .resultsContent {
     align-items: center;
+    margin-bottom: 0;
+}
+
+.limitedBlock {
+    overflow: scroll;
+
+    /* Скрыть скроллбар для Chrome, Safari, Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Скрыть скроллбар для Firefox */
+    scrollbar-width: none;
+
+    /* Скрыть скроллбар для IE, Edge */
+    -ms-overflow-style: none;
+}
+
+.resultPlayers {
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+
+    height: 70vh;
 }
 
 .userContent {
-    width: 38%;
+    width: 45%;
 }
 
 .userContent:nth-child(2n) {
@@ -61,7 +85,7 @@
     width: calc(100% - 40px);
     font-size: 14px;
     padding-bottom: 5px;
-    margin-top: 40px;
+    margin-top: 1vh;
     animation: fadeIn 0.5s ease forwards;
 }
 
@@ -74,6 +98,11 @@
 
 .content .believeText {
     color: var(--red-color);
+}
+
+.ratePlayers {
+    max-height: 100%;
+    padding: 5px;
 }
 
 @media(max-width: 370px) {
