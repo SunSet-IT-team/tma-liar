@@ -5,27 +5,16 @@ import { Static } from './static/Static';
 import { AppRouter } from './routes/AppRouter';
 import { BrowserRouter } from 'react-router-dom';
 import { useEffect } from 'react';
+import { AuthProvider } from './providers/Auth/AuthProvider';
 
 function App() {
-  useEffect(() => {
-    const tg = window.Telegram?.WebApp;
-  
-    if (!tg) return;
-  
-    tg.ready();
-  
-    const topInset = tg.safeAreaInset?.top ?? 0;
-  
-    document.documentElement.style.setProperty(
-      '--tg-safe-area-top',
-      `${topInset}px`
-    );
-  }, []);
   return (
     <BrowserRouter>
       <Provider store={store}>
-        <Static />
-        <AppRouter />
+        <AuthProvider>
+          <Static />
+          <AppRouter />
+        </AuthProvider>
       </Provider>
     </BrowserRouter>
     

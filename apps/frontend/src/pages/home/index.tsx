@@ -1,4 +1,4 @@
-import { FC } from "react"
+import { FC, useEffect, useState } from "react"
 import styles from './style/homeStyle.module.scss'
 import homeCircle from '../../../public/icons/homeCircle.svg'
 import { SettingIcon } from "../../shared/ui/SettingIcon"
@@ -12,6 +12,8 @@ import profileIcon from '../../shared/ui/icons/profileIcon.svg'
 import { PageRoutes } from "../../app/routes/pages"
 import { useNavigate } from "react-router-dom"
 import clsx from "clsx"
+import { authService } from "../../shared/services/auth.service"
+import axios from "axios"
 
 /** 
  * Главная страница, при открытии приложения показывается именно она
@@ -27,7 +29,7 @@ export const Home: FC = () => {
           Создать
         </Button>
         <Button className={clsx(styles.homeBtn, styles.connectBtn)} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
-          Присоедениться
+          Присоединиться
         </Button>
         <div className={styles.bgBlock}>
           <img src={bgIcon} alt="" className={styles.bgImage} />

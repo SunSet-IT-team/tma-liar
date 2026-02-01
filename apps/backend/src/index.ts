@@ -32,12 +32,18 @@ app.use(errorMiddleware);
  * Функция для запуска сервера
  */
 async function startServer() {
-    try { 
-        await connectToDatabase();
-        app.listen(3000, () => console.log('🚀 Server running on http://localhost:3000'));
-    } catch(error) {
-        throw error;
+    try {
+      console.log('Starting server...');
+      await connectToDatabase();
+      console.log('Database connected');
+  
+      app.listen(3000, () =>
+        console.log('🚀 Server running on http://localhost:3000')
+      );
+    } catch (error) {
+      console.error('START SERVER ERROR:', error);
+      process.exit(1);
     }
-}
-
-await startServer();
+  }
+  
+  startServer();
