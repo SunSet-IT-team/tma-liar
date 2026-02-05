@@ -13,6 +13,13 @@ export default defineConfig({
       usePolling: true,
       interval: 1000,
     },
+    proxy: {
+      '/api': {
+        target: 'http://backend:3000',
+        // changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
     hmr: process.env.HMR_HOST
       ? {
           host: process.env.HMR_HOST.replace(/^https?:\/\//, ''), // убираем https://
