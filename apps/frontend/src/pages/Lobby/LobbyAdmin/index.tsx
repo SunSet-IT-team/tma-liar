@@ -24,7 +24,7 @@ export const LobbyAdmin: FC = () => {
           <Typography className={styles.lobbyCode}>#13HJ</Typography>
         </Typography>
       </div>
-      <LobbyUsersBadge className={styles.players} />
+      <LobbyUsersBadge playersClassName={styles.lobbyPlayers} className={styles.players} />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput

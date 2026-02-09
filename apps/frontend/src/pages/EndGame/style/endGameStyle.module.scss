@@ -4,6 +4,7 @@
 
 .container .playerName p {
     color: var(--black-main-color);
+    overflow: hidden;
 }
 
 .playerPlace {
@@ -15,7 +16,6 @@
 .endButtons {
     display: flex;
     width: 100%;
-    padding: 0 60px;
     justify-content: space-between;
     padding-bottom: 40px;
 }
@@ -25,11 +25,11 @@
 }
 
 .endBtn:nth-child(1) {
-    margin-left: 80px;
+    margin-left: 3vh;
 }
 
 .endBtn:nth-child(2) {
-    margin-right: 80px;
+    margin-right: 3vh;
 }
 
 .endBtn::after {
@@ -39,7 +39,7 @@
 .endIcon {
     width: 100%;
     position: absolute;
-    bottom: 0;
+    bottom: -20px;
     left: 0;
     z-index: -2;
 }

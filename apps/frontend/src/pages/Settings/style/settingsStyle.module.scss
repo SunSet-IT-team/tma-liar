@@ -10,7 +10,7 @@
 
 .content {
     width: 60%;
-    flex: 1;
+    padding-top: 3vh;
     flex-direction: column;
 }
 
@@ -22,24 +22,22 @@
 
 .sounds {
     gap: 75px;
-    margin-bottom: 65px;
+    margin-bottom: 6vh;
 }
 
 .soundImg {
-    width: 57px;
-    height: 83px;
+    width: 7vh;
 }
 
 .musicImg {
-    width: 65px;
-    height: 65px;
+    width: 9vh;
 }
 
 .languageBlock {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 60px;
+    margin-bottom: 6vh;
 }
 
 .content .settingsText {
@@ -53,16 +51,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
-    margin-bottom: 65px;
+    margin-bottom: 7vh;
 }
 
 .helpBtn {
-    margin-bottom: 60px;
+    margin-bottom: 6vh;
 }
 
 .settingsBg {
-    width: 380px;
-    height: 330px;
+    width: 37vh;
     position: absolute;
     bottom: 0;
     right: 0;

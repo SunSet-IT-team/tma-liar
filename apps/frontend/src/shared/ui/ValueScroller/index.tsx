@@ -5,6 +5,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import './style/scroller.scss';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
+import { Typography } from '../Typography';
 
 export type ReusedScrollerValues = {
   /**
@@ -88,7 +89,7 @@ export const ValueScroller: FC<ScrollerProps> = ({
       >
         {values.map((value, i) => (
           <SwiperSlide key={i} className="swiperSlide scrollerSwiperSlide">
-            <span className="slideItem">{value}</span>
+            <Typography variant="titleMiniLarge">{value}</Typography>
           </SwiperSlide>
         ))}
       </Swiper>

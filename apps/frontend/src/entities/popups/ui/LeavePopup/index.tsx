@@ -42,9 +42,11 @@ export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow
       <Typography className={clsx(styles.title, styles.leaveTitle)} variant="titleLarge">
         лобби?
       </Typography>
-      <div className={styles.leaveBtns}>
-        <Button onClick={leaveGame}>Да</Button>
-        <Button onClick={() => changeShow(false)}>Нет</Button>
+      <div className={styles.leaveBtnsWrapper}>
+        <div className={styles.leaveBtns}>
+          <Button onClick={leaveGame}>Да</Button>
+          <Button onClick={() => changeShow(false)}>Нет</Button>
+        </div>
       </div>
     </Popup>
   );

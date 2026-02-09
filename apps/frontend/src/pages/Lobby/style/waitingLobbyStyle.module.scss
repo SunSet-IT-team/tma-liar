@@ -2,10 +2,6 @@
     justify-content: space-around;
 }
 
-.header {
-    padding-top: 10px;
-}
-
 .lobbyBlock {
     width: 100%;
     margin-bottom: 30px;
@@ -15,11 +11,16 @@
     position: relative; 
     display: inline-block;
     color: var(--red-color);
+    font-size: 10vh;
 }
 
 .lobbyCode {
     position: absolute;
     right: -20px;
+}
+
+.lobbyPlayers {
+    gap: 1.3vh;
 }
 
 .taskBlock {
@@ -31,8 +32,8 @@
 
 .taskLoserText {
     color: var(--red-color);
-    margin-top: 70px;
-    margin-bottom: 30px;
+    margin-top: 3vh;
+    margin-bottom: 3vh;
     text-align: center;
 }
 
@@ -49,20 +50,10 @@
 }
 
 .connectedPlayers {
-    margin-bottom: 50px;
+    margin-bottom: 1vh;
 }
 
 .readyBtn {
     color: var(--red-color);
-    font-size: 87px;
-}
-
-@media(max-width: 370px) {
-    .readyBtn {
-        font-size: 48px;
-    }
-
-    .lobbyTitle {
-        font-size: 76px;
-    }
+    font-size: 8vh;
 }

@@ -15,6 +15,10 @@ type ContainerProps = {
 export const Container: FC<ContainerProps> = ({ className, children }) => {
   const location = useLocation();
 
+  const tg = window.Telegram?.WebApp;
+  console.log(tg?.platform);
+  const isMobile = tg?.platform === 'tdesktop';
+
   return (
     <AnimatePresence mode="wait">
       <motion.div

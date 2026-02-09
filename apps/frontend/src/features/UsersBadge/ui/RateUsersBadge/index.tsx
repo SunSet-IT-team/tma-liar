@@ -51,7 +51,7 @@ export const RateUsersBadge: FC = () => {
   const [rated, setRated] = useState<boolean>(false);
 
   return (
-    <div className={clsx(styles.content, styles.answersContent)}>
+    <div className={clsx(styles.content, styles.answersContent, styles.limitedBlock, styles.ratePlayers)}>
       {testUsers.map((user: Player) => (
         <div className={styles.playerBlock} key={user.id}>
           <UserBadge

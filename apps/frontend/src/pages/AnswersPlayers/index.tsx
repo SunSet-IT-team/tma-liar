@@ -35,7 +35,7 @@ export const AnswersPlayers: FC = () => {
         Игроки
       </Typography>
       <Typography className={styles.answersText}>и их ответы</Typography>
-      <AnswersUserBadge />
+      <AnswersUserBadge className={styles.answersPlayers} />
       <div className={styles.bottomBlock}>
         <Button className={styles.nextBtn} onClick={further}>
           Далее

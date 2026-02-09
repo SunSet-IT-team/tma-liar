@@ -17,11 +17,11 @@
 
 .subtitle {
     color: var(--white-main-color);
-    margin-bottom: 50px;
+    margin-bottom: 4vh;
 }
 
 .rulesText {
-    max-height: 300px;
+    max-height: 30vh;
     overflow: scroll;
     color: var(--white-main-color);
 
@@ -45,8 +45,7 @@
 }
 
 .rulesIcon {
-    width: 250px;
-    height: 250px;
+    width: 28vh;
 }
 
 @media (max-width: 370px) {

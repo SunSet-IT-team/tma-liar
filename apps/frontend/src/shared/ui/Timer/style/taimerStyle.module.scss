@@ -1,5 +1,6 @@
 .content {
   position: relative;
+  z-index: -1;
 }
 
 .coveringBlock {
@@ -9,16 +10,18 @@
 }
 
 .taimerIcon {
+  position: relative;
   max-width: 100%;
+  z-index: -1;
 }
 
 .loaderWrapper {
-    width: 100%;
+    width: 110%;
     aspect-ratio: 2 / 1; // ширина : высота = 2:1 (полукруг)
     overflow: hidden;
     position: absolute;
-    bottom: 0;
-    left: 0;     // обрезаем нижнюю часть
+    top: -50px;
+    left: -20px;     // обрезаем нижнюю часть
   }
 
 @property --angle {
