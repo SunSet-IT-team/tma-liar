@@ -18,6 +18,9 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const tg = window.Telegram?.WebApp;
+  const telegramUser = tg?.initDataUnsafe?.user;
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const playSound = usePlaySound();
 
@@ -67,7 +70,7 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
       />
 
       {/* Кликабельный аватар */}
-      <img src={preview || noPhoto} alt="avatar" className={styles.avatar} onClick={handleClick} />
+      <img src={preview || telegramUser?.photo_url} alt="avatar" className={styles.avatar} onClick={handleClick} />
 
       {error && (
         <Typography variant="caption" className={styles.error}>
