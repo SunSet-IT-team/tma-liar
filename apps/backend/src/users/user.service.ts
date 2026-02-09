@@ -48,11 +48,13 @@ export class UserApi implements UserApiMethods {
   public async updateUser(param: UserApiUpdateUserParams): Promise<User> {
     if(!param.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
 
-    const { telegramId, ...updateFields } = param; 
+    const { telegramId, ...rest } = param; 
 
-    if(Object.keys(updateFields).length == 0) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
+    const updateFields = Object.fromEntries(
+      Object.entries(rest).filter(([_, value]) => value !== undefined)
+    );
 
-    if(updateFields) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
+    if(Object.keys(updateFields).length === 0) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
 
     let updatedUser = await UserModel.findOneAndUpdate(
       { telegramId },

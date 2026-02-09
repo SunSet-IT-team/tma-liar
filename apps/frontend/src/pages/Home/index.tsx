@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import { useEffect, type FC } from 'react';
 import styles from './style/homeStyle.module.scss';
 import homeCircle from '../../../public/icons/homeCircle.svg';
 import { SettingIcon } from '../../shared/ui/SettingIcon';
@@ -11,19 +11,17 @@ import rulesIcon from '../../shared/ui/icons/rulesIcon.svg';
 import profileIcon from '../../shared/ui/icons/profileIcon.svg';
 import { PageRoutes } from '../../app/routes/pages';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../shared/services/auth/auth.service';
+import { getUser } from '../../shared/services/user/api/getUser.api';
+import axios from 'axios';
+import { userService } from '../../shared/services/user/user.service';
+import { updateUser } from '../../shared/services/user/api/updateUser.api';
 
 /**
  * Главная страница, при открытии приложения показывается именно она
  */
 export const Home: FC = () => {
   const navigate = useNavigate();
-
-  fetch('/api/hello', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
 
   return (
     <Container>
@@ -35,7 +33,7 @@ export const Home: FC = () => {
         className={styles.homeBtn}
         onClick={() => navigate(`/${PageRoutes.CREATE_LOBBY}`)}
       >
-        Создатьzz2
+        Создать
       </Button>
       <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
         Присоедениться

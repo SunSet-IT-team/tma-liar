@@ -5,7 +5,7 @@ import axios from "axios";
 */
 export const fetchToken = async (telegramId: string) => {
   const res = await axios.get(
-    `http://localhost:3000/api/auth/${telegramId}`
+    `/api/auth/${telegramId}`
   );
 
   return res.data.payload.token;

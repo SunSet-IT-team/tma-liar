@@ -1,7 +1,9 @@
 import { createContext, useEffect, useState } from 'react';
-import { authService } from '../../../shared/services/auth.service';
-import { fetchToken } from '../../../shared/services/api/auth.api';
-import { createUser } from '../../../shared/services/api/user.api';
+import { authService } from '../../../shared/services/auth/auth.service';
+import { fetchToken } from '../../../shared/services/auth/api/auth.api';
+import { createUser } from '../../../shared/services/user/api/createUser.api';
+import { getUser } from '../../../shared/services/user/api/getUser.api';
+import { userService } from '../../../shared/services/user/user.service';
 
 export const AuthContext = createContext({
   isAuth: false,
@@ -13,17 +15,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    const telegramUser = tg?.initDataUnsafe?.user;
+
     const initAuth = async () => {
       try {
         let token = authService.getToken();
+        let user = userService.getUser();
 
-        if (token) {
+        if (!user) {
+          user = await getUser(telegramUser.id);
+          if (user) userService.setUser(user);
+        }
+
+        if (token && user) {
           setIsAuth(true);
           return;
         }
-
-        const tg = window.Telegram?.WebApp;
-        const telegramUser = tg?.initDataUnsafe?.user;
 
         if (!telegramUser?.id) {
           throw new Error('TELEGRAM_USER_NOT_FOUND');
@@ -37,21 +45,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (err: any) {
           // Если юзер не зарегистрирован — создаём
           if (err?.response?.data?.message === 'USER_NOT_REGISTERED') {
-            await createUser(telegramId, telegramUser.username);
+            const nickname =
+            telegramUser.first_name
+              ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}`
+              : telegramUser.username || '';
+            await createUser(telegramId, nickname);
             token = await fetchToken(telegramId);
+            user = await getUser(telegramId);
           } else {
             throw err;
           }
         }
         
-        if (token !== null)
-        authService.setToken(token);
-        setIsAuth(true);
+        if (token && user) {
+          authService.setToken(token);
+          userService.setUser(user)
+          setIsAuth(true);
+        }
       } catch (e) {
-        authService.removeToken();
-        setIsAuth(false);
+          authService.removeToken();
+          setIsAuth(false);
       } finally {
-        setIsLoading(false);
+          setIsLoading(false);
       }
     };
 

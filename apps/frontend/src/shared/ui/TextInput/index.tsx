@@ -12,18 +12,23 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
    * Класс, который будет применяться к input
    */
   inputClassName?: string;
+  /** 
+   * Значение поля ввода
+  */
+  value?: string;
 };
 
 /**
  * Кастомный инпут
  * Будет выполнять отправку данных из поля ввода на сервер
  */
-export const TextInput: FC<InputProps> = ({ placeholder, className, inputClassName, ...rest }) => {
+export const TextInput: FC<InputProps> = ({ placeholder, className, inputClassName, value, ...rest }) => {
   return (
     <div className={clsx(styles.wrapper, className)}>
       <input
         name="text"
         type="text"
+        value={value}
         className={clsx(styles.input, inputClassName)}
         placeholder={placeholder}
         {...rest}
