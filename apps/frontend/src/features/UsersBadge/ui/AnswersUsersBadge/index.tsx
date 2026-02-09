@@ -1,17 +1,17 @@
-import clsx from "clsx"
-import { FC } from "react"
-import type { Player } from "../../../../entities/user/model/types"
-import { UserBadge } from "../../../../entities/user/ui/UserBadge"
-import { Typography } from "../../../../shared/ui/Typography"
-import styles from '../../style/usersBadgeStyle.module.scss'
+import clsx from 'clsx';
+import { FC } from 'react';
+import type { Player } from '../../../../entities/user/model/types';
+import { UserBadge } from '../../../../entities/user/ui/UserBadge';
+import { Typography } from '../../../../shared/ui/Typography';
+import styles from '../../style/usersBadgeStyle.module.scss';
 
 type Props = {
   className?: string;
-}
+};
 
-/** 
+/**
  * Получаем ответы игроков
-*/
+ */
 
 const testUsers = [
   {
@@ -50,20 +50,22 @@ const testUsers = [
     name: 'Лысый Татар',
     isBelieve: true,
   },
-]
+];
 
-/** 
+/**
  * Получаем ответы игроков
-*/
+ */
 export const AnswersUserBadge: FC<Props> = ({ className }) => {
   return (
     <div className={clsx(styles.content, styles.answersContent, className)}>
       {testUsers.map((user: Player) => (
         <div key={user.id} className={styles.playerBlock}>
           <UserBadge id={user.id} photo={user.photo} name={user.name} isBelieve={user.isBelieve} />
-          <Typography className={user.isBelieve ? styles.believeText : ''}>{user.isBelieve ? 'Верит' : 'Не верит'}</Typography>
+          <Typography className={user.isBelieve ? styles.believeText : ''}>
+            {user.isBelieve ? 'Верит' : 'Не верит'}
+          </Typography>
         </div>
       ))}
     </div>
-  )
-}
+  );
+};

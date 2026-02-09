@@ -1,17 +1,17 @@
-import { FC, useEffect } from "react"
-import { Typography } from "../../shared/ui/Typography"
-import { Header } from "../../widgets/Header"
-import styles from './style/waitingPlayersStyle.module.scss'
-import waitingIcon from '../../../public/icons/waitingIcon.svg'
-import waitingCircle from '../../../public/icons/waitingCircle.svg'
-import { Container } from "../../shared/ui/Container"
-import { useAppDispatch, useAppSelector } from "../../app/store/hook"
-import { useLocation, useNavigate } from "react-router-dom"
-import { playTimer, tick, updateTimer } from "../../entities/game/model/timerSlice"
+import { type FC, useEffect } from 'react';
+import { Typography } from '../../shared/ui/Typography';
+import { Header } from '../../widgets/Header';
+import styles from './style/waitingPlayersStyle.module.scss';
+import waitingIcon from '../../../public/icons/waitingIcon.svg';
+import waitingCircle from '../../../public/icons/waitingCircle.svg';
+import { Container } from '../../shared/ui/Container';
+import { useAppDispatch, useAppSelector } from '../../app/store/hook';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { playTimer, tick, updateTimer } from '../../entities/game/model/timerSlice';
 
-/** 
+/**
  * Экран показывается решало, когда лжец делает выбор
-*/
+ */
 export const WaitingPlayers: FC = () => {
   const dispatch = useAppDispatch();
   const location = useLocation();
@@ -21,9 +21,7 @@ export const WaitingPlayers: FC = () => {
   // Маршрут для следующего перехода
   const nextRoute = location.state?.nextRoute;
 
-  const { tickSeconds, time, isRunning } = useAppSelector(
-    (state) => state.timer
-  );
+  const { tickSeconds, time, isRunning } = useAppSelector((state) => state.timer);
 
   // тик
   useEffect(() => {
@@ -51,11 +49,13 @@ export const WaitingPlayers: FC = () => {
   return (
     <Container className={styles.container}>
       <Header className={styles.header} inGame popupStyle="white" />
-      <Typography className={styles.title} variant='titleLarge'>Ждем!</Typography>
-      <Typography>Других игроков</Typography> 
+      <Typography className={styles.title} variant="titleLarge">
+        Ждем!
+      </Typography>
+      <Typography>Других игроков</Typography>
       <img src={waitingIcon} alt="" className={styles.waitingIcon} />
       <img src={waitingCircle} alt="" className={styles.waitingCircle} />
       <Typography className={styles.waitingText}>Уже скоро?</Typography>
     </Container>
-  )
-}
+  );
+};

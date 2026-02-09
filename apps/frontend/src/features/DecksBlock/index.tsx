@@ -1,21 +1,21 @@
-import { FC } from "react"
-import './style/decksStyle.scss'
+import { type FC } from 'react';
+import './style/decksStyle.scss';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import type { Swiper as SwiperType } from "swiper";
-import deckIcon from '../../../public/icons/blackPhoto.svg'
+import type { Swiper as SwiperType } from 'swiper';
+import deckIcon from '../../../public/icons/blackPhoto.svg';
 
 import 'swiper/css';
 
 type DecksProps = {
   /**
-    * Будет ли зациклен слайдер с колодами
-  */
+   * Будет ли зациклен слайдер с колодами
+   */
   loop?: boolean;
-  /** 
+  /**
    * Изменение активного индекса выбранной колоды
-  */
+   */
   onChangeActiveDeck?: (index: number) => void;
-}
+};
 
 export const testDecks = [
   {
@@ -27,7 +27,7 @@ export const testDecks = [
       'Бывало ли, что ты начинал спор, понимая, что не прав, но не хотел сдаваться?',
       'Ты когда-нибудь притворялся занятым, чтобы избежать разговора или встречи?',
     ],
-    categories: ['Повседневность', 'Социум']
+    categories: ['Повседневность', 'Социум'],
   },
   {
     ageLimit: 16,
@@ -53,7 +53,7 @@ export const testDecks = [
       'Ты испытывал внутренний конфликт между «надо» и «хочу»?',
       'Ты чувствовал одиночество, находясь среди людей?',
     ],
-    categories: ['Эмоции', 'Социум']
+    categories: ['Эмоции', 'Социум'],
   },
   {
     ageLimit: 18,
@@ -69,7 +69,7 @@ export const testDecks = [
       'Ты говорил «всё в порядке», когда внутри было совсем не так?',
       'Ты когда-нибудь хотел уйти, но не решался сказать об этом прямо?',
     ],
-    categories: ['Отношения']
+    categories: ['Отношения'],
   },
   {
     ageLimit: 16,
@@ -80,7 +80,7 @@ export const testDecks = [
       'Боялся ли ты сказать правду, понимая, что она может всё изменить?',
       'Ты боялся потерять человека, не показывая этого?',
     ],
-    categories: ['Страхи', 'Социум']
+    categories: ['Страхи', 'Социум'],
   },
   {
     ageLimit: 14,
@@ -89,15 +89,14 @@ export const testDecks = [
       'Ты принимал решение, о котором позже сожалел?',
       'Ты принимал решение, которое шло против твоих принципов?',
     ],
-    categories: ['Решения']
+    categories: ['Решения'],
   },
-]
+];
 
-/** 
+/**
  * Блок с колодами
-*/
+ */
 export const DecksBlock: FC<DecksProps> = ({ loop = true, onChangeActiveDeck }) => {
-
   return (
     <div className="content">
       <Swiper
@@ -114,12 +113,11 @@ export const DecksBlock: FC<DecksProps> = ({ loop = true, onChangeActiveDeck }) 
         {testDecks.map((value, i) => (
           <SwiperSlide key={i} className="swiperSlide deckSwiperSlide">
             <div className="deckSlideItem">
-              <img src={deckIcon} alt="" className="deckIcon" />  
+              <img src={deckIcon} alt="" className="deckIcon" />
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
     </div>
-      
-  )
-}
+  );
+};

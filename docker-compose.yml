@@ -14,12 +14,6 @@ services:
       - mongodb_config_dev:/data/configdb
     networks:
       - tma-liar-network-dev
-    healthcheck:
-      test: ['CMD-SHELL', 'mongosh --eval ''db.runCommand("ping").ok'' --quiet || exit 1']
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   # Backend сервис для разработки
   backend:
@@ -37,8 +31,7 @@ services:
       DB_NAME: ${DB_NAME:-liar}
       SECRET: ${SECRET:-dev-secret-key}
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - tma-liar-network-dev
     volumes:
@@ -46,12 +39,6 @@ services:
       - ./packages/shared:/app/packages/shared
       - /app/node_modules
       - /app/apps/backend/node_modules
-    healthcheck:
-      test: ['CMD-SHELL', 'nc -z localhost 3000 || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
   frontend:
     build:
@@ -70,12 +57,6 @@ services:
       - ./packages/shared:/app/packages/shared
       - /app/node_modules
       - /app/apps/frontend/node_modules
-    healthcheck:
-      test: ['CMD-SHELL', 'nc -z localhost 5173 || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
   # Ngrok для создания HTTPS туннеля к frontend
   ngrok:
@@ -98,8 +79,7 @@ services:
     networks:
       - tma-liar-network-dev
     depends_on:
-      frontend:
-        condition: service_started
+      - frontend
 
 volumes:
   mongodb_data_dev:

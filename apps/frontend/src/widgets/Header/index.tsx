@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { FC, useState } from "react"
+import { type FC, useState } from "react"
 import { BackArrow } from "../../shared/ui/BackArrow";
 import type { BackArrowVariant } from "../../shared/ui/BackArrow";
 import { SettingIcon } from "../../shared/ui/SettingIcon";

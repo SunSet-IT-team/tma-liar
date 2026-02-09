@@ -1,89 +1,88 @@
-import { FC, useEffect, useState } from "react"
-import styles from '../../style/usersBadgeStyle.module.scss'
-import type { Player, PlayerSize } from "../../../../entities/user/model/types";
-import { UserBadge } from "../../../../entities/user/ui/UserBadge";
-import clsx from "clsx";
-import { Typography } from "../../../../shared/ui/Typography";
-import type { TypographyVariant } from "../../../../shared/ui/Typography";
-import { RESULT_ANIMATION_CONFIG } from "../../config/resultAnimationConfig";
-import drumSound from "../../../../shared/assets/sounds/drumroll.mp3";
-import { Button } from "../../../../shared/ui/Button";
+import { type FC, useEffect, useState } from 'react';
+import styles from '../../style/usersBadgeStyle.module.scss';
+import type { Player, PlayerSize } from '../../../../entities/user/model/types';
+import { UserBadge } from '../../../../entities/user/ui/UserBadge';
+import clsx from 'clsx';
+import { Typography } from '../../../../shared/ui/Typography';
+import type { TypographyVariant } from '../../../../shared/ui/Typography';
+import { RESULT_ANIMATION_CONFIG } from '../../config/resultAnimationConfig';
+import drumSound from '../../../../shared/assets/sounds/drumroll.mp3';
+import { Button } from '../../../../shared/ui/Button';
 
 const testUsers = [
-    {
-      id: 1,
-      photo: '',
-      name: 'Бешеный Татар',
-      points: 300,
-      currentPlayer: false,
-      task: 'Вылизываем кота'
-    },
-    {
-      id: 2,
-      photo: '',
-      name: 'Лысый Татар',
-      points: 150,
-      currentPlayer: false,
-      task: 'Пустить бутерброд по кругу'
-    },
-    {
-      id: 3,
-      photo: '',
-      name: 'Крутой Татар',
-      points: 270,
-      currentPlayer: false,
-      task: 'Съесть носок друга'
-    },
-    {
-      id: 4,
-      photo: '',
-      name: 'Бешеный Татар',
-      points: 130,
-      currentPlayer: false,
-      task: 'Пустить бутерброд по кругу'
-    },
-    {
-      id: 5,
-      photo: '',
-      name: 'Бешеный Татар',
-      points: 450,
-      currentPlayer: false,
-      task: 'Вылизываем кота'
-    },
-    {
-      id: 6,
-      photo: '',
-      name: 'Лысый Татар',
-      points: 90,
-      currentPlayer: true,
-      task: 'Съесть носок друга'
-    },
-    {
-      id: 7,
-      photo: '',
-      name: 'Бешеный Татар',
-      points: 140,
-      currentPlayer: false,
-      task: 'Вылизываем кота'
-    },
-    {
-      id: 8,
-      photo: '',
-      name: 'Лысый Татар',
-      points: 420,
-      currentPlayer: false,
-      task: 'Пустить бутерброд по кругу'
-    },
-  ]
+  {
+    id: 1,
+    photo: '',
+    name: 'Бешеный Татар',
+    points: 300,
+    currentPlayer: false,
+    task: 'Вылизываем кота',
+  },
+  {
+    id: 2,
+    photo: '',
+    name: 'Лысый Татар',
+    points: 150,
+    currentPlayer: false,
+    task: 'Пустить бутерброд по кругу',
+  },
+  {
+    id: 3,
+    photo: '',
+    name: 'Крутой Татар',
+    points: 270,
+    currentPlayer: false,
+    task: 'Съесть носок друга',
+  },
+  {
+    id: 4,
+    photo: '',
+    name: 'Бешеный Татар',
+    points: 130,
+    currentPlayer: false,
+    task: 'Пустить бутерброд по кругу',
+  },
+  {
+    id: 5,
+    photo: '',
+    name: 'Бешеный Татар',
+    points: 450,
+    currentPlayer: false,
+    task: 'Вылизываем кота',
+  },
+  {
+    id: 6,
+    photo: '',
+    name: 'Лысый Татар',
+    points: 90,
+    currentPlayer: true,
+    task: 'Съесть носок друга',
+  },
+  {
+    id: 7,
+    photo: '',
+    name: 'Бешеный Татар',
+    points: 140,
+    currentPlayer: false,
+    task: 'Вылизываем кота',
+  },
+  {
+    id: 8,
+    photo: '',
+    name: 'Лысый Татар',
+    points: 420,
+    currentPlayer: false,
+    task: 'Пустить бутерброд по кругу',
+  },
+];
 
-/** 
+/**
  * Отображение мест игроков с анимацией
-*/
+ */
 export const ResultUsersBadge: FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [task, setTask] = useState<string>("Здесь будет задание...");
-  
+  const [task, setTask] = useState<string>('Здесь будет задание...');
 
   const sortedUsers = [...testUsers].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
 
@@ -142,34 +141,33 @@ export const ResultUsersBadge: FC = () => {
     <div className={clsx(styles.content, styles.answersContent, styles.resultsContent)}>
       <div className={clsx(styles.resultPlayers, styles.limitedBlock)}>
         {sortedUsers.map((user: Player, index) => (
-          <div 
+          <div
             className={clsx(
-              styles.playerBlock, 
-              styles.resultsBlock, 
-              index < visibleCount && styles.show   // класс для анимации
-            )} 
+              styles.playerBlock,
+              styles.resultsBlock,
+              index < visibleCount && styles.show, // класс для анимации
+            )}
             key={user.id}
           >
-            <Typography className={styles.resultPlace} variant={getTypographyVariant(index)}>{index + 1}</Typography>
-            <UserBadge 
-              id={user.id} 
-              photo={user.photo} 
+            <Typography className={styles.resultPlace} variant={getTypographyVariant(index)}>
+              {index + 1}
+            </Typography>
+            <UserBadge
+              id={user.id}
+              photo={user.photo}
               name={user.name}
               variant={getSizeByPlace(index)}
-              points={user.points} 
-              currentPlayer={user.currentPlayer} 
+              points={user.points}
+              currentPlayer={user.currentPlayer}
             />
           </div>
         ))}
       </div>
       {finished && (
-        <Button
-          variant="buttonUnderline"
-          className={styles.resultTask}
-        >
+        <Button variant="buttonUnderline" className={styles.resultTask}>
           {task}
         </Button>
       )}
     </div>
-  )
-}
+  );
+};

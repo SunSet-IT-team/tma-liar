@@ -1,33 +1,31 @@
-import { FC, useEffect, useRef } from "react"
-import { useLocation, useNavigate } from "react-router-dom";
-import { PageRoutes } from "../../app/routes/pages";
-import { useAppDispatch, useAppSelector } from "../../app/store/hook";
-import { tick, updateTimer } from "../../entities/game/model/timerSlice";
+import { type FC, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { PageRoutes } from '../../app/routes/pages';
+import { useAppDispatch, useAppSelector } from '../../app/store/hook';
+import { tick, updateTimer } from '../../entities/game/model/timerSlice';
 import tickSound from '../../shared/assets/sounds/taymer-konec-aukciona__mp3cut.net_.mp3';
 
 type GameProcessProps = {
-  /** 
+  /**
    * Маршрут для перехода на страницу
-  */
+   */
   route?: string;
-  /** 
+  /**
    * Зафиксирован ли ответ
-  */
+   */
   isFixed?: boolean;
-}
+};
 
-/** 
+/**
  * Процесс игры, переходы между экранами
-*/
+ */
 export const GameProcess: FC<GameProcessProps> = ({ route, isFixed }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { tickSeconds, isRunning } = useAppSelector(
-    (state) => state.timer
-  );
-  
+  const { tickSeconds, isRunning } = useAppSelector((state) => state.timer);
+
   /** ref для аудио */
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -55,15 +53,14 @@ export const GameProcess: FC<GameProcessProps> = ({ route, isFixed }) => {
       stopSound();
       return;
     }
-    
+
     if (!tickSeconds || tickSeconds <= 0) {
       stopSound();
       return;
     }
-  
-    const isChoosingLiar =
-      location.pathname === `/${PageRoutes.CHOOSING_LIAR}`;
-  
+
+    const isChoosingLiar = location.pathname === `/${PageRoutes.CHOOSING_LIAR}`;
+
     // ChoosingLiar — только последние 5 сек
     if (isChoosingLiar) {
       if (tickSeconds <= 5) {
@@ -73,7 +70,7 @@ export const GameProcess: FC<GameProcessProps> = ({ route, isFixed }) => {
       }
       return;
     }
-  
+
     // все остальные экраны — последние 11 сек
     if (tickSeconds <= 11) {
       playTickSound();
@@ -106,7 +103,5 @@ export const GameProcess: FC<GameProcessProps> = ({ route, isFixed }) => {
     }
   };
 
-  return (
-    <></>
-  )
-}
+  return <></>;
+};

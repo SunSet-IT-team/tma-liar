@@ -1,10 +1,10 @@
-import { FC, JSX, ReactNode } from 'react';
+import { type FC, JSX, ReactNode } from 'react';
 import styles from './style/typographyStyle.module.scss';
 import clsx from 'clsx';
 
 /**
-  * Вариманты размеров текста
-*/
+ * Вариманты размеров текста
+ */
 export type TypographyVariant =
   | 'titleLarge'
   | 'titleMiniLarge'
@@ -16,26 +16,27 @@ export type TypographyVariant =
 export interface TypographyProps {
   className?: string;
   /**
-    * Вариманты размеров текста
-  */
+   * Вариманты размеров текста
+   */
   variant?: TypographyVariant;
   /**
-    * Отображаемый тег
-  */
+   * Отображаемый тег
+   */
   as?: keyof JSX.IntrinsicElements;
   children: ReactNode;
 }
 
-/** 
+/**
  * Отображение кастомного текста с вариантами размеров текста
-*/
-export const Typography: FC<TypographyProps> = ({ className, variant = 'body', as: Component = 'p', children, }: TypographyProps) => {
+ */
+export const Typography: FC<TypographyProps> = ({
+  className,
+  variant = 'body',
+  as: Component = 'p',
+  children,
+}: TypographyProps) => {
   return (
-    <Component className={clsx(
-      styles.typographyBase,
-      styles[variant],
-      className,
-    )}>
+    <Component className={clsx(styles.typographyBase, styles[variant], className)}>
       {children}
     </Component>
   );

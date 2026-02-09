@@ -11,7 +11,20 @@ export default defineConfig({
     allowedHosts: ['localhost', '.ngrok-free.dev', '.ngrok.io', '.ngrok.app', '.ngrok-free.app'],
     watch: {
       usePolling: true,
-      interval: 100,
+      interval: 1000,
     },
+    proxy: {
+      '/api': {
+        target: 'http://backend:3000',
+        // changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+    hmr: process.env.HMR_HOST
+      ? {
+          host: process.env.HMR_HOST.replace(/^https?:\/\//, ''), // убираем https://
+          protocol: process.env.HMR_HOST.includes('ngrok') ? 'wss' : 'ws',
+        }
+      : undefined,
   },
 });

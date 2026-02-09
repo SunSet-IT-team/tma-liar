@@ -1,19 +1,19 @@
-import { ChangeEvent, FC, useRef, useState } from "react"
-import styles from './style/loadAvatarStyle.module.scss'
-import noPhoto from '../../../../public/icons/blackPhoto.svg'
-import { Typography } from "../Typography";
-import { usePlaySound } from "../../lib/sound/usePlaySound";
+import { ChangeEvent, type FC, useRef, useState } from 'react';
+import styles from './style/loadAvatarStyle.module.scss';
+import noPhoto from '../../../../public/icons/blackPhoto.svg';
+import { Typography } from '../Typography';
+import { usePlaySound } from '../../lib/sound/usePlaySound';
 
 type LoadAvatarProps = {
   onChange?: (file: File | null) => void;
 };
 
 const MAX_SIZE_MB = 15;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 
-/** 
+/**
  * Загрузка фото профиля
-*/
+ */
 export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
 
     // Проверка типа
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Разрешены только JPG, PNG, SVG и WEBP");
+      setError('Разрешены только JPG, PNG, SVG и WEBP');
       setPreview(null);
       onChange?.(null);
       return;
@@ -40,7 +40,7 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
 
     // Проверка размера
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      setError("Максимальный размер изображения — 15 МБ");
+      setError('Максимальный размер изображения — 15 МБ');
       setPreview(null);
       onChange?.(null);
       return;
@@ -67,14 +67,13 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({ onChange }) => {
       />
 
       {/* Кликабельный аватар */}
-      <img
-        src={preview || noPhoto}
-        alt="avatar"
-        className={styles.avatar}
-        onClick={handleClick}
-      />
+      <img src={preview || noPhoto} alt="avatar" className={styles.avatar} onClick={handleClick} />
 
-      {error && <Typography variant="caption" className={styles.error}>{error}</Typography>}
+      {error && (
+        <Typography variant="caption" className={styles.error}>
+          {error}
+        </Typography>
+      )}
     </div>
   );
 };
