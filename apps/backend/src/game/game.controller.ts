@@ -1,77 +1,94 @@
-import { Router } from "express";
-import { Game } from "./game.service";
-import { asyncHandler } from "../middlewares/asyncHandler.middleware";
-import type { Request, Response } from "express";
-import { ApiError, success } from "../common/response";
+import type { Request, Response } from 'express';
+import { GameService } from './game.service';
+import { success } from '../common/response';
 
-export const gameController = Router(); 
-const game = new Game(); 
+import {
+  startGameValidator,
+  nextStageValidator,
+  setAnswerValidator,
+  likeAnswerValidator,
+  confirmAnswerValidator,
+  liarChoosesValidator,
+} from './game.validators';
 
-/**
- * Роут для тригерра следующего шага
- */
-gameController.post('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
-    const { lobbyCode } = req.params;
+import {
+  StartGameDto,
+  NextStageDto,
+  SetAnswerDto,
+  LikeAnswerDto,
+  ConfirmAnswerDto,
+  LiarChoosesDto,
+} from './game.dto';
 
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-    
-    const response = await game.nextStage({ lobbyCode: lobbyCode });
-
-    return res.status(200).json(success(response));
-}))
-
-/**
- * Роут чтобы выбрать, будет ли врать лжец
- */
-gameController.post('/:lobbyCode/liar', asyncHandler(async (req: Request, res: Response) => {
-    const { lobbyCode } = req.params;
-    const { answer } = req.body;
-
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-
-    const response = await game.liarChooses(lobbyCode, answer);
-
-    return res.status(200).json(success(response));
-}));
+const gameService = new GameService();
 
 /**
- * Роут чтобы поставить лайк
+ * Контроллеры игры
  */
-gameController.post('/:lobbyCode/like', asyncHandler(async (req: Request, res: Response) => {
-    const { lobbyCode } = req.params;
-    const { senderId, receiverId } = req.body;
+export class GameController {
+  /**
+   * Контроллер старта игры
+   */
+  public async startGame(req: Request, res: Response) {
+    const dto = new StartGameDto(startGameValidator(req.body));
 
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    const game = await gameService.startGame(dto);
 
-    const response = await game.likeAnswer({ senderId, receiverId, lobbyCode });
+    return res.status(200).json(success(game));
+  }
 
-    return res.status(200).json(success(response));
-}));
+  /**
+   * Контроллер перехода к следующей стадии
+   */
+  public async nextStage(req: Request, res: Response) {
+    const dto = new NextStageDto(nextStageValidator(req.params.gameId));
 
-/**
- * Роут чтобы задать ответ 
- */
-gameController.put('/:lobbyCode/answer', asyncHandler(async (req: Request, res: Response) => {
-    const { lobbyCode } = req.params;
-    const { telegramId, answer } = req.body;
+    const stage = await gameService.nextStage({ gameId: dto.gameId });
 
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+    return res.status(200).json(success(stage));
+  }
 
-    const response = await game.setAnswer({ lobbyCode, telegramId, answer });
+  /**
+   * Контроллер выбора лжецом (врать / не врать)
+   */
+  public async liarChooses(req: Request, res: Response) {
+    const dto = new LiarChoosesDto(liarChoosesValidator(req.body));
 
-    return res.status(200).json(success(response));
-}));
+    const doLie = await gameService.liarChooses(dto.gameId, dto.answer);
 
-/**
- * Роут чтобы зафиксировать ответ
- */
-gameController.put('/:lobbyCode/secure', asyncHandler(async (req: Request, res: Response) => {
-    const { lobbyCode } = req.params;
-    const { telegramId } = req.body;
+    return res.status(200).json(success(doLie));
+  }
 
-    if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+  /**
+   * Контроллер установки ответа игрока
+   */
+  public async setAnswer(req: Request, res: Response) {
+    const dto = new SetAnswerDto(setAnswerValidator(req.body));
 
-    const response = await game.secureAnswer(lobbyCode, telegramId);
+    const player = await gameService.setAnswer(dto);
 
-    return res.status(200).json(success(response));
-}));
+    return res.status(200).json(success(player));
+  }
+
+  /**
+   * Контроллер подтверждения ответа игрока
+   */
+  public async confirmAnswer(req: Request, res: Response) {
+    const dto = new ConfirmAnswerDto(confirmAnswerValidator(req.body));
+
+    const player = await gameService.confirmAnswer(dto.gameId, dto.playerId);
+
+    return res.status(200).json(success(player));
+  }
+
+  /**
+   * Контроллер лайка ответа игрока
+   */
+  public async likeAnswer(req: Request, res: Response) {
+    const dto = new LikeAnswerDto(likeAnswerValidator(req.body));
+
+    const player = await gameService.likeAnswer(dto);
+
+    return res.status(200).json(success(player));
+  }
+}

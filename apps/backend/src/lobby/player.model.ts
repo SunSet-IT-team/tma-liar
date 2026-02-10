@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose';
 import type { Player } from './entities/player.entity';
 
-export const PlayerSchema = new Schema<Player>(
+export const PlayerModel = new Schema<Player>(
   {
     nickname: { type: String, required: true },
     telegramId: { type: String, required: true, unique: true },
@@ -45,7 +45,6 @@ export const PlayerSchema = new Schema<Player>(
     }
   },
   {
-    _id: false, 
     versionKey: false,
   }
 );

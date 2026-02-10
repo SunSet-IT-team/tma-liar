@@ -1,46 +1,90 @@
 import type { Player } from './entities/player.entity';
 import type { Settings } from './entities/settings.entity';
-import { GameStages } from './entities/lobby.entity';
+import { LobbyStatus, LobbyScreen } from './entities/lobby.entity';
 
-export interface LobbyApiFindLobbyParams {
+/**Интерфейсы для работы с лобби */
+
+/**
+ * Интерфейс для поиска лобби
+ * @param lobbyCode код лобби
+ */
+export interface LobbyServiceFindLobbyParams {
   lobbyCode: string;
 }
 
-export interface LobbyApiFindLobbiesParams {
+/**
+ * Интерфейс для поиска нескольких лобби
+ * @param lobbyCodes массив кодов лобби
+ */
+export interface LobbyServiceFindLobbiesParams {
   lobbyCodes: string[];
 }
 
-export interface LobbyApiCreateLobbyParams {
-  players: Player[] | [];
+/**
+ * Интерфейс для создания лобби
+ * @param adminId id администратора лобби
+ * @param players массив игроков в лобби
+ * @param settings настройки лобби
+ */
+export interface LobbyServiceCreateLobbyParams {
   adminId: string;
+  players: Player[];
   settings: Settings;
 }
 
-export interface LobbyApiUpdateLobbyParams {
+/**
+ * Интерфейс для обновления лобби
+ * @param lobbyCode код лобби
+ * @param players массив игроков в лобби
+ * @param settings настройки лобби
+ * @param status статус игры в лобби
+ * @param currentScreen текущий экран в лобби
+ */
+export interface LobbyServiceUpdateLobbyParams {
   lobbyCode: string;
   players?: Player[];
   settings?: Settings;
-  status?: 'waiting' | 'started' | 'finished';
-  currentScreen?: 'lobby' | 'game' | 'result';
-}
- 
-export interface LobbyApiDeleteLobbyParams {
-  lobbyCode?: string;
+  status?: LobbyStatus;
+  currentScreen?: LobbyScreen;
 }
 
-export interface LobbyApiJoinParams { 
+/**
+ * Интерфейс для удаления лобби
+ * @param lobbyCode код лобби
+ */
+export interface LobbyServiceDeleteLobbyParams {
+  lobbyCode: string;
+}
+
+/**
+ * Интерфейс для присоединения к лобби
+ * @param lobbyCode код лобби
+ * @param player игрок, который присоединяется к лобби
+ */
+export interface LobbyServiceJoinParams { 
   lobbyCode: string;
   player: Player;
 }
 
-export interface LobbyApiToggleReadyParams {
+/**
+ * Интерфейс для переключения готовности игрока
+ * @param lobbyCode код лобби
+ * @param telegramId id игрока, который переключает готовность
+ * @param loserTask задание для проигравшего
+ */
+export interface LobbyServiceToggleReadyParams {
   lobbyCode: string;
   telegramId: string;
-  loserTask?: string;
+  loserTask: string | null;
 }
 
-export interface LobbyApiStartGameParams {
+/**
+ * Интерфейс для начала игры
+ * @param lobbyCode код лобби
+ * @param telegramId id игрока, который начинает игру
+ */
+export interface LobbyServiceStartGameParams {
   lobbyCode: string;
   telegramId: string;
-  loserTask: string;
+  loserTask: string | null;
 }

@@ -5,6 +5,7 @@ import type {
     UserAuthLoginParams
 } from './auth.params'
 import { ApiError } from "../common/response";
+import { UserModel } from "../users/user.modal";
 
 dotenv.config();
 const JWT_SECRET = process.env.SECRET || "super-secret"; 
@@ -13,7 +14,7 @@ const JWT_SECRET = process.env.SECRET || "super-secret";
  * Интерфейс для авторизации
  */
 export interface UserAuthMethods {
-  userLogin: (param?: UserAuthLoginParams) => Promise<string | null>;
+  userLogin: (param: UserAuthLoginParams) => Promise<string | null>;
 }
 
 /**
@@ -22,18 +23,20 @@ export interface UserAuthMethods {
 export class UserAuth implements UserAuthMethods { 
     constructor(private users: UserApi) {}
 
-    public async userLogin(param?: UserAuthLoginParams) : Promise<string | null> { 
-        if(!param?.telegramId) throw new ApiError(404, "ID_ERROR");
+    public async userLogin(param: UserAuthLoginParams) : Promise<string> { 
+        const user = await UserModel.findOne({ telegramId: param.telegramId });
 
-        const user = await this.users.findUser({ telegramId: param.telegramId });
-
-        if(!user) throw new ApiError(404, "USER_NOT_REGISTERED");
+        if(!user) throw new ApiError(400, "USER_NOT_REGISTERED");
 
         const token = jwt.sign(
             { userId: user._id.toString() }, 
             JWT_SECRET, 
             { expiresIn:"1d" }, 
         );
+
+        if (!token) {
+            throw new ApiError(401, "AUTH_FAILED");
+        }
 
         return token;
     }
