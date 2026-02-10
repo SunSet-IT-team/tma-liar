@@ -8,164 +8,204 @@ import { GameStages } from "../lobby/entities/lobby.entity";
 import type { 
   GameLikeAnswerParams,
   GameNextStageParams,
-  GameSetAnswerParams
+  GameSetAnswerParams,
+  GameStartParams
 } from "./game.params";
+import type { Game } from './entities/game.entity';
+import { GameModel } from './game.model';
 
 export interface GameMethods { 
-  nextStage: (param?: GameNextStageParams) => Promise<GameStages>,
-  likeAnswer: (param?: GameLikeAnswerParams) => Promise<Player>, 
-  setAnswer: (param?: GameSetAnswerParams) => Promise<Player>, 
+  startGame: (param: GameStartParams) => Promise<Game>,
+  nextStage: (param: GameNextStageParams) => Promise<GameStages>,
+  likeAnswer: (param: GameLikeAnswerParams) => Promise<Player>, 
+  setAnswer: (param: GameSetAnswerParams) => Promise<Player>, 
 }
 
-export class Game implements GameMethods { 
+// Очки в случае если ответ "не определено"
+const SCORE_NOT_STATED = 50;
+
+// Очки в случае если лжецу удалось обмануть
+const SCORE_TRICKED = 100;
+
+//Время таймера 
+const TIMER = 10000
+
+export class GameService implements GameMethods { 
+
+
+
+  /**
+   * Функция поиска игры
+   * @param gameId id игры
+   * @returns 
+   */  
+  public async findGame(gameId: string): Promise<Game> {
+    const game = await GameModel.findById(gameId).lean();
+    if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
+
+    return game;
+  }
+
+  /**
+   * Функция для начала игры
+   * @param lobbyId айди лобби
+   * @param stage стадия игры
+   * @param players массив игроков в игре
+   * @param settings настройки игры
+   * @param liarId айди лжеца
+   * @param questionHistory массив id истории вопросов
+   * @param activeQuestion активный вопрос
+   * @param timerId айди таймера
+   * @param doLie флаг, указывающий, лжет ли игрок
+   * @param loserTask задание для проигравшего
+   * @param winnerId айди победителя
+   * @param loserId айди проигравшего
+   */
+  public async startGame(param: GameStartParams): Promise<Game> {
+    const game = await GameModel.create(param); 
+    if(!game) throw new ApiError(400, 'GAME_NOT_CREATED');
+
+    await this.nextStage( {gameId: String(game._id)} );
+    return game.toObject();
+  }
+
   /**
    * Функция для смены стадии и основного процесса игры 
-   * @param lobbyCode код лобби
+   * @param gameId id игры
    */ 
-  public async nextStage(param?: GameNextStageParams): Promise<GameStages> {
-    if(!param?.lobbyCode) throw new ApiError(404, "LOBBY_NOT_FOUND");
-    const { lobbyCode } = param;
+  public async nextStage(param: GameNextStageParams): Promise<GameStages> {
+    const { gameId } = param;
+    const game = await GameModel.findById(gameId);
+      if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
 
-    const lobby = await LobbyModel.findOne({ lobbyCode });
-    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
-
-    if (lobby.timerId) {
-      clearTimeout(lobby.timerId);
-      lobby.timerId = null;
+    if (game.timerId) {
+      clearTimeout(game.timerId);
+      game.timerId = null;
     }
 
-    const currentStage = lobby.stage as GameStages;
+    const currentStage = game.stage;
 
     let nextStage: GameStages;
 
     switch (currentStage) {
       case GameStages.LOBBY:
-        nextStage = await this.handleLobbyStage(lobby, lobbyCode);
+        nextStage = await this.handleLobbyStage(game, gameId);
         break;
 
       case GameStages.LIAR_CHOOSES:
-        nextStage = await this.handleLiarChoosesStage(lobby, lobbyCode);
+        nextStage = await this.handleLiarChoosesStage(game, gameId);
         break;
 
       case GameStages.QUESTION_TO_LIAR:
-        nextStage = await this.handleQuestionToLiarStage(lobby, lobbyCode);
+        nextStage = await this.handleQuestionToLiarStage(game, gameId);
         break;
 
       case GameStages.QUESTION_RESULTS:
-        nextStage = await this.handleQuestionResultsStage(lobby, lobbyCode);
+        nextStage = await this.handleQuestionResultsStage(game, gameId);
         break;
 
       case GameStages.GAME_RESULTS:
-        nextStage = await this.handleGameResultsStage(lobby, lobbyCode);
+        nextStage = await this.handleGameResultsStage(game, gameId);
         break;
 
       case GameStages.END:
-        nextStage = await this.handleEndStage(lobby, lobbyCode);
+        nextStage = await this.handleEndStage(game, gameId);
         break;
 
       default:
         throw new ApiError(400, 'UNKNOWN_STAGE');
     }
 
-    lobby.stage = nextStage;
+    game.stage = nextStage;
 
-    lobby.markModified('stage');
-    await lobby.save();
+    game.markModified('stage');
+    await game.save();
 
     return nextStage;
   }
 
-  public async handleLobbyStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages> {
+  public async handleLobbyStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages> {
     console.log('on stage lobby');
 
-    if (!lobby.players.every(p => p.isReady)) throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
+    if (!game.players.every(p => p.isReady)) throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
 
-    const nextQuestion = this.pickNextQuestion(lobby);
-    if (!nextQuestion) throw new ApiError(400, 'NO_QUESTIONS_LEFT');
+    const nextQuestion = this.pickNextQuestion(game);
+    if (!nextQuestion) game.questionHistory = [];
+    
 
-    const updatedLobby = await LobbyModel.findOneAndUpdate(
-      { lobbyCode },
-      {
-        $set: {
-          activeQuestion: nextQuestion,
-          stage: GameStages.LIAR_CHOOSES
-        },
-        $push: { questionHistory: nextQuestion.id }
-      },
-      { new: true }
-    );
+    game.activeQuestion = nextQuestion.id;
+    game.stage = GameStages.LIAR_CHOOSES;
+    game.questionHistory.push(nextQuestion.id);
 
-    if (!updatedLobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
+    await this.chooseLiar(game);
 
-    await this.chooseLiar(updatedLobby);
-
-    updatedLobby.timerId = this.resolveTimer(10000, async () => {
-      await this.nextStage({ lobbyCode });
+    game.timerId = this.resolveTimer(TIMER, async () => {
+      await this.nextStage({ gameId });
     });
 
     return GameStages.LIAR_CHOOSES;
   }
 
   
-  public async handleLiarChoosesStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages>{ 
+  public async handleLiarChoosesStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
     console.log('on stage liar chooses');
 
-    lobby.doLie ??= Math.random() < 0.5;
+    game.doLie ??= Math.random() < 0.5;
 
     const nextStage = GameStages.QUESTION_TO_LIAR;
 
-    lobby.markModified('doLie');
+    game.markModified('doLie');
 
-    lobby.timerId = this.resolveTimer(lobby.settings.answerTime, async () => { 
-      await this.nextStage({ lobbyCode: lobbyCode }) 
+    game.timerId = this.resolveTimer(TIMER, async () => { 
+      await this.nextStage({ gameId: gameId }) 
     });
 
     return nextStage;
   }
 
-  public async handleQuestionToLiarStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages>{ 
+  public async handleQuestionToLiarStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
     console.log('on stage question to liar');
 
-    lobby.players.forEach(p => { if (p.answer == null) p.answer = 2 });
+    game.players.forEach(p => { if (p.answer == null) p.answer = 2 });
 
     const nextStage = GameStages.QUESTION_RESULTS;
 
-    lobby.markModified('players');
+    game.markModified('players');
 
-    lobby.timerId = this.resolveTimer(10000, async () => { 
-      await this.nextStage({ lobbyCode: lobbyCode }) 
+    game.timerId = this.resolveTimer(TIMER, async () => { 
+      await this.nextStage({ gameId: gameId }) 
     });
 
     return nextStage;
   }
 
-  public async handleQuestionResultsStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages>{ 
+  public async handleQuestionResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
     console.log('on stage question results');
 
-    await this.calculateLiarPoints(lobby);
-    await this.calculatePlayersPoints(lobby);
-    await this.calculatePlayersPointsWithLikes(lobby);
+    await this.calculateLiarPoints(game);
+    await this.calculatePlayersPoints(game);
+    await this.calculatePlayersPointsWithLikes(game);
 
     let nextStage : GameStages;
-    if (lobby.questionHistory.length < lobby.settings.questionCount) {
-      const nextQuestion = this.pickNextQuestion(lobby);
+    if (game.questionHistory.length < game.settings.questionCount) {
+      const nextQuestion = this.pickNextQuestion(game);
 
-      lobby.activeQuestion = nextQuestion;
-      lobby.questionHistory.push(nextQuestion.id);
+      game.activeQuestion = nextQuestion.content;
+      game.questionHistory.push(nextQuestion.id);
       
-      await this.chooseLiar(lobby);
-      lobby.players.forEach(p => { p.answer = null; p.secure == null });
-      lobby.doLie = null;
+      await this.chooseLiar(game);
+      game.players.forEach(p => { p.answer = null; p.secure == null });
+      game.doLie = null;
       nextStage = GameStages.LIAR_CHOOSES;
 
-      lobby.markModified('players');
-      lobby.markModified('doLie');
+      game.markModified('players');
+      game.markModified('doLie');
 
-      lobby.timerId = this.resolveTimer(10000, async () => { 
-        await this.nextStage({ lobbyCode: lobbyCode }) 
+      game.timerId = this.resolveTimer(TIMER, async () => { 
+        await this.nextStage({ gameId: gameId }) 
       });
     } else {
-      const sortedPlayers = [...lobby.players].sort((a, b) => b.score - a.score);
+      const sortedPlayers = [...game.players].sort((a, b) => b.score - a.score);
 
       const loser = sortedPlayers[sortedPlayers.length - 1];
       if(!loser) throw new ApiError(400, 'LOSER_NOT_FOUND')
@@ -173,11 +213,9 @@ export class Game implements GameMethods {
       const winner = sortedPlayers[0];
       if(!winner) throw new ApiError(400, 'WINNER_NOT_FOUND')
         
-      lobby.winnerId = winner.telegramId;
-      lobby.loserId = loser.telegramId;  
-      lobby.loserTask = winner.loserTask;
-
-      await lobby.save();
+      game.winnerId = winner.telegramId;
+      game.loserId = loser.telegramId;  
+      game.loserTask = winner.loserTask;
 
       nextStage = GameStages.GAME_RESULTS;
     }
@@ -185,13 +223,13 @@ export class Game implements GameMethods {
     return nextStage;
   }
 
-  public async handleGameResultsStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages>{ 
+  public async handleGameResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
     const nextStage = GameStages.END;
     
     return nextStage;
   }
 
-  public async handleEndStage(lobby: HydratedDocument<Lobby>, lobbyCode: string): Promise<GameStages>{ 
+  public async handleEndStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
     const nextStage = GameStages.END;
     
     return nextStage;
@@ -199,183 +237,176 @@ export class Game implements GameMethods {
 
   /**
    * Выбор следующего вопроса
-   * @param lobby mongoose-документ лоббт
+   * @param game mongoose-документ игры
    * @returns объект следующего вопроса
    */
-  public pickNextQuestion(lobby: HydratedDocument<Lobby>): Question {
-    return lobby.settings.deck.questions.find(q => !lobby.questionHistory.includes(q.id))!;
+  public pickNextQuestion(game: HydratedDocument<Game>): Question {
+    return game.settings.deck.questions.find(q => !game.questionHistory.includes(q.id))!;
   }
   
   /**
    * Функция выбора лжеца 
-   * @param lobby mongoose-документ лобби
+   * @param game mongoose-документ игры
    */
-  public async chooseLiar(lobby: HydratedDocument<Lobby>) {
-    const minCount = Math.min(...lobby.players.map(p => p.wasLiar!));
+  public async chooseLiar(game: HydratedDocument<Game>) {
+    const minCount = Math.min(...game.players.map(p => p.wasLiar!));
  
-    const candidates = lobby.players.filter(p => p.wasLiar === minCount);
+    const candidates = game.players.filter(p => p.wasLiar === minCount);
     const liar = candidates[Math.floor(Math.random() * candidates.length)];
     
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND');
     liar.wasLiar += 1;
-    lobby.liarId = liar.telegramId;
+    game.liarId = liar.telegramId;
 
-    lobby.markModified('players');
-    lobby.markModified('liarId');
-
-    await lobby.save();
+    game.markModified('players');
+    game.markModified('liarId');
   }
 
   /**
    * Функция выбора ответа лжеца 
-   * @param lobbyCode код лобби
+   * @param gameId id игры 
    * @param answer ответ (будет врать - true, не будет - false)
    * @returns doLie будет врать или нет
    */
-  public async liarChooses(lobbyCode: string, answer: boolean) {
-    const lobby = await LobbyModel.findOne({ lobbyCode });
-    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
+  public async liarChooses(gameId: string, answer: boolean) {
+    const game = await GameModel.findById(gameId);
+    if (!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    if(lobby.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
+    if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
 
-    lobby.doLie = answer;
+    game.doLie = answer;
+    game.markModified('doLie');
 
-    lobby.markModified('doLie');
+    await this.nextStage({ gameId });
 
-    await lobby.save();
-
-    await this.nextStage({ lobbyCode });
-
-    return lobby.doLie;
+    return game.doLie;
   }
 
   /**
    * Функция подсчёта очков лжецу 
-   * @param lobby mongoose-документ лобби
+   * @param gameId id игры 
    */
-  public async calculateLiarPoints(lobby: HydratedDocument<Lobby>) { 
-    const liar = lobby.players.find(p => p.telegramId == lobby.liarId);
+  public async calculateLiarPoints(game: HydratedDocument<Game>) { 
+    const liar = game.players.find(p => p.telegramId == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
-    lobby.players.forEach(player => {
-      if(player.telegramId == lobby.liarId) return;
+    game.players.forEach(player => {
+      if(player.telegramId == game.liarId) return;
 
-      if(player.answer == 2) liar.score += 50;
-      else if(player.answer != (lobby.doLie ? 1 : 0)) liar.score += 100;
+      if(player.answer == 2) liar.score += SCORE_NOT_STATED;
+      else if(player.answer != (game.doLie ? 1 : 0)) liar.score += SCORE_TRICKED;
     });
 
-    lobby.markModified('players');
+    game.markModified('players');
 
   }
 
   /**
    * Функция подсчёта очков игрокам 
-   * @param lobby mongoose-документ лобби
+   * @param gameId id игры 
    */
-  public async calculatePlayersPoints(lobby: HydratedDocument<Lobby>) { 
-    const liar = lobby.players.find(p => p.telegramId == lobby.liarId);
+  public async calculatePlayersPoints(game: HydratedDocument<Game>) { 
+    const liar = game.players.find(p => p.telegramId == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
-    lobby.players.forEach(player => {
-      if(player.telegramId == lobby.liarId) return;
+    game.players.forEach(player => {
+      if(player.telegramId == game.liarId) return;
 
-      if(player.answer == (lobby.doLie ? 1 : 0)) player.score += 200;
+      if(player.answer == (game.doLie ? 1 : 0)) player.score += 200;
     });
 
-    lobby.markModified('players');
+    game.markModified('players');
   }  
 
   /**
    * Функция подсчёта очков игрокам с учётом лайков 
-   * @param lobby mongoose-документ лобби
+   * @param game mongoose-документ игры
    */
-  public async calculatePlayersPointsWithLikes(lobby: HydratedDocument<Lobby>) { 
-    const liar = lobby.players.find(p => p.telegramId == lobby.liarId);
+  public async calculatePlayersPointsWithLikes(game: HydratedDocument<Game>) { 
+    const liar = game.players.find(p => p.telegramId == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
-    lobby.players.forEach(player => {
-      if(player.telegramId == lobby.liarId) return;
+    game.players.forEach(player => {
+      if(player.telegramId == game.liarId) return;
 
       player.score += player.likes * 10;
     });
 
-    lobby.markModified('players');
+    game.markModified('players');
   }   
 
   /**
    * Функция для лайка
-   * @param senderId tg id отправителя лайка
-   * @param receiverId tg id получателя лайка
-   * @param lobbyCode код лобби
+   * @param senderId id отправителя лайка
+   * @param receiverId id получателя лайка
+   * @param gameId id игры
    * @returns receiver объект Player получателя лайка
    */
-  public async likeAnswer(param?: GameLikeAnswerParams): Promise<Player> {
-    if(param?.receiverId == param?.senderId) throw new ApiError(400, 'RECEIVER_EQUALS_SENDER_IDS');
-    if (!param?.lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+  public async likeAnswer(param: GameLikeAnswerParams): Promise<Player> {
+    if(param.receiverId == param.senderId) throw new ApiError(400, 'RECEIVER_EQUALS_SENDER_IDS');
 
-    const lobby = await LobbyModel.findOne({ lobbyCode: param?.lobbyCode });
+    const game = await GameModel.findById(param.gameId);
     
-    if(!lobby) throw new ApiError(400, 'LOBBY_NOT_FOUND');
-    if(lobby.stage != GameStages.QUESTION_RESULTS && lobby.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
-    if(param?.receiverId == lobby.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
+    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+    if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
+    if(param?.receiverId == game.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
 
-    const sender = lobby.players.find(p => p.telegramId == param?.senderId);
+    const sender = game.players.find(p => p.telegramId == param.senderId);
     
     if(!sender) throw new ApiError(400, 'SENDER_NOT_FOUND');
     if(sender.answer == 2) throw new ApiError(400, 'SENDER_DIDNT_ANSWER'); 
 
-    const receiver = lobby.players.find(p => p.telegramId == param?.receiverId);
+    const receiver = game.players.find(p => p.telegramId == param.receiverId);
 
     if(!receiver) throw new ApiError(400, 'RECEIVER_NOT_FOUND');
 
     receiver.likes += 1;
 
-    lobby.markModified('players');
-    await lobby.save();
+    game.markModified('players');
+    await game.save();
 
     return receiver; 
   }
 
   /**
    * Функция чтобы задать ответ игроку 
-   * @param lobbyCode код лобби
-   * @param telegramId tg id игрока
+   * @param gameId код лобби
+   * @param playerId tg id игрока
    * @param answer ответ (число: 0 - не верит, 1 - верит, 2 - не определился)
    * @returns объект Player игрока, которому задали ответ
    */
-  public async setAnswer(param?: GameSetAnswerParams): Promise<Player>{ 
-    const lobby = await LobbyModel.findOne({ lobbyCode: param?.lobbyCode }); 
-    if(!lobby) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+  public async setAnswer(param: GameSetAnswerParams): Promise<Player>{ 
+    const game = await GameModel.findById(param.gameId); 
+    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
 
-    if(lobby.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
+    if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
 
-    const player = lobby.players.find(p => p.telegramId == param?.telegramId);
+    const player = game.players.find(p => p.telegramId == param.playerId);
     if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
 
-    if(param?.answer == null) throw new ApiError(400, 'ANSWER_NOT_FOUND');
-    if(player.secure == true) throw new ApiError(400, 'ANSWER_ALREADY_SECURED');
+    if(player.secure == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED');
     
-    player.answer = param?.answer;
+    player.answer = param.answer;
 
-    lobby.markModified('players');
-    await lobby.save();
+    game.markModified('players');
+    await game.save();
 
     return player;
   }
 
   /**
    * Функция для фиксирования ответа
-   * @param lobbyCode код лобби
-   * @param telegramId tg id игрока, которому фиксируем ответ
+   * @param gameId id игры
+   * @param playerId tg id игрока, которому фиксируем ответ
    * @returns объект Player игрока, которому зафиксировали ответ
    */
-  public async secureAnswer(lobbyCode: string, telegramId: string): Promise<Player>{ 
-    const lobby = await LobbyModel.findOne({ lobbyCode: lobbyCode }); 
-    if(!lobby) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+  public async confirmAnswer(gameId: string, playerId: string): Promise<Player>{ 
+    const game = await GameModel.findById(gameId); 
+    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
 
-    if(lobby.stage != GameStages.QUESTION_RESULTS && lobby.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
+    if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
 
-    const player = lobby.players.find(p => p.telegramId == telegramId);
+    const player = game.players.find(p => p.telegramId == playerId);
     if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
 
     if(player.answer == 2) throw new ApiError(400, 'PLAYER_DIDNT_ANSWER'); 
@@ -383,8 +414,8 @@ export class Game implements GameMethods {
     if(player.secure == true) throw new ApiError(400, 'ALREADY_SECURED'); 
     player.secure = true;
 
-    lobby.markModified('players');
-    await lobby.save();
+    game.markModified('players');
+    await game.save();
 
     return player;
   }

@@ -1,9 +1,9 @@
 import type {
-  DeckApiFindDeckParams,
-  DeckApiFindDecksParams,
-  DeckApiCreateDeckParams,
-  DeckApiUpdateDeckParams,
-  DeckApiDeleteDeckParams,
+  DeckServiceFindDeckParams,
+  DeckServiceFindDecksParams,
+  DeckServiceCreateDeckParams,
+  DeckServiceUpdateDeckParams,
+  DeckServiceDeleteDeckParams,
 } from './deck.params';
 
 import type { Deck } from './entities/deck.entity';
@@ -11,53 +11,48 @@ import { ApiError } from '../common/response';
 import { DeckModel } from './deck.model';
 
 /**
- * Интерфейс для API колод
+ * Интерфейс для сервиса колод
  */
-export interface DeckApiMethods {
-  findDeck: (param?: DeckApiFindDeckParams) => Promise<Deck | null>;
-  findDecks: (param?: DeckApiFindDecksParams) => Promise<Deck[] | []>;
-  createDeck: (param: DeckApiCreateDeckParams) => Promise<Deck>;
-  updateDeck: (param: DeckApiUpdateDeckParams) => Promise<Deck>;
-  deleteDeck: (param: DeckApiDeleteDeckParams) => Promise<Deck>;
+export interface DeckServiceMethods {
+  findDeck: (param: DeckServiceFindDeckParams) => Promise<Deck>;
+  findDecks: (param: DeckServiceFindDecksParams) => Promise<Deck[]>;
+  createDeck: (param: DeckServiceCreateDeckParams) => Promise<Deck>;
+  updateDeck: (param: DeckServiceUpdateDeckParams) => Promise<Deck>;
+  deleteDeck: (param: DeckServiceDeleteDeckParams) => Promise<Deck>;
 }
 
 /**
- * API для колод
+ * Сервис колод
  */
-export class DeckApi implements DeckApiMethods {
-  public async findDeck(param?: DeckApiFindDeckParams): Promise<Deck | null> {
-    if (!param?.id) {
-      throw new ApiError(400, 'DECK_ID_NOT_SET');
-    }
+export class DeckService implements DeckServiceMethods {
+  /** Найти одну колоду */
+  public async findDeck(param: DeckServiceFindDeckParams): Promise<Deck> {
+    const deck = await DeckModel.findOne({ _id: param.id }).lean();
 
-    return DeckModel.findOne({ _id: param.id }).lean();
+    if (!deck) throw new ApiError(400, 'DECK_NOT_FOUND');
+
+    return deck;
   }
 
-  public async findDecks(param?: DeckApiFindDecksParams): Promise<Deck[] | []> {
-    if (!param?.ids || param.ids.length === 0) {
-      throw new ApiError(400, 'DECK_IDS_NOT_SET');
-    }
+  /** Найти несколько колод */
+  public async findDecks(param: DeckServiceFindDecksParams): Promise<Deck[]> {
+    const decks = await DeckModel.find({ _id: { $in: param.ids } }).lean();
 
-    return DeckModel.find({ _id: { $in: param.ids } }).lean();
+    if(!decks || decks.length == 0) throw new ApiError(400, 'DECKS_NOT_FOUND');
+
+    return decks;
   }
 
-  public async createDeck(param: DeckApiCreateDeckParams): Promise<Deck> {
-    if (!param.name) {
-      throw new ApiError(400, 'DECK_NAME_NOT_SET');
-    }
+  /** Создать колоду */
+  public async createDeck(param: DeckServiceCreateDeckParams): Promise<Deck> {
+    const deck = await DeckModel.create(param);
 
-    if (!param.questions) {
-      throw new ApiError(400, 'QUESTIONS_NOT_SET');
-    }
-
-    return (await DeckModel.create(param)).toObject();
+    if(!deck) throw new ApiError(400, 'DECK_NOT_CREATED');
+    return deck.toObject();
   }
 
-  public async updateDeck(param: DeckApiUpdateDeckParams): Promise<Deck> {
-    if (!param.id) {
-      throw new ApiError(400, 'DECK_ID_NOT_SET');
-    }
-
+  /** Обновить колоду */
+  public async updateDeck(param: DeckServiceUpdateDeckParams): Promise<Deck> {
     const { id, ...updateFields } = param;
 
     const updatedDeck = await DeckModel.findOneAndUpdate(
@@ -67,22 +62,18 @@ export class DeckApi implements DeckApiMethods {
     ).lean();
 
     if (!updatedDeck) {
-      throw new ApiError(404, 'DECK_NOT_FOUND');
+      throw new ApiError(400, 'DECK_NOT_FOUND');
     }
 
     return updatedDeck;
   }
 
   /** Удалить колоду */
-  public async deleteDeck(param: DeckApiDeleteDeckParams): Promise<Deck> {
-    if (!param.id) {
-      throw new ApiError(400, 'DECK_ID_NOT_SET');
-    }
-
+  public async deleteDeck(param: DeckServiceDeleteDeckParams): Promise<Deck> {
     const deletedDeck = await DeckModel.findOneAndDelete({ _id: param.id }).lean();
 
     if (!deletedDeck) {
-      throw new ApiError(404, 'DECK_NOT_FOUND');
+      throw new ApiError(400, 'DECK_NOT_FOUND');
     }
 
     return deletedDeck;

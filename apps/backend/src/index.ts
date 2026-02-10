@@ -4,10 +4,9 @@ import { connectToDatabase } from './database/database';
 import { userController } from './users/user.controller';
 import { errorMiddleware } from './middlewares/errorHandler.middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
-import { authController } from './auth/auth.controller';
-import { lobbyController } from './lobby/lobby.controller';
-import { deckController } from './decks/deck.controller';
-import { gameController } from './game/game.controller';
+// import { lobbyController } from './lobby/lobby.controller';
+import { deckRouter } from './decks/deck.router';
+import authRouter from './auth/auth.router';
 
 const app = express();
 
@@ -16,15 +15,15 @@ app.use(express.json());
 
 app.get('/api/hello', (_, res) => res.status(200).json({ message: 'Hello from backend!' }));
 
-app.use('/api/auth', authController);
+// app.use('/api/auth', authRouter);
 
-app.use('/api/users', userController, authMiddleware);
+// app.use('/api/users', userController, authMiddleware);
 
-app.use('/api/lobbies', lobbyController);
+// app.use('/api/lobbies', lobbyController);
 
-app.use('/api/decks', deckController);
+app.use('/api/decks', deckRouter);
 
-app.use('/api/game', gameController);
+// app.use('/api/game', gameController);
 
 app.use(errorMiddleware);
 

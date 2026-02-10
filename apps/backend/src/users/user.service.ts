@@ -28,7 +28,7 @@ export class UserApi implements UserApiMethods {
   public async findUser(param?: UserApiFindUserParams): Promise<User | null> {
     if(!param?.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
 
-    return UserModel.findOne({ telegramId: param.telegramId }).lean();
+    return UserModel.findOne({ telegramId: param.telegramId });
   }
 
   public async findUsers(param?: UserApiFindUsersParams): Promise<User[] | []> {
