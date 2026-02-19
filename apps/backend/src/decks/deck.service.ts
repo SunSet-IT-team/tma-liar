@@ -35,8 +35,8 @@ export class DeckService implements DeckServiceMethods {
   }
 
   /** Найти несколько колод */
-  public async findDecks(param: DeckServiceFindDecksParams): Promise<Deck[]> {
-    const decks = await DeckModel.find({ _id: { $in: param.ids } }).lean();
+  public async findDecks(): Promise<Deck[]> {
+    const decks = await DeckModel.find({}).lean();
 
     if(!decks || decks.length == 0) throw new ApiError(400, 'DECKS_NOT_FOUND');
 

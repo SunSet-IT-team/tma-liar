@@ -37,9 +37,7 @@ export class DeckController {
    * Контроллер поиска нескольких колод
    */
   public async findDecks(req: Request, res: Response) {
-    const dto = new FindDecksDto(findDecksIdsValidator(req.body.ids).ids);
-
-    const decks = await deckService.findDecks({ ids: dto.ids });
+    const decks = await deckService.findDecks();
     
     return res.status(200).json(success(decks));
   }
