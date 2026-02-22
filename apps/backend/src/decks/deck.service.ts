@@ -1,24 +1,20 @@
-import type {
-  DeckServiceFindDeckParams,
-  DeckServiceFindDecksParams,
-  DeckServiceCreateDeckParams,
-  DeckServiceUpdateDeckParams,
-  DeckServiceDeleteDeckParams,
-} from './deck.params';
-
 import type { Deck } from './entities/deck.entity';
 import { ApiError } from '../common/response';
 import { DeckModel } from './deck.model';
+import type { FindDeckDto } from './dtos/deck-find.dto';
+import type { CreateDeckDto } from './dtos/deck-create.dto';
+import type { UpdateDeckDto } from './dtos/deck-update.dto';
+import type { DeleteDeckDto } from './dtos/deck-delete.dto';
 
 /**
  * Интерфейс для сервиса колод
  */
 export interface DeckServiceMethods {
-  findDeck: (param: DeckServiceFindDeckParams) => Promise<Deck>;
-  findDecks: (param: DeckServiceFindDecksParams) => Promise<Deck[]>;
-  createDeck: (param: DeckServiceCreateDeckParams) => Promise<Deck>;
-  updateDeck: (param: DeckServiceUpdateDeckParams) => Promise<Deck>;
-  deleteDeck: (param: DeckServiceDeleteDeckParams) => Promise<Deck>;
+  findDeck: (param: FindDeckDto) => Promise<Deck>;
+  findDecks: () => Promise<Deck[]>;
+  createDeck: (param: CreateDeckDto) => Promise<Deck>;
+  updateDeck: (param: UpdateDeckDto) => Promise<Deck>;
+  deleteDeck: (param: DeleteDeckDto) => Promise<Deck>;
 }
 
 /**
@@ -26,33 +22,34 @@ export interface DeckServiceMethods {
  */
 export class DeckService implements DeckServiceMethods {
   /** Найти одну колоду */
-  public async findDeck(param: DeckServiceFindDeckParams): Promise<Deck> {
-    const deck = await DeckModel.findOne({ _id: param.id }).lean();
+  public async findDeck(param: FindDeckDto): Promise<Deck> {
+    const deck = await DeckModel.findOne({ _id: param.id });
 
-    if (!deck) throw new ApiError(400, 'DECK_NOT_FOUND');
+    if (!deck) {
+      throw new ApiError(400, 'DECK_NOT_FOUND');
+    }
 
-    return deck;
+    return deck.toObject();
   }
 
   /** Найти несколько колод */
   public async findDecks(): Promise<Deck[]> {
-    const decks = await DeckModel.find({}).lean();
+    const decks = await DeckModel.find().lean();
 
-    if(!decks || decks.length == 0) throw new ApiError(400, 'DECKS_NOT_FOUND');
-
+    if (!decks || decks.length === 0) throw new ApiError(400, 'DECKS_NOT_FOUND');
     return decks;
   }
 
   /** Создать колоду */
-  public async createDeck(param: DeckServiceCreateDeckParams): Promise<Deck> {
+  public async createDeck(param: CreateDeckDto): Promise<Deck> {
     const deck = await DeckModel.create(param);
 
-    if(!deck) throw new ApiError(400, 'DECK_NOT_CREATED');
+    if (!deck) throw new ApiError(400, 'DECK_NOT_CREATED');
     return deck.toObject();
   }
 
   /** Обновить колоду */
-  public async updateDeck(param: DeckServiceUpdateDeckParams): Promise<Deck> {
+  public async updateDeck(param: UpdateDeckDto): Promise<Deck> {
     const { id, ...updateFields } = param;
 
     const updatedDeck = await DeckModel.findOneAndUpdate(
@@ -69,7 +66,7 @@ export class DeckService implements DeckServiceMethods {
   }
 
   /** Удалить колоду */
-  public async deleteDeck(param: DeckServiceDeleteDeckParams): Promise<Deck> {
+  public async deleteDeck(param: DeleteDeckDto): Promise<Deck> {
     const deletedDeck = await DeckModel.findOneAndDelete({ _id: param.id }).lean();
 
     if (!deletedDeck) {

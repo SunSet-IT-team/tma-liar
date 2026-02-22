@@ -1,79 +1,87 @@
 import type { Request, Response } from 'express';
 import { DeckService } from './deck.service';
-import { 
-  findDeckIdValidator,
-  findDecksIdsValidator,
-  createDeckValidator,
-  updateDeckValidator,
-  deleteDeckIdValidator
-} from './deck.validator';
-import { FindDeckDto } from './dto/find-deck.dto';
-import { FindDecksDto } from './dto/find-decks.dto';
-import { success } from '../common/response';
-import { CreateDeckDto } from './dto/create-deck.dto';
-import { UpdateDeckDto } from './dto/update-deck.dto';
-import { DeleteDeckDto } from './dto/delete-deck.dto';
-
-const deckService = new DeckService();
+import { ApiError, success } from '../common/response';
+import { FindDeckDtoSchema, type FindDeckDto } from './dtos/deck-find.dto';
+import { CreateDeckDtoSchema, type CreateDeckDto } from './dtos/deck-create.dto';
+import { UpdateDeckDtoSchema, type UpdateDeckDto } from './dtos/deck-update.dto';
+import { DeleteDeckDtoSchema, type DeleteDeckDto } from './dtos/deck-delete.dto';
 
 /**
  * Класс контроллеров колод
  */
-export class DeckController { 
+export class DeckController {
+  constructor(private deckService: DeckService) {}
+
   /**
    * Контроллер поиска колоды
    */
-  public async findDeck(req: Request, res: Response) {
-    const id = findDeckIdValidator(req.params.id);
+  findDeck = async (req: Request, res: Response) => {
+    const result = FindDeckDtoSchema.safeParse({ id: req.params.id });
 
-    const dto = new FindDeckDto(id);
+    if (!result.success) {
+      throw new ApiError(400, "FIND_DECK_DATA_INVALID");
+    }
 
-    const deck = await deckService.findDeck({ id: dto.id });
-    
+    const dto: FindDeckDto = result.data;
+    const deck = await this.deckService.findDeck({ id: dto.id });
+
     return res.status(200).json(success(deck));
-  }
+  };
 
   /**
    * Контроллер поиска нескольких колод
    */
-  public async findDecks(req: Request, res: Response) {
-    const decks = await deckService.findDecks();
-    
+  findDecks = async (_: Request, res: Response) => {
+    const decks = await this.deckService.findDecks();
+
     return res.status(200).json(success(decks));
-  }
+  };
 
   /**
    * Контроллер создания колоды
    */
-  public async createDeck(req: Request, res: Response) {
-    const dto: CreateDeckDto = new CreateDeckDto(createDeckValidator(req.body));
+  createDeck = async (req: Request, res: Response) => {
+    const result = CreateDeckDtoSchema.safeParse(req.body);
 
-    const deck = await deckService.createDeck({ ...dto });
-    
+    if (!result.success) {
+      throw new ApiError(400, "CREATE_DECK_DATA_INVALID");
+    }
+
+    const dto: CreateDeckDto = result.data;
+    const deck = await this.deckService.createDeck({ ...dto });
+
     return res.status(200).json(success(deck));
-  }
+  };
 
   /**
    * Контроллер обновления колоды
    */
-  public async updateDeck(req: Request, res: Response) {
-    const dto: UpdateDeckDto = new UpdateDeckDto(updateDeckValidator(req.body));
+  updateDeck = async (req: Request, res: Response) => {
+    const result = UpdateDeckDtoSchema.safeParse(req.body);
 
-    const deck = await deckService.updateDeck({...dto});
-    
+    if (!result.success) {
+      throw new ApiError(400, "UPDATE_DECK_DATA_INVALID");
+    }
+
+    const dto: UpdateDeckDto = result.data;
+    const deck = await this.deckService.updateDeck({ ...dto });
+
     return res.status(200).json(success(deck));
-  }
+  };
 
   /**
    * Контроллер удаления колоды
    */
-  public async deleteDeck(req: Request, res: Response) {
-    const id = deleteDeckIdValidator(req.params.id);
+  deleteDeck = async (req: Request, res: Response) => {
+    const result = DeleteDeckDtoSchema.safeParse({ id: req.params.id });
 
-    const dto = new DeleteDeckDto(id);
+    if (!result.success) {
+      throw new ApiError(400, "DELETE_DECK_DATA_INVALID");
+    }
 
-    const deck = await deckService.deleteDeck({ id: dto.id });
-    
-    return res.status(200).json(success(deck));  
-  }
+    const dto: DeleteDeckDto = result.data;
+    const deck = await this.deckService.deleteDeck({ id: dto.id });
+
+    return res.status(200).json(success(deck));
+  };
 }

@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { DeckController } from "./deck.controller";
+import { DeckService } from "./deck.service";
 import { asyncHandler } from "../middlewares/asyncHandler.middleware";
 import type { Request, Response } from "express";
-import { findDiff } from "../common/diff";
 
 export const deckRouter = Router();
-const deckController = new DeckController();
+const deckController = new DeckController(new DeckService());
 
 /** Маршруты для работы с колодами */
 

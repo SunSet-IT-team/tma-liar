@@ -6,6 +6,7 @@ import z from 'zod';
  * Сущность "Колода"
  */
 export interface Deck {
+  id: string;
   name: string;
   questionsCount: number;
   cover: string;
@@ -13,6 +14,7 @@ export interface Deck {
 }
 
 export const DeckSchema = z.object({
+  id: z.string().min(1),
   name: z.string().max(100),
   questionsCount: z.number().min(0),
   cover: z.string(),

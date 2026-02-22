@@ -31,7 +31,12 @@ const DeckSchema = new Schema<Deck>(
   {
     timestamps: true,
     versionKey: false,
+    toObject: { virtuals: true }, 
   }
 );
+
+DeckSchema.virtual('id').get(function () {
+  return this._id.toString();
+});
 
 export const DeckModel = model<Deck>('Deck', DeckSchema);
