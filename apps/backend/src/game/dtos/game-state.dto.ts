@@ -9,7 +9,7 @@ import { isValidObjectId } from "mongoose";
  * @field stage    Текущая стадия игры (enum GameStages)
  * @field players  Список игроков, участвующих в игре (минимум 1)
  */
-const GameStateDtoSchema = z.object({
+export const GameStateDtoSchema = z.object({
     gameId: z.string().nonempty().refine(val => isValidObjectId(val), {
         message: "INVALID_GAME_ID"
     }),
