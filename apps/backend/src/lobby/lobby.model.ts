@@ -1,7 +1,8 @@
 import { Schema, model } from 'mongoose';
 import type { Lobby } from './entities/lobby.entity';
-import { PlayerSchema } from './player.model';
 import { LobbyStatus } from './entities/lobby.entity';
+import { SettingsModel } from './settings.modal';
+import { PlayerModel } from './player.model';
 
 /**
  * Сущность "Лобби"
@@ -21,7 +22,7 @@ const LobbySchema = new Schema<Lobby>(
 
     currentGameId: { 
       type: String, 
-      required: true,
+      // required: true,
       default: null,
     },
 
@@ -33,14 +34,24 @@ const LobbySchema = new Schema<Lobby>(
     },
 
     players: {
-      type: [PlayerSchema], 
+      type: [PlayerModel], 
       default: [],
     },
+
+    settings: { 
+      type: SettingsModel, 
+      required: true,
+    }
   },
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
   }
 );
+
+LobbySchema.virtual('id').get(function () {
+  return this._id.toString();
+});
 
 export const LobbyModel = model<Lobby>('Lobby', LobbySchema);

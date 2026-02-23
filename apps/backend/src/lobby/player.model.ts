@@ -39,12 +39,18 @@ export const PlayerModel = new Schema<Player>(
       default: null,
     },
 
-    secure: {
+    isConfirmed: {
       type: Boolean, 
       default: false,
     }
   },
   {
     versionKey: false,
+    lean: { virtuals: true }, 
+    toObject: { virtuals: true }, 
   }
 );
+
+PlayerModel.virtual('id').get(function () {
+  return this._id.toString();
+});

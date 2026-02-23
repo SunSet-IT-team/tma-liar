@@ -1,4 +1,5 @@
 import type { Player } from './player.entity';
+import type { Settings } from './settings.entity';
 
 /**
  * Сущность "Лобби"
@@ -30,7 +31,6 @@ export enum LobbyScreen {
 
 /**
  * Этапы игры
-
  * @property LOBBY - Этап лобби перед началом игры
  * @property LIAR_CHOOSES - Этап, когда "лжец" выбирает кого-то
  * @property QUESTION_TO_LIAR - Этап, когда задают вопрос лжецу
@@ -54,5 +54,6 @@ export interface Lobby {
   adminId: string;
   currentGameId: string | null;
   status: LobbyStatus;
-  players: Player[] | [];
+  players: Player[];
+  settings: Settings;
 }

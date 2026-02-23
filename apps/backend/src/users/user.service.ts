@@ -1,77 +1,70 @@
-import type {
-  UserApiFindUserParams,
-  UserApiFindUsersParams,
-  UserApiCreateUserParams,
-  UserApiUpdateUserParams,
-  UserApiDeleteUserParams,
-} from './user.params';
 import type { User } from './entities/user.entity';
 import { ApiError } from '../common/response';
 import { UserModel } from './user.modal';
+import type { FindUserDto } from './dtos/user-find.dto';
+import type { FindUsersDto } from './dtos/user-findUsers.dto';
+import type { CreateUserDto } from './dtos/user-create.dto';
+import type { UpdateUserDto } from './dtos/user-update.dto';
+import type { DeleteUserDto } from './dtos/user-delete.dto';
 
 /**
- * Интерфейс для API пользователей
+ * Интерфейс для сервиса пользователей
  */
-export interface UserApiMethods {
-  findUser: (param?: UserApiFindUserParams) => Promise<User | null>;
-  findUsers: (param?: UserApiFindUsersParams) => Promise<User[] | []>;
-  createUser: (param: UserApiCreateUserParams) => Promise<User>;
-  updateUser: (param: UserApiUpdateUserParams) => Promise<User>;
-  deleteUser: (param: UserApiDeleteUserParams) => Promise<User>;
+export interface UserServiceMethods {
+  findUser: (param: FindUserDto) => Promise<User | null>;
+  findUsers: (param: FindUsersDto) => Promise<User[]>;
+  createUser: (param: CreateUserDto) => Promise<User>;
+  updateUser: (param: UpdateUserDto) => Promise<User>;
+  deleteUser: (param: DeleteUserDto) => Promise<User>;
 }
 
 /**
- * API для пользователей
+ * Сервис пользователей
  */
-export class UserApi implements UserApiMethods {
-  
-  public async findUser(param?: UserApiFindUserParams): Promise<User | null> {
-    if(!param?.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
+export class UserService implements UserServiceMethods {
+  public async findUser(param: FindUserDto): Promise<User> {
+    const user = await UserModel.findOne({ telegramId: param.telegramId });
 
-    return UserModel.findOne({ telegramId: param.telegramId });
+    if (!user) {
+      throw new ApiError(400, 'USER_NOT_FOUND');
+    }
+
+    return user.toObject();
   }
 
-  public async findUsers(param?: UserApiFindUsersParams): Promise<User[] | []> {
-    if(!param?.telegramIds || param.telegramIds.length == 0) throw new ApiError(400, "USER_IDS_NOT_SET");
-    
-    return UserModel.find({ telegramId: { $in: param.telegramIds } }).lean();
+  public async findUsers(param: FindUsersDto): Promise<User[]> {
+    const users = await UserModel.find({ telegramId: { $in: param.telegramIds } });
+
+    if (!users || users.length === 0) throw new ApiError(400, 'USERS_NOT_FOUND');
+    return users;
   }
 
-  public async createUser(param: UserApiCreateUserParams): Promise<User> {
-    if(!param.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
+  public async createUser(param: CreateUserDto): Promise<User> {
+    const user = await UserModel.create(param);
 
-    if(!param.nickname) throw new ApiError(400, "NICKNAME_NOT_SET");
-
-    return (await UserModel.create(param)).toObject();
+    if (!user) throw new ApiError(400, 'USER_NOT_CREATED');
+    return user;
   }
 
-  public async updateUser(param: UserApiUpdateUserParams): Promise<User> {
-    if(!param.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
+  public async updateUser(param: UpdateUserDto): Promise<User> {
+    const { telegramId, ...updateFields } = param;
 
-    const { telegramId, ...updateFields } = param; 
-
-    if(Object.keys(updateFields).length == 0) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
-
-    if(updateFields) throw new ApiError(400, "UPDATE_FIELDS_EMPTY");
-
-    let updatedUser = await UserModel.findOneAndUpdate(
+    const updatedUser = await UserModel.findOneAndUpdate(
       { telegramId },
-      { $set: updateFields }, 
-      { new: true },
+      { $set: updateFields },
+      { new: true }
     );
 
-    if(!updatedUser) throw new ApiError(400, "USER_NOT_FOUND");
+    if (!updatedUser) throw new ApiError(400, 'USER_NOT_FOUND');
 
-    return updatedUser;
+    return updatedUser.toObject();
   }
 
-  public async deleteUser(param: UserApiDeleteUserParams): Promise<User> {
-    if (!param.telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
+  public async deleteUser(param: DeleteUserDto): Promise<User> {
+    const deletedUser = await UserModel.findOneAndDelete({ telegramId: param.telegramId });
 
-    const deletedUser = await UserModel.findOneAndDelete({ telegramId: param.telegramId }).lean();
+    if (!deletedUser) throw new ApiError(400, 'USER_NOT_FOUND');
 
-    if (!deletedUser) throw new ApiError(400, "USER_NOT_FOUND");
-
-    return deletedUser;
-  }  
+    return deletedUser.toObject();
+  }
 }

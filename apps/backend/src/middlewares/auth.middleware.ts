@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../common/response";
 
-const JWT_SECRET = process.env.SECRET || "super-secret";
+const SECRET = process.env.SECRET ?? "super-secret";
 
 /**
  * Интерфейс для авторизации
@@ -32,7 +32,7 @@ export function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const payload = jwt.verify(token, SECRET) as unknown as { userId: string };
     req.userId = payload.userId;
     next();
   } catch {

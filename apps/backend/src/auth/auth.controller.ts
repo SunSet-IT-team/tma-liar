@@ -1,26 +1,27 @@
-import type { Request, Response, Router } from 'express';
-import { success } from '../common/response';
-import { UserAuth } from './auth.service';
-import { UserApi } from '../users/user.service';
-import { AuthLoginDto } from './auth.login.dto';
-import { validateLoginTelegramId } from './auth.validator';
-
-const userAuth = new UserAuth(new UserApi());
+import type { Request, Response } from "express";
+import { AuthService } from "./auth.service";
+import { ApiError, success } from "../common/response";
+import { AuthLoginDtoSchema, type AuthLoginDto } from "./dtos/auth-login.dto";
 
 /**
  * Класс контроллеров авторизации
  */
-export class AuthController { 
-  /**
-   * Контроллер логина
-   */
-  public async getAuthTelegram(req: Request, res: Response) {
-    const telegramId = validateLoginTelegramId(req.params.telegramId); 
+export class AuthController {
+  constructor(private authService: AuthService) {}
 
-    const authDto = new AuthLoginDto(telegramId);
-            
-    const token = await userAuth.userLogin({ telegramId: authDto.telegramId });
-    
+  /**
+   * Контроллер логина по telegramId
+   */
+  getAuthTelegram = async (req: Request, res: Response) => {
+    const result = AuthLoginDtoSchema.safeParse({ telegramId: req.params.telegramId });
+
+    if (!result.success) {
+      throw new ApiError(400, "LOGIN_DATA_INVALID");
+    }
+
+    const dto: AuthLoginDto = result.data;
+    const token = await this.authService.login(dto);
+
     return res.status(200).json(success({ token }));
-  }
+  };
 }

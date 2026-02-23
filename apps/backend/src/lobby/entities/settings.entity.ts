@@ -8,7 +8,7 @@ import { isValidObjectId } from 'mongoose';
  */
 export interface Settings {
   deck: Deck;
-  deckId: number;
+  deckId: string;
   questionCount: number;
   answerTime: number;
 }
@@ -18,15 +18,12 @@ export interface Settings {
  */
 export const SettingsSchema = z.object({
   deck: z.object({
-    _id: z.string().nonempty().refine(val => isValidObjectId(val), {
-        message: "DECK_ID_NOT_SET"
-    }),
     name: z.string(),
     questionsCount: z.number(),
     cover: z.string(),
     questions: z.array(QuestionSchema),
   }),
-  deckId: z.number(),
+  deckId: z.string(),
   questionCount: z.number(),
   answerTime: z.number(),
 });

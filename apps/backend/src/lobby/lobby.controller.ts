@@ -1,26 +1,11 @@
 import type { Request, Response } from 'express';
 import { LobbyService } from './lobby.service';
 import { ApiError, success } from '../common/response';
-import { asyncHandler } from '../middlewares/asyncHandler.middleware';
-import { 
-  findLobbiesCodesValidator, 
-  findLobbyCodeValidator, 
-  createLobbyValidator, 
-  updateLobbyValidator, 
-  deleteLobbyCodeValidator,
-  joinLobbyValidator,
-} from './lobby.validators'; 
-import { 
-  CreateLobbyDto, 
-  FindLobbiesDto, 
-  FindLobbyDto, 
-  DeleteLobbyDto,
-  JoinLobbyDto, 
-  ToggleReadyDto, 
-  UpdateLobbyDto
-} from './lobby.dtos';
-
-const lobbyService = new LobbyService();
+import { CreateLobbyDtoSchema, type CreateLobbyDto } from './dtos/lobby-create.dto';
+import { FindLobbyDtoSchema, type FindLobbyDto } from './dtos/lobby-find.dto';
+import { JoinLobbyDtoSchema, type JoinLobbyDto } from './dtos/lobby-join.dto';
+import { UpdateLobbyDtoSchema, type UpdateLobbyDto } from './dtos/lobby-update.dto';
+import { DeleteLobbyDtoSchema, type DeleteLobbyDto } from './dtos/lobby-delete.dto';
 
 /**
  * Класс контроллеров лобби
@@ -29,10 +14,18 @@ export class LobbyController {
   /**
    * Контроллер получения одного лобби
    */
-  public async findLobby(req: Request, res: Response) {
-    const dto = new FindLobbyDto(findLobbyCodeValidator(req.params.id).lobbyCode);
 
-    const lobby = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
+  constructor(private readonly lobbyService = new LobbyService()) {}
+
+  public async findLobby(req: Request, res: Response) {
+    const result = FindLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
+
+    if (!result.success) {
+      throw new ApiError(400, "FIND_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: FindLobbyDto = result.data;
+    const lobby = await this.lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
     
     return res.status(200).json(success(lobby));
   }
@@ -41,9 +34,7 @@ export class LobbyController {
    * Контроллер поиска нескольких лобби
    */
   public async findLobbies(req: Request, res: Response) {
-    const dto = new FindLobbiesDto(findLobbiesCodesValidator(req.body.lobbyCodes).lobbyCodes);
-
-    const lobbies = await lobbyService.findLobbies({ lobbyCodes: dto.lobbyCodes });
+    const lobbies = await this.lobbyService.findLobbies();
     
     return res.status(200).json(success(lobbies));
   }
@@ -52,20 +43,41 @@ export class LobbyController {
    * Контроллер создания лобби
    */
   public async createLobby(req: Request, res: Response) {
-    const dto: CreateLobbyDto = new CreateLobbyDto(createLobbyValidator(req.body));
+    const result = CreateLobbyDtoSchema.safeParse(req.body);
+    console.log(11);    
+    if (!result.success) {
 
-    const lobby = await lobbyService.createLobby({ ...dto });
+      // result.error содержит все ошибки
+      console.log("Validation failed!");
+    
+      // Перебираем и выводим все ошибки
+      result.error.issues.forEach((issue) => {
+        console.log(`Path: ${issue.path.join(".")}, Message: ${issue.message}`);
+      });
+    } 
+    console.log(11);    
+
+    if (!result.success) {
+      throw new ApiError(400, "CREATE_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: CreateLobbyDto = result.data;
+    const lobby = await this.lobbyService.createLobby({ ...dto });
     
     return res.status(200).json(success(lobby));
   }
 
   /**
    * Контроллер обновления лобби
-   */
+  */
   public async updateLobby(req: Request, res: Response) {
-    const dto: UpdateLobbyDto = new UpdateLobbyDto(updateLobbyValidator(req.body));
+    const result = UpdateLobbyDtoSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new ApiError(400, "UPDATE_LOBBY_DATA_INVALID");
+    }
+    const dto: UpdateLobbyDto = result.data;
 
-    const lobby = await lobbyService.updateLobby({...dto});
+    const lobby = await this.lobbyService.updateLobby({...dto});
     
     return res.status(200).json(success(lobby));
   }
@@ -74,21 +86,32 @@ export class LobbyController {
    * Контроллер удаления лобби
    */
   public async deleteLobby(req: Request, res: Response) {
-    const dto = new DeleteLobbyDto(deleteLobbyCodeValidator(req.params.id).lobbyCode);
+    const result = DeleteLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
+    if (!result.success) {
+      throw new ApiError(400, "DELETE_LOBBY_DATA_INVALID");
+    }
+    const dto: DeleteLobbyDto = result.data;
 
-    const lobby = await lobbyService.deleteLobby({ lobbyCode: dto.lobbyCode });
+    const lobby = await this.lobbyService.deleteLobby(dto);
     
     return res.status(200).json(success(lobby));  
   }  
 
   /**
    * Контроллер присоединения к лобби
-   */
+  */ 
   public async joinLobby(req: Request, res: Response) {
-    const dto: JoinLobbyDto = new JoinLobbyDto(joinLobbyValidator(req.body));
+    const result = JoinLobbyDtoSchema.safeParse(req.body);
 
-    const lobby = await lobbyService.joinLobby({...dto});
+    if (!result.success) {
+      throw new Error("JOIN_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: JoinLobbyDto = result.data;
+    const lobby = await this.lobbyService.joinLobby({...dto});
 
     return res.status(200).json(success(lobby));  
-  }  
+  }
+  
+  
 }

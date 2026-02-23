@@ -12,16 +12,16 @@ export interface Player extends User {
   wasLiar: number;
   answer: number | null;
   likes: number;
-  secure: boolean | null;
+  isConfirmed: boolean | null;
 }
 
 /**Схема сущности "Игрок" */
 export const PlayerSchema = UserSchema.extend({
-  score: z.number().min(0),
+  score: z.number().min(0).optional().default(0),
   isReady: z.boolean(),
-  loserTask: z.string().nullable(),
-  wasLiar: z.number().min(0),
-  answer: z.number().nullable(),
-  likes: z.number().min(0),
-  secure: z.boolean().nullable()
+  loserTask: z.string(),
+  wasLiar: z.number().min(0).optional().default(0),
+  answer: z.number().nullable().optional().default(null),
+  likes: z.number().min(0).optional().default(0),
+  isConfirmed: z.boolean().nullable().default(false)
 });

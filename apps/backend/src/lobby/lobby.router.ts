@@ -9,7 +9,7 @@ export const lobbyRouter = Router();
 const lobbyController = new LobbyController();
 
 /** Маршрут для получения одного лобби */
-lobbyRouter.get('/:id', asyncHandler(async (req: Request, res: Response) => {
+lobbyRouter.get('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
   await lobbyController.findLobby(req, res);
 }));
 
@@ -23,12 +23,12 @@ lobbyRouter.post('/', asyncHandler(async (req: Request, res: Response) => {
   await lobbyController.createLobby(req, res);
 }));
 
-/** Маршрут для обновления колоды*/
+/** Маршрут для обновления лобби */
 lobbyRouter.put('/', asyncHandler(async (req: Request, res: Response) => {
   await lobbyController.updateLobby(req, res);
 }));
 
-/** Маршрут для удаления колоды*/
-lobbyRouter.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
+/** Маршрут для удаления лобби */
+lobbyRouter.delete('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
   await lobbyController.deleteLobby(req, res);
 }));

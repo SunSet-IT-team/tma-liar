@@ -1,39 +1,34 @@
 import type { HydratedDocument } from 'mongoose';
-import type { Lobby } from '../lobby/entities/lobby.entity';
 import type { Question } from '../decks/entities/question.entity';
 import type { Player } from '../lobby/entities/player.entity';
-import { ApiError } from "../common/response";
+import { ApiError, buildStatePayload } from "../common/response";
 import { LobbyModel } from "../lobby/lobby.model";
 import { GameStages } from "../lobby/entities/lobby.entity";
-import type { 
-  GameLikeAnswerParams,
-  GameNextStageParams,
-  GameSetAnswerParams,
-  GameStartParams
-} from "./game.params";
 import type { Game } from './entities/game.entity';
 import { GameModel } from './game.model';
+import type { GameStartDto } from './dtos/game-start.dto';
+import type { GameNextStageDto } from './dtos/game-next-stage.dto';
+import type { GamePlayerLikedDto } from './dtos/game-player-liked.dto';
+import type { GamePlayerVotedDto } from './dtos/game-player-voted.dto';
+import type { GamePlayerSecuredDto } from './dtos/game-player-secured.dto';
+import type { GameLiarChoosesDto } from './dtos/game-liar-chooses.dto';
+import type { Server } from 'socket.io';
+import { findDiff } from '../common/diff';
+import { GameMessageTypes } from '../../../common/message-types/game.types';
+
+const SCORE_NOT_STATED = parseInt(process.env.SCORE_NOT_STATED ?? "50", 10);
+const SCORE_TRICKED = parseInt(process.env.SCORE_TRICKED ?? "100", 10);
+const GAME_STAGE_TIMER_MS = parseInt(process.env.GAME_STAGE_TIMER_MS ?? "1000", 10);
 
 export interface GameMethods { 
-  startGame: (param: GameStartParams) => Promise<Game>,
-  nextStage: (param: GameNextStageParams) => Promise<GameStages>,
-  likeAnswer: (param: GameLikeAnswerParams) => Promise<Player>, 
-  setAnswer: (param: GameSetAnswerParams) => Promise<Player>, 
+  createGame: (dto: GameStartDto) => Promise<Game>,
+  nextStage: (dto: GameNextStageDto) => Promise<GameStages>,
+  likeAnswer: (dto: GamePlayerLikedDto) => Promise<Player>, 
+  setAnswer: (dto: GamePlayerVotedDto) => Promise<Player>, 
 }
 
-// Очки в случае если ответ "не определено"
-const SCORE_NOT_STATED = 50;
-
-// Очки в случае если лжецу удалось обмануть
-const SCORE_TRICKED = 100;
-
-//Время таймера 
-const TIMER = 10000
-
 export class GameService implements GameMethods { 
-
-
-
+  constructor(private io: Server) {}
   /**
    * Функция поиска игры
    * @param gameId id игры
@@ -46,38 +41,35 @@ export class GameService implements GameMethods {
     return game;
   }
 
-  /**
-   * Функция для начала игры
-   * @param lobbyId айди лобби
-   * @param stage стадия игры
-   * @param players массив игроков в игре
-   * @param settings настройки игры
-   * @param liarId айди лжеца
-   * @param questionHistory массив id истории вопросов
-   * @param activeQuestion активный вопрос
-   * @param timerId айди таймера
-   * @param doLie флаг, указывающий, лжет ли игрок
-   * @param loserTask задание для проигравшего
-   * @param winnerId айди победителя
-   * @param loserId айди проигравшего
-   */
-  public async startGame(param: GameStartParams): Promise<Game> {
-    const game = await GameModel.create(param); 
-    if(!game) throw new ApiError(400, 'GAME_NOT_CREATED');
+    /** 
+     * Создать игру 
+     * 
+     */
+  public async createGame( dto: GameStartDto ): Promise<Game> {
+    const lobby = await LobbyModel.findOne({ lobbyCode: dto.lobbyCode }).lean();
+    if (!lobby) throw new ApiError(400, "LOBBY_NOT_FOUND");
 
-    await this.nextStage( {gameId: String(game._id)} );
+    if (dto.player.id !== lobby.adminId) throw new ApiError(400, "PLAYER_IS_NOT_ADMIN");
+
+    const playersInGame = lobby.players;
+
+    const game = await GameModel.create({lobbyCode: dto.lobbyCode, players: playersInGame, settings: lobby.settings});
+
+    if (!game) throw new ApiError(400, 'LOBBY_NOT_CREATED');
     return game.toObject();
   }
 
   /**
    * Функция для смены стадии и основного процесса игры 
-   * @param gameId id игры
+   * @param dto DTO для перехода на следующую стадию
    */ 
-  public async nextStage(param: GameNextStageParams): Promise<GameStages> {
-    const { gameId } = param;
+  public async nextStage(dto: GameNextStageDto): Promise<GameStages> {
+    const { gameId } = dto;
     const game = await GameModel.findById(gameId);
-      if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
+    if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
 
+    const gameSnapobj = game.toObject();
+    
     if (game.timerId) {
       clearTimeout(game.timerId);
       game.timerId = null;
@@ -120,6 +112,15 @@ export class GameService implements GameMethods {
 
     game.markModified('stage');
     await game.save();
+    
+    const updatedGame = await GameModel.findById(gameId);
+    if(!updatedGame) throw new ApiError(404, 'GAME_AFTER_UPDATE_NOT_FOUND');
+    const updatedGameobj = updatedGame.toObject();
+
+    const diff = findDiff(gameSnapobj, updatedGameobj, nextStage);
+    console.log(`[nextStage] Emitting stage change: ${currentStage} → ${nextStage}, diff keys: ${Object.keys(diff).join(", ")}`);
+    
+    this.io.to(gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff));
 
     return nextStage;
   }
@@ -139,7 +140,7 @@ export class GameService implements GameMethods {
 
     await this.chooseLiar(game);
 
-    game.timerId = this.resolveTimer(TIMER, async () => {
+    game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => {
       await this.nextStage({ gameId });
     });
 
@@ -156,7 +157,7 @@ export class GameService implements GameMethods {
 
     game.markModified('doLie');
 
-    game.timerId = this.resolveTimer(TIMER, async () => { 
+    game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => { 
       await this.nextStage({ gameId: gameId }) 
     });
 
@@ -172,7 +173,7 @@ export class GameService implements GameMethods {
 
     game.markModified('players');
 
-    game.timerId = this.resolveTimer(TIMER, async () => { 
+    game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => { 
       await this.nextStage({ gameId: gameId }) 
     });
 
@@ -180,7 +181,7 @@ export class GameService implements GameMethods {
   }
 
   public async handleQuestionResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    console.log('on stage question results');
+    console.log(`[handleQuestionResultsStage] Processing stage: ${game.stage}`);
 
     await this.calculateLiarPoints(game);
     await this.calculatePlayersPoints(game);
@@ -188,20 +189,22 @@ export class GameService implements GameMethods {
 
     let nextStage : GameStages;
     if (game.questionHistory.length < game.settings.questionCount) {
+      console.log(game.questionHistory.length);
+      console.log(game.settings.questionCount);
       const nextQuestion = this.pickNextQuestion(game);
 
       game.activeQuestion = nextQuestion.content;
       game.questionHistory.push(nextQuestion.id);
       
       await this.chooseLiar(game);
-      game.players.forEach(p => { p.answer = null; p.secure == null });
+      game.players.forEach(p => { p.answer = null; p.isConfirmed == null });
       game.doLie = null;
       nextStage = GameStages.LIAR_CHOOSES;
 
       game.markModified('players');
       game.markModified('doLie');
 
-      game.timerId = this.resolveTimer(TIMER, async () => { 
+      game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => { 
         await this.nextStage({ gameId: gameId }) 
       });
     } else {
@@ -213,26 +216,34 @@ export class GameService implements GameMethods {
       const winner = sortedPlayers[0];
       if(!winner) throw new ApiError(400, 'WINNER_NOT_FOUND')
         
-      game.winnerId = winner.telegramId;
-      game.loserId = loser.telegramId;  
+      game.winnerId = winner.id;
+      game.loserId = loser.id;  
       game.loserTask = winner.loserTask;
 
       nextStage = GameStages.GAME_RESULTS;
+
+      game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => { 
+        await this.nextStage({ gameId: gameId }) 
+      });
     }
     
     return nextStage;
   }
 
   public async handleGameResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    const nextStage = GameStages.END;
+    console.log('on stage game results');
     
+    const nextStage = GameStages.END;
+
+    game.timerId = this.resolveTimer(GAME_STAGE_TIMER_MS, async () => { 
+      await this.nextStage({ gameId: gameId }) 
+    });
+
     return nextStage;
   }
 
   public async handleEndStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    const nextStage = GameStages.END;
-    
-    return nextStage;
+    return GameStages.END;
   }
 
   /**
@@ -256,7 +267,7 @@ export class GameService implements GameMethods {
     
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND');
     liar.wasLiar += 1;
-    game.liarId = liar.telegramId;
+    game.liarId = liar.id;
 
     game.markModified('players');
     game.markModified('liarId');
@@ -264,11 +275,11 @@ export class GameService implements GameMethods {
 
   /**
    * Функция выбора ответа лжеца 
-   * @param gameId id игры 
-   * @param answer ответ (будет врать - true, не будет - false)
+   * @param dto DTO для выбора лжеца
    * @returns doLie будет врать или нет
    */
-  public async liarChooses(gameId: string, answer: boolean) {
+  public async liarChooses(dto: GameLiarChoosesDto) {
+    const { gameId, answer } = dto;
     const game = await GameModel.findById(gameId);
     if (!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
@@ -287,11 +298,11 @@ export class GameService implements GameMethods {
    * @param gameId id игры 
    */
   public async calculateLiarPoints(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId == game.liarId);
+    const liar = game.players.find(p => p.id == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId == game.liarId) return;
+      if(player.id == game.liarId) return;
 
       if(player.answer == 2) liar.score += SCORE_NOT_STATED;
       else if(player.answer != (game.doLie ? 1 : 0)) liar.score += SCORE_TRICKED;
@@ -306,11 +317,11 @@ export class GameService implements GameMethods {
    * @param gameId id игры 
    */
   public async calculatePlayersPoints(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId == game.liarId);
+    const liar = game.players.find(p => p.id == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId == game.liarId) return;
+      if(player.id == game.liarId) return;
 
       if(player.answer == (game.doLie ? 1 : 0)) player.score += 200;
     });
@@ -323,11 +334,11 @@ export class GameService implements GameMethods {
    * @param game mongoose-документ игры
    */
   public async calculatePlayersPointsWithLikes(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId == game.liarId);
+    const liar = game.players.find(p => p.id == game.liarId);
     if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId == game.liarId) return;
+      if(player.id == game.liarId) return;
 
       player.score += player.likes * 10;
     });
@@ -337,26 +348,25 @@ export class GameService implements GameMethods {
 
   /**
    * Функция для лайка
-   * @param senderId id отправителя лайка
-   * @param receiverId id получателя лайка
-   * @param gameId id игры
+   * @param dto DTO для лайка ответа игрока
    * @returns receiver объект Player получателя лайка
    */
-  public async likeAnswer(param: GameLikeAnswerParams): Promise<Player> {
-    if(param.receiverId == param.senderId) throw new ApiError(400, 'RECEIVER_EQUALS_SENDER_IDS');
+  public async likeAnswer(dto: GamePlayerLikedDto): Promise<Player> {
+    const { senderId, receiverId, gameId } = dto;
+    if(receiverId == senderId) throw new ApiError(400, 'RECEIVER_EQUALS_SENDER_IDS');
 
-    const game = await GameModel.findById(param.gameId);
+    const game = await GameModel.findById(gameId);
     
     if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
-    if(param?.receiverId == game.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
+    if(receiverId == game.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
 
-    const sender = game.players.find(p => p.telegramId == param.senderId);
+    const sender = game.players.find(p => p.id == senderId);
     
     if(!sender) throw new ApiError(400, 'SENDER_NOT_FOUND');
     if(sender.answer == 2) throw new ApiError(400, 'SENDER_DIDNT_ANSWER'); 
 
-    const receiver = game.players.find(p => p.telegramId == param.receiverId);
+    const receiver = game.players.find(p => p.id == receiverId);
 
     if(!receiver) throw new ApiError(400, 'RECEIVER_NOT_FOUND');
 
@@ -370,23 +380,22 @@ export class GameService implements GameMethods {
 
   /**
    * Функция чтобы задать ответ игроку 
-   * @param gameId код лобби
-   * @param playerId tg id игрока
-   * @param answer ответ (число: 0 - не верит, 1 - верит, 2 - не определился)
+   * @param dto DTO для голосования игрока
    * @returns объект Player игрока, которому задали ответ
    */
-  public async setAnswer(param: GameSetAnswerParams): Promise<Player>{ 
-    const game = await GameModel.findById(param.gameId); 
+  public async setAnswer(dto: GamePlayerVotedDto): Promise<Player>{ 
+    const { gameId, playerId, answer } = dto;
+    const game = await GameModel.findById(gameId); 
     if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
 
-    const player = game.players.find(p => p.telegramId == param.playerId);
+    const player = game.players.find(p => p.id == playerId);
     if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
 
-    if(player.secure == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED');
+    if(player.isConfirmed == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED');
     
-    player.answer = param.answer;
+    player.answer = answer;
 
     game.markModified('players');
     await game.save();
@@ -396,23 +405,23 @@ export class GameService implements GameMethods {
 
   /**
    * Функция для фиксирования ответа
-   * @param gameId id игры
-   * @param playerId tg id игрока, которому фиксируем ответ
+   * @param dto DTO для подтверждения ответа игрока
    * @returns объект Player игрока, которому зафиксировали ответ
    */
-  public async confirmAnswer(gameId: string, playerId: string): Promise<Player>{ 
+  public async confirmAnswer(dto: GamePlayerSecuredDto): Promise<Player>{ 
+    const { gameId, playerId } = dto;
     const game = await GameModel.findById(gameId); 
     if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
 
-    const player = game.players.find(p => p.telegramId == playerId);
+    const player = game.players.find(p => p.id == playerId);
     if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
 
     if(player.answer == 2) throw new ApiError(400, 'PLAYER_DIDNT_ANSWER'); 
 
-    if(player.secure == true) throw new ApiError(400, 'ALREADY_SECURED'); 
-    player.secure = true;
+    if(player.isConfirmed == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED'); 
+    player.isConfirmed = true;
 
     game.markModified('players');
     await game.save();

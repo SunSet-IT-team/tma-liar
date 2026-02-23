@@ -6,7 +6,8 @@ import type { Settings } from "../../lobby/entities/settings.entity";
  * Сущность "Игра"
  */
 export interface Game {
-    lobbyId: string;
+    id: string;
+    lobbyCode: string;
     stage: GameStages;
     players: Player[] | [];
     settings: Settings;

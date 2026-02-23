@@ -1,0 +1,55 @@
+{
+  "adminId": "507f1f77bcf86cd799439011",
+  "players": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "nickname": "Player1",
+      "telegramId": "123456789",
+      "profileImg": "https://example.com/avatar1.jpg",
+      "score": 0,
+      "isReady": false,
+      "loserTask": "",
+      "wasLiar": 0,
+      "answer": null,
+      "likes": 0,
+      "isConfirmed": false
+    },
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "nickname": "Player2",
+      "telegramId": "987654321",
+      "profileImg": "https://example.com/avatar2.jpg",
+      "score": 0,
+      "isReady": false,
+      "loserTask": "",
+      "wasLiar": 0,
+      "answer": null,
+      "likes": 0,
+      "isConfirmed": false
+    }
+  ],
+  "settings": {
+    "deck": {
+      "name": "Test Deck",
+      "questionsCount": 10,
+      "cover": "https://example.com/deck-cover.jpg",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "general",
+          "content": "What is your favorite color?",
+          "complexity": 1
+        },
+        {
+          "id": "q2",
+          "type": "general",
+          "content": "What is your favorite food?",
+          "complexity": 1
+        }
+      ]
+    },
+    "deckId": 1,
+    "questionCount": 5,
+    "answerTime": 30
+  }
+}

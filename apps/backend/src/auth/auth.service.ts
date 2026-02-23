@@ -1,43 +1,42 @@
-import jwt from "jsonwebtoken"; 
-import dotenv from "dotenv"
-import { UserApi } from "../users/user.service";
-import type { 
-    UserAuthLoginParams
-} from './auth.params'
+import jwt from "jsonwebtoken";
+import { UserService } from "../users/user.service";
+import type { AuthLoginDto } from "./dtos/auth-login.dto";
 import { ApiError } from "../common/response";
 import { UserModel } from "../users/user.modal";
 
-dotenv.config();
-const JWT_SECRET = process.env.SECRET || "super-secret"; 
+const SECRET = process.env.SECRET ?? "super-secret";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "1d";
 
-/**
- * Интерфейс для авторизации
+if (!SECRET) {
+  throw new Error("SECRET_UNDEFINED");
+}
+
+/*
+ * Интерфейс для сервиса авторизации
  */
-export interface UserAuthMethods {
-  userLogin: (param: UserAuthLoginParams) => Promise<string | null>;
+export interface AuthServiceMethods {
+  login: (param: AuthLoginDto) => Promise<string>;
 }
 
 /**
- * Авторизация
+ * Сервис авторизации
  */
-export class UserAuth implements UserAuthMethods { 
-    constructor(private users: UserApi) {}
+export class AuthService implements AuthServiceMethods {
+  constructor(private users: UserService) {}
 
-    public async userLogin(param: UserAuthLoginParams) : Promise<string> { 
-        const user = await UserModel.findOne({ telegramId: param.telegramId });
+  public async login(param: AuthLoginDto): Promise<string> {
+    const user = await UserModel.findOne({ telegramId: param.telegramId });
 
-        if(!user) throw new ApiError(400, "USER_NOT_REGISTERED");
+    if (!user) throw new ApiError(400, "USER_NOT_REGISTERED");
 
-        const token = jwt.sign(
-            { userId: user._id.toString() }, 
-            JWT_SECRET, 
-            { expiresIn:"1d" }, 
-        );
+    const token = jwt.sign(
+      { userId: user.id },
+      SECRET,
+      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+    );
 
-        if (!token) {
-            throw new ApiError(401, "AUTH_FAILED");
-        }
+    if (!token) throw new ApiError(401, "AUTH_FAILED");
 
-        return token;
-    }
+    return token;
+  }
 }

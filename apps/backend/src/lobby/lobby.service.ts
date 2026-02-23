@@ -1,61 +1,56 @@
 import { customAlphabet } from 'nanoid';
-import type {
-  LobbyServiceFindLobbyParams,
-  LobbyServiceFindLobbiesParams,
-  LobbyServiceCreateLobbyParams,
-  LobbyServiceUpdateLobbyParams,
-  LobbyServiceDeleteLobbyParams,
-  LobbyServiceJoinParams,
-  LobbyServiceToggleReadyParams,
-  LobbyServiceStartGameParams,
-} from './lobby.params';
-
-import { LobbyStatus, type Lobby } from './entities/lobby.entity';
+import { type Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
 import { LobbyModel } from './lobby.model';
-import type { Player } from './entities/player.entity';
-import { GameService } from '../game/game.service';
+import type { CreateLobbyDto } from './dtos/lobby-create.dto';
+import type { JoinLobbyDto } from './dtos/lobby-join.dto';
+import type { FindLobbyDto } from './dtos/lobby-find.dto';
+import type { UpdateLobbyDto } from './dtos/lobby-update.dto';
+import type { DeleteLobbyDto } from './dtos/lobby-delete.dto';
+import type { ToggleReadyDto } from './dtos/lobby-toggleReady.dto';
+
+const LOBBY_CODE_ALPHABET = process.env.LOBBY_CODE_ALPHABET ?? "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const LOBBY_CODE_LENGTH = parseInt(process.env.LOBBY_CODE_LENGTH ?? "6", 10);
 
 /**
  * Интерфейс для сервиса лобби
  */
 export interface LobbyServiceMethods {
-  findLobby: (param: LobbyServiceFindLobbyParams) => Promise<Lobby>;
-  findLobbies: (param: LobbyServiceFindLobbiesParams) => Promise<Lobby[]>;
-  createLobby: (param: LobbyServiceCreateLobbyParams) => Promise<Lobby>;
-  updateLobby: (param: LobbyServiceUpdateLobbyParams) => Promise<Lobby>;
-  deleteLobby: (param: LobbyServiceDeleteLobbyParams) => Promise<Lobby>;
-  joinLobby: (param: LobbyServiceJoinParams) => Promise<Lobby>;
-  togglePlayerReady: (param: LobbyServiceToggleReadyParams) => Promise<Lobby>;
+  findLobby: (param: FindLobbyDto) => Promise<Lobby>;
+  findLobbies: () => Promise<Lobby[]>;
+  createLobby: (param: CreateLobbyDto) => Promise<Lobby>;
+  updateLobby: (param: UpdateLobbyDto) => Promise<Lobby>;
+  deleteLobby: (param: DeleteLobbyDto) => Promise<Lobby>;
+  joinLobby: (param: JoinLobbyDto) => Promise<Lobby>;
+  togglePlayerReady: (param: ToggleReadyDto) => Promise<Lobby>;
 }
 
-const nanoid6 = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
-
-const gameService = new GameService();
-
+const nanoid6 = customAlphabet(LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH);
 /**
  * Сервис лобби
  */
 export class LobbyService implements LobbyServiceMethods {
   /** Найти одно лобби */
-  public async findLobby(param: LobbyServiceFindLobbyParams): Promise<Lobby> {
-    const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
+    public async findLobby(param: FindLobbyDto): Promise<Lobby> {
+      const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode });
 
-    if (!lobby) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+      if (!lobby) {
+        throw new ApiError(400, 'LOBBY_NOT_FOUND');
+      }
 
-    return lobby;
-  }
+      return lobby.toObject();
+    }
 
   /** Найти несколько лобби */
-  public async findLobbies(param: LobbyServiceFindLobbiesParams): Promise<Lobby[] | []> {
-    const lobbies = await LobbyModel.find({ lobbyCode: { $in: param.lobbyCodes } }).lean();
+  public async findLobbies(): Promise<Lobby[]> {
+    const lobbies = await LobbyModel.find().lean();
 
     if (!lobbies || lobbies.length === 0) throw new ApiError(400, 'LOBBIES_NOT_FOUND');
     return lobbies;
   }
 
   /** Создать лобби */
-  public async createLobby( param: LobbyServiceCreateLobbyParams): Promise<Lobby> {
+  public async createLobby( param: CreateLobbyDto): Promise<Lobby> {
     const lobby = await LobbyModel.create({
       lobbyCode: nanoid6(),
       ...param
@@ -66,7 +61,7 @@ export class LobbyService implements LobbyServiceMethods {
   }
 
   /** Обновить лобби */
-  public async updateLobby(param: LobbyServiceUpdateLobbyParams): Promise<Lobby> {
+  public async updateLobby(param: UpdateLobbyDto): Promise<Lobby> {
     const { lobbyCode, ...updateFields } = param;
 
     const updatedLobby = await LobbyModel.findOneAndUpdate(
@@ -83,7 +78,7 @@ export class LobbyService implements LobbyServiceMethods {
   }
 
   /** Удалить лобби */
-  public async deleteLobby(param: LobbyServiceDeleteLobbyParams): Promise<Lobby> {
+  public async deleteLobby(param: DeleteLobbyDto): Promise<Lobby> {
     const deletedLobby = await LobbyModel.findOneAndDelete({ lobbyCode: param.lobbyCode }).lean();
 
     if (!deletedLobby) {
@@ -94,29 +89,37 @@ export class LobbyService implements LobbyServiceMethods {
   }
 
   /** Присоединиться к лобби */
-  public async joinLobby(param: LobbyServiceJoinParams): Promise<Lobby> {
-    const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode });
+  public async joinLobby(param: JoinLobbyDto): Promise<Lobby> {
+    // Проверяем существование лобби и наличие игрока
+    const existingLobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
+    
+    if (!existingLobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
-    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
-
-    const exists = lobby.players.find(p => p.telegramId === param.player.telegramId);
+    const exists = existingLobby.players.find(p => p.telegramId === param.player.telegramId);
     if (exists) throw new ApiError(400, 'PLAYER_ALREADY_IN_LOBBY');
 
-    (lobby.players as Player[]).push(param.player);
+    const updatedLobby = await LobbyModel.findOneAndUpdate(
+      { lobbyCode: param.lobbyCode },
+      { $push: { players: param.player } },
+      { new: true }
+    );
 
-    await lobby.save();
+    console.log("updatedLobby", updatedLobby);
+    if (!updatedLobby) {
+      throw new ApiError(400, 'LOBBY_UPDATE_FAILED');
+    }
 
-    return lobby.toObject();
+    return updatedLobby.toObject();
   }
 
   /** Переключить готовность игрока */
-  public async togglePlayerReady(param: LobbyServiceToggleReadyParams): Promise<Lobby> {    
-    const { lobbyCode, telegramId, loserTask } = param;
+  public async togglePlayerReady(param: ToggleReadyDto): Promise<Lobby> {    
+    const { lobbyCode, playerId, loserTask } = param;
 
     const lobby = await LobbyModel.findOne({ lobbyCode });
     if (!lobby) throw new ApiError(400, "LOBBY_NOT_FOUND");
 
-    const player = lobby.players.find(p => p.telegramId === telegramId);
+    const player = lobby.players.find(p => p.id === playerId);
 
     if(!player) throw new ApiError(400, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
 

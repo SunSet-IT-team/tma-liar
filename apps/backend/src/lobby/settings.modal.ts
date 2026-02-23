@@ -9,13 +9,12 @@ export const SettingsModel = new Schema({
   }, 
 
   deckId: { 
-    type: Number,
+    type: String,
     required: true,
   },
 
-  quesyionCount: {
+  questionsCount: {
     type: Number,
-    required: true,
   },
 
   answerTime: {
