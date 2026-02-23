@@ -6,5 +6,5 @@ import { LobbyMessageTypes } from "./lobby.types";
  */
 export const MessageTypes = {
     Lobby: LobbyMessageTypes,
-    Game: GameMessageTypes
+    Game: GameMessageTypes,    
 }

@@ -16,4 +16,7 @@ export enum GameMessageTypes {
 
     /** В игре поменялась стадия */
     STAGE_CHANGED = "game:stage:changed", 
+
+    /** Админ начал игру */
+    GAME_STARTED = "game:started",   
 }
