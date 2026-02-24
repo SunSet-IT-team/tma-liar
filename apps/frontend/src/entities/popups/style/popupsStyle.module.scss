@@ -1,0 +1,106 @@
+.deckPopupContent {
+    width: 100%;
+    max-width: 480px;
+    height: 70vh;
+    max-height: 100%;
+    padding: 20px 5vh;
+    margin: 20px;
+}
+
+.deckPopupContent p {
+    font-size: 3.5vh;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    color: var(--red-color);
+    margin-bottom: 15px;
+}
+
+.title {
+    color: var(--red-color);
+}
+
+.deckParams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dataDeck {
+    margin-top: 6vh;
+}
+
+.leavePopupContent {
+    width: calc(100% - 40px);
+    max-width: 480px;
+    height: 60vh;
+    padding: 0 2vh;
+    margin: 20px;
+    justify-content: center;
+}
+
+.red {
+    background-color: var(--red-color);
+}
+
+.red .leaveTitle {
+    color: var(--white-main-color);
+}
+
+.leaveTitle {
+    margin-bottom: 6vh;
+    font-size: 10vh;
+}
+
+.leaveText {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 5vh;
+}
+
+.leaveBtnsWrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.leaveBtns {
+    display: flex;
+    width: calc(100% - 5vh);
+    justify-content: space-between;
+}
+
+.developer {
+    width: calc(100% - 10vh);
+    max-width: 460px;
+    height: 60vh;
+    padding: 45px 3vh;
+}
+
+.developerBlock {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.developerIcon {
+    margin-right: 25px;
+    border-radius: 10px;
+}
+
+.developerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.developerDescr {
+    margin-bottom: 20px;
+}
+
+.developerLink {
+    font-size: 14px;
+    text-align: left;
+}

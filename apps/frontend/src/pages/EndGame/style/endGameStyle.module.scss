@@ -1,0 +1,45 @@
+.header {
+    margin-bottom: auto;
+}
+
+.container .playerName p {
+    color: var(--black-main-color);
+    overflow: hidden;
+}
+
+.playerPlace {
+    padding: 70px 0;
+    color: var(--white-main-color);
+    font-size: 40px;
+}
+
+.endButtons {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding-bottom: 40px;
+}
+
+.endBtn {
+    color: var(--white-main-color);
+}
+
+.endBtn:nth-child(1) {
+    margin-left: 3vh;
+}
+
+.endBtn:nth-child(2) {
+    margin-right: 3vh;
+}
+
+.endBtn::after {
+    background-color: var(--black-main-color);
+}
+
+.endIcon {
+    width: 100%;
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    z-index: -2;
+}

@@ -8,7 +8,7 @@ const initialState = {
   },
   sounds: true,
   backgroundMusic: false,
-  volume: 50,
+  volume: 20,
 }
 
 const appSlice = createSlice({
@@ -23,7 +23,7 @@ const appSlice = createSlice({
     setBackgroundMusicIsPlay: (state, action) => {
       state.backgroundMusic = action.payload;
     },
-    // Изменение громкости звуков в игре
+    // Изменение громкости музыки в игре
     setMainVolume: (state, action) => {
       state.volume = action.payload;
     }

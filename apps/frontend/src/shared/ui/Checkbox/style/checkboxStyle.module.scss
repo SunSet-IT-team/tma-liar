@@ -9,13 +9,13 @@
 .checkmark {
     border-radius: 10px;
     display: inline-block;
-    width: 58px;
-    height: 58px;
-    outline: 3.5px solid var(--black-main-color);
+    width: 7vh;
+    height: 7vh;
+    outline: 0.4vh solid var(--black-main-color);
 }
 
 .check:checked + .checkmark {
-	background-image: url('../../../assets/icons/checkedIcon.svg');
+	background-image: url('../../../../../public/icons/checkedIcon.svg');
 	background-repeat: no-repeat;
 	background-position: center center;
 }

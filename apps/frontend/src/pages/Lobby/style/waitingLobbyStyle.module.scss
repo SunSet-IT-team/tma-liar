@@ -1,0 +1,59 @@
+.container {
+    justify-content: space-around;
+}
+
+.lobbyBlock {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.lobbyTitle {
+    position: relative; 
+    display: inline-block;
+    color: var(--red-color);
+    font-size: 10vh;
+}
+
+.lobbyCode {
+    position: absolute;
+    right: -20px;
+}
+
+.lobbyPlayers {
+    gap: 1.3vh;
+}
+
+.taskBlock {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.taskLoserText {
+    color: var(--red-color);
+    margin-top: 3vh;
+    margin-bottom: 3vh;
+    text-align: center;
+}
+
+.container .taskLoserWrapper {
+    width: 100%;
+    max-width: unset;
+    margin-bottom: 25px;
+}
+
+.container .taskLoserInput {
+    width: 100%;
+    font-size: 14px;
+    padding-bottom: 5px;
+}
+
+.connectedPlayers {
+    margin-bottom: 1vh;
+}
+
+.readyBtn {
+    color: var(--red-color);
+    font-size: 8vh;
+}

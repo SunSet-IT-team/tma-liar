@@ -1,48 +1,54 @@
-import { FC, ReactNode, useEffect, useState } from "react";
+import { type FC, ReactNode, useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import type { Swiper as SwiperType } from "swiper";
+import type { Swiper as SwiperType } from 'swiper';
 
 import 'swiper/css';
 import './style/scroller.scss';
+import { usePlaySound } from '../../lib/sound/usePlaySound';
+import { Typography } from '../Typography';
 
 export type ReusedScrollerValues = {
   /**
-    * Минимальное значение вертикального выбора
-  */
+   * Минимальное значение вертикального выбора
+   */
   min?: number;
   /**
-    * Максимальное значение вертикального выбора
-  */
+   * Максимальное значение вертикального выбора
+   */
   max?: number;
   /**
-    * Промежуток между значениями
-  */
+   * Промежуток между значениями
+   */
   step?: number;
   /**
-    * Изначально, отображаемое значение
-  */
+   * Изначально, отображаемое значение
+   */
   defaultValue?: number;
-} 
+};
 
 type ScrollerProps = {
   /**
-    * Классические параметры для вертикального выбора (min, max, step, defaultValue)
-  */
+   * Классические параметры для вертикального выбора (min, max, step, defaultValue)
+   */
   reusedValues: ReusedScrollerValues;
   /**
-    * Будет ли зациклен вертикального выбор
-  */
+   * Будет ли зациклен вертикального выбор
+   */
   loop?: boolean;
   onChange?: (value: number) => void;
   children?: ReactNode;
-}
+};
 
-/** 
+/**
  * Отображение вертикального выбора
  * Используется для задачи параметров при создании лобби
- * @see CreateLobby 
-*/
-export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max = 100, step = 1, defaultValue = 30 }, loop = true, onChange, children, }) => {
+ */
+export const ValueScroller: FC<ScrollerProps> = ({
+  reusedValues: { min = 1, max = 100, step = 1, defaultValue = 30 },
+  loop = true,
+  onChange,
+  children,
+}) => {
   const [values, setValues] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
@@ -56,11 +62,12 @@ export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max 
     }
     setValues(arr);
 
-    const minIndex = arr.findIndex(v => v === min);
+    const minIndex = arr.findIndex((v) => v === min);
     setCurrentIndex(minIndex >= 0 ? minIndex : 0);
   }, [min, max, step]);
 
-  
+  const playSound = usePlaySound();
+
   return (
     <div className="scrollerContent">
       <Swiper
@@ -72,6 +79,7 @@ export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max 
         onSlideChange={(swiper: SwiperType) => {
           const index = swiper.realIndex;
           onChange?.(values[index]); // realIndex — индекс с учётом loop
+          playSound();
         }}
         onClick={() => {
           if (swiperInstance) {
@@ -81,11 +89,11 @@ export const ValueScroller: FC<ScrollerProps> = ({ reusedValues: { min = 1, max 
       >
         {values.map((value, i) => (
           <SwiperSlide key={i} className="swiperSlide scrollerSwiperSlide">
-            <span className="slideItem">{value}</span>  
+            <Typography variant="titleMiniLarge">{value}</Typography>
           </SwiperSlide>
         ))}
       </Swiper>
       {children}
     </div>
-  )
-}
+  );
+};
