@@ -2,18 +2,17 @@ FROM oven/bun:1.3.5-alpine
 
 WORKDIR /app
 
-# Устанавливаем зависимости (копируем только package.json для кеширования)
-COPY package.json bun.lock* ./
-COPY tsconfig.json ./
+# Копируем только манифесты workspace для максимального кеширования install слоя
+COPY package.json bun.lock ./
+COPY apps/backend/package.json ./apps/backend/package.json
 COPY apps/frontend/package.json ./apps/frontend/package.json
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/shared ./packages/shared
+COPY packages/shared/package.json ./packages/shared/package.json
 
-# Устанавливаем зависимости
-RUN bun install
+# Детерминированная установка зависимостей по lockfile
+RUN bun install --frozen-lockfile
 
 EXPOSE 5173
 
-# Запуск Vite dev server
+# Запуск Vite dev server (код монтируется volume'ами из docker-compose)
 WORKDIR /app/apps/frontend
-CMD ["bun", "run", "dev", "--host"]
+CMD ["bun", "run", "dev"]

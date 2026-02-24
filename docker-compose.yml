@@ -36,9 +36,8 @@ services:
       - tma-liar-network-dev
     volumes:
       - ./apps/backend:/app/apps/backend
+      - ./apps/common:/app/apps/common
       - ./packages/shared:/app/packages/shared
-      - /app/node_modules
-      - /app/apps/backend/node_modules
 
   frontend:
     build:
@@ -54,9 +53,8 @@ services:
       - tma-liar-network-dev
     volumes:
       - ./apps/frontend:/app/apps/frontend
+      - ./apps/common:/app/apps/common
       - ./packages/shared:/app/packages/shared
-      - /app/node_modules
-      - /app/apps/frontend/node_modules
 
   # Ngrok для создания HTTPS туннеля к frontend
   ngrok:
