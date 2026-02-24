@@ -1,35 +1,48 @@
+import { init, miniApp, retrieveLaunchParams, viewport } from '@tma.js/sdk';
 import { useEffect } from 'react';
-import './main.scss'
+import './main.scss';
 
 export const Static = () => {
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) return;
-  
-    tg.ready();
-    tg.expand();
-  
+    let cleanupSdk: VoidFunction | null = null;
+    let removeSafeAreaListener: VoidFunction | null = null;
+
+    try {
+      cleanupSdk = init();
+      miniApp.ready();
+      viewport.mount();
+      viewport.expand();
+    } catch {
+      return;
+    }
+
+    let platform = 'unknown';
+    try {
+      platform = retrieveLaunchParams().tgWebAppPlatform;
+    } catch {
+      platform = 'unknown';
+    }
+
     const updateInset = () => {
-      const inset =
-        tg.safeAreaInset?.top ?? 0;
-  
-      const extra =
-        tg.platform !== 'tdesktop' ? 60 : 0;
-  
+      const inset = viewport.safeAreaInsetTop();
+      const extra = platform !== 'tdesktop' ? 60 : 0;
+
       document.documentElement.style.setProperty(
         '--tg-top-inset',
-        `${inset + extra}px`
+        `${(inset ?? 0) + extra}px`,
       );
     };
-  
+
     updateInset();
-    tg.onEvent('viewportChanged', updateInset);
-  
+    removeSafeAreaListener = viewport.safeAreaInsetTop.sub(updateInset);
+
     return () => {
-      tg.offEvent('viewportChanged', updateInset);
+      removeSafeAreaListener?.();
+      cleanupSdk?.();
     };
   }, []);
+
   return (
     <></>
-  )
-}
+  );
+};

@@ -1,11 +1,16 @@
+import { parse, validate } from '@tma.js/init-data-node';
 import jwt from "jsonwebtoken";
-import { UserService } from "../users/user.service";
 import type { AuthLoginDto } from "./dtos/auth-login.dto";
 import { ApiError } from "../common/response";
 import { UserModel } from "../users/user.modal";
 
 const SECRET = process.env.SECRET ?? "super-secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "1d";
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '';
+const TELEGRAM_INITDATA_EXPIRES_IN = parseInt(
+  process.env.TELEGRAM_INITDATA_EXPIRES_IN ?? '3600',
+  10,
+);
 
 if (!SECRET) {
   throw new Error("SECRET_UNDEFINED");
@@ -22,12 +27,43 @@ export interface AuthServiceMethods {
  * Сервис авторизации
  */
 export class AuthService implements AuthServiceMethods {
-  constructor(private users: UserService) {}
-
   public async login(param: AuthLoginDto): Promise<string> {
-    const user = await UserModel.findOne({ telegramId: param.telegramId });
+    if (!TELEGRAM_BOT_TOKEN) {
+      throw new ApiError(500, 'TELEGRAM_BOT_TOKEN_UNDEFINED');
+    }
 
-    if (!user) throw new ApiError(400, "USER_NOT_REGISTERED");
+    try {
+      validate(param.initData, TELEGRAM_BOT_TOKEN, {
+        expiresIn: TELEGRAM_INITDATA_EXPIRES_IN,
+      });
+    } catch {
+      throw new ApiError(401, 'INIT_DATA_INVALID');
+    }
+
+    const parsed = parse(param.initData);
+    const telegramUser = parsed.user;
+
+    if (!telegramUser?.id) {
+      throw new ApiError(400, 'TELEGRAM_USER_NOT_FOUND');
+    }
+
+    const telegramId = String(telegramUser.id);
+    const fallbackNickname = [telegramUser.first_name, telegramUser.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    const nickname = telegramUser.username ?? fallbackNickname ?? `user_${telegramId}`;
+
+    let user = await UserModel.findOne({ telegramId });
+
+    if (!user) {
+      user = await UserModel.create({
+        telegramId,
+        nickname,
+        profileImg: telegramUser.photo_url,
+      });
+    }
 
     const token = jwt.sign(
       { userId: user.id },
