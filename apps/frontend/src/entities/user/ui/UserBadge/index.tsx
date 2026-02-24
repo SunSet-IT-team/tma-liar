@@ -1,9 +1,9 @@
 import { type FC } from 'react';
 import styles from '../../style/userStyle.module.scss';
-import noPhoto from '../../../../../public/icons/blackPhoto.svg';
+import noPhoto from '/icons/blackPhoto.svg';
 import { Typography } from '../../../../shared/ui/Typography';
 import clsx from 'clsx';
-import hornsIcon from '../../../../../public/icons/hornsIcon.svg';
+import hornsIcon from '/icons/hornsIcon.svg';
 import type { Player } from '../../model/types';
 
 type UserBadgeProps = Player & {

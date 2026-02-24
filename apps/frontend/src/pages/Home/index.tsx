@@ -1,10 +1,10 @@
 import { type FC } from 'react';
 import styles from './style/homeStyle.module.scss';
-import homeCircle from '../../../public/icons/homeCircle.svg';
+import homeCircle from '/icons/homeCircle.svg';
 import { SettingIcon } from '../../shared/ui/SettingIcon';
-import homeLogo from '../../../public/icons/homeIcon-lzhets.svg';
+import homeLogo from '/icons/homeIcon-lzhets.svg';
 import { Button } from '../../shared/ui/Button';
-import bgIcon from '../../../public/icons/homeIcon-bg.svg';
+import bgIcon from '/icons/homeIcon-bg.svg';
 import { Container } from '../../shared/ui/Container';
 import { Link } from '../../shared/ui/Link';
 import rulesIcon from '../../shared/ui/icons/rulesIcon.svg';

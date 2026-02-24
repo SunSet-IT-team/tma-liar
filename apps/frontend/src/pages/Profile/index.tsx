@@ -1,8 +1,8 @@
 import { type FC } from 'react';
 import styles from './style/profileStyle.module.scss';
-import circleIcon from '../../../public/icons/profileCircle.svg';
+import circleIcon from '/icons/profileCircle.svg';
 import { TextInput } from '../../shared/ui/TextInput';
-import logo from '../../../public/icons/homeIcon-lzhets.svg';
+import logo from '/icons/homeIcon-lzhets.svg';
 import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { LoadAvatar } from '../../shared/ui/LoadAvatar';

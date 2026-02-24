@@ -1,6 +1,6 @@
 import { ChangeEvent, type FC, useRef, useState } from 'react';
 import styles from './style/loadAvatarStyle.module.scss';
-import noPhoto from '../../../../public/icons/blackPhoto.svg';
+import noPhoto from '/icons/blackPhoto.svg';
 import { Typography } from '../Typography';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
 

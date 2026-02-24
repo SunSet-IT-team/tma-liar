@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 import styles from './style/taimerStyle.module.scss';
-import taimerCircle from '../../../../public/icons/taimerCircle.svg';
+import taimerCircle from '/icons/taimerCircle.svg';
 import { useAppSelector } from '../../../app/store/hook';
 
 /**

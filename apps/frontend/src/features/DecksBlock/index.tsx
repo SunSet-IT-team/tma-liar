@@ -2,7 +2,7 @@ import { type FC } from 'react';
 import './style/decksStyle.scss';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
-import deckIcon from '../../../public/icons/blackPhoto.svg';
+import deckIcon from '/icons/blackPhoto.svg';
 
 import 'swiper/css';
 

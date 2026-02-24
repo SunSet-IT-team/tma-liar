@@ -1,7 +1,7 @@
 import { useState, type FC } from 'react';
 import { Button } from '../../shared/ui/Button';
 import styles from './style/createLobbyStyle.module.scss';
-import lobbyCircle from '../../../public/icons/lobbyCircle.svg';
+import lobbyCircle from '/icons/lobbyCircle.svg';
 import { Header } from '../../widgets/Header';
 import { ChoiceParamsLobby } from '../../widgets/ChoiceParamsLobby';
 import { Typography } from '../../shared/ui/Typography';

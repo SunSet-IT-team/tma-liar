@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 import styles from './style/rulesStyle.module.scss';
-import rulesIcon from '../../../public/icons/rulesIcon.svg';
+import rulesIcon from '/icons/rulesIcon.svg';
 import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { Typography } from '../../shared/ui/Typography';

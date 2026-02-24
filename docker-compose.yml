@@ -38,6 +38,7 @@ services:
       - ./apps/backend:/app/apps/backend
       - ./apps/common:/app/apps/common
       - ./packages/shared:/app/packages/shared
+      - backend_node_modules:/app/apps/backend/node_modules
 
   frontend:
     build:
@@ -55,6 +56,7 @@ services:
       - ./apps/frontend:/app/apps/frontend
       - ./apps/common:/app/apps/common
       - ./packages/shared:/app/packages/shared
+      - frontend_node_modules:/app/apps/frontend/node_modules
 
   # Ngrok для создания HTTPS туннеля к frontend
   ngrok:
@@ -83,6 +85,10 @@ volumes:
   mongodb_data_dev:
     driver: local
   mongodb_config_dev:
+    driver: local
+  backend_node_modules:
+    driver: local
+  frontend_node_modules:
     driver: local
 
 networks:

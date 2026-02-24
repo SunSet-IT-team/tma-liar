@@ -5,7 +5,7 @@ import { Container } from '../../shared/ui/Container';
 import { Typography } from '../../shared/ui/Typography';
 import { Header } from '../../widgets/Header';
 import styles from './style/endGameStyle.module.scss';
-import endIcon from '../../../public/icons/endIcon2.svg';
+import endIcon from '/icons/endIcon2.svg';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../app/routes/pages';
 

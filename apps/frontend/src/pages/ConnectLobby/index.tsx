@@ -6,7 +6,7 @@ import { Typography } from '../../shared/ui/Typography';
 import { TextInput } from '../../shared/ui/TextInput';
 import { Button } from '../../shared/ui/Button';
 import { UserBadge } from '../../entities/user/ui/UserBadge';
-import circleIcon from '../../../public/icons/profileCircle.svg';
+import circleIcon from '/icons/profileCircle.svg';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../app/routes/pages';
 import { usePlaySound } from '../../shared/lib/sound/usePlaySound';
