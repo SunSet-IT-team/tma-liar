@@ -16,4 +16,4 @@ EXPOSE 3000
 
 # Запуск в dev режиме с watch (код монтируется volume'ами из docker-compose)
 WORKDIR /app/apps/backend
-CMD ["bun", "--watch", "run", "dev"]
+CMD ["bun", "--watch", "src/index.ts"]
