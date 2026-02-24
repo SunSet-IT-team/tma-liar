@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose';
 import type { Question } from './entities/question.entity';
 
 /**
- * Модель сущности "Вопрсос"
+ * Модель сущности "Вопрос"
  */
 export const QuestionSchema = new Schema<Question>(
     {
@@ -25,6 +25,9 @@ export const QuestionSchema = new Schema<Question>(
             type: Number, 
             required: true
         }, 
+    },
+    {
+        _id: false,
     }
 );
 

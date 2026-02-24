@@ -1,24 +1,27 @@
-import { Router } from 'express';
-import type { Request, Response } from 'express';
-import { UserAuth } from './auth.service';
-import { UserApi } from '../users/user.service';
-import { asyncHandler } from '../middlewares/asyncHandler.middleware';
-import { ApiError, success } from '../common/response';
+import type { Request, Response } from "express";
+import { AuthService } from "./auth.service";
+import { ApiError, success } from "../common/response";
+import { AuthLoginDtoSchema, type AuthLoginDto } from "./dtos/auth-login.dto";
 
-export const authController = Router();
+/**
+ * Класс контроллеров авторизации
+ */
+export class AuthController {
+  constructor(private authService: AuthService) {}
 
-const userAuth = new UserAuth(new UserApi());
+  /**
+   * Контроллер логина по telegramId
+   */
+  getAuthTelegram = async (req: Request, res: Response) => {
+    const result = AuthLoginDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
-authController.get('/:telegramId', asyncHandler(async (req: Request, res: Response) => {
-    const { telegramId } = req.params; 
-    
-    if(!telegramId) throw new ApiError(400, "USER_ID_NOT_SET");
-
-    const token = await userAuth.userLogin({ telegramId });
-
-    if (!token) {
-      throw new ApiError(401, "AUTH_FAILED");
+    if (!result.success) {
+      throw new ApiError(400, "LOGIN_DATA_INVALID");
     }
 
+    const dto: AuthLoginDto = result.data;
+    const token = await this.authService.login(dto);
+
     return res.status(200).json(success({ token }));
-}));
+  };
+}

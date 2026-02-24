@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose';
 import type { Player } from './entities/player.entity';
 
-export const PlayerSchema = new Schema<Player>(
+export const PlayerModel = new Schema<Player>(
   {
     nickname: { type: String, required: true },
     telegramId: { type: String, required: true, unique: true },
@@ -39,13 +39,18 @@ export const PlayerSchema = new Schema<Player>(
       default: null,
     },
 
-    secure: {
+    isConfirmed: {
       type: Boolean, 
       default: false,
     }
   },
   {
-    _id: false, 
     versionKey: false,
+    lean: { virtuals: true }, 
+    toObject: { virtuals: true }, 
   }
 );
+
+PlayerModel.virtual('id').get(function () {
+  return this._id.toString();
+});

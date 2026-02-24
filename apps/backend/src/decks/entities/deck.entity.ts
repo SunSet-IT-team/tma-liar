@@ -1,17 +1,22 @@
+import { QuestionSchema } from './question.entity';
 import type { Question } from './question.entity';
+import z from 'zod';
 
 /**
- * Сущность ""
+ * Сущность "Колода"
  */
 export interface Deck {
+  id: string;
   name: string;
   questionsCount: number;
   cover: string;
   questions: Question[];
 }
 
-export interface DeckExt extends Deck {
-  _embedded: {
-    questions: Question[];
-  };
-}
+export const DeckSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().max(100),
+  questionsCount: z.number().min(0),
+  cover: z.string(),
+  questions: z.array(QuestionSchema),
+});

@@ -1,111 +1,117 @@
-import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { LobbyApi } from './lobby.service';
+import { LobbyService } from './lobby.service';
 import { ApiError, success } from '../common/response';
-import { asyncHandler } from '../middlewares/asyncHandler.middleware';
+import { CreateLobbyDtoSchema, type CreateLobbyDto } from './dtos/lobby-create.dto';
+import { FindLobbyDtoSchema, type FindLobbyDto } from './dtos/lobby-find.dto';
+import { JoinLobbyDtoSchema, type JoinLobbyDto } from './dtos/lobby-join.dto';
+import { UpdateLobbyDtoSchema, type UpdateLobbyDto } from './dtos/lobby-update.dto';
+import { DeleteLobbyDtoSchema, type DeleteLobbyDto } from './dtos/lobby-delete.dto';
 
-export const lobbyController = Router();
-const lobbyApi = new LobbyApi();
+/**
+ * Класс контроллеров лобби
+ */
+export class LobbyController { 
+  /**
+   * Контроллер получения одного лобби
+   */
 
-lobbyController.get('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
+  constructor(private readonly lobbyService = new LobbyService()) {}
 
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
+  public async findLobby(req: Request, res: Response) {
+    const result = FindLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
 
-  const lobby = await lobbyApi.findLobby({ lobbyCode });
+    if (!result.success) {
+      throw new ApiError(400, "FIND_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: FindLobbyDto = result.data;
+    const lobby = await this.lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
+    
+    return res.status(200).json(success(lobby));
+  }
 
-  if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
+  /**
+   * Контроллер поиска нескольких лобби
+   */
+  public async findLobbies(req: Request, res: Response) {
+    const lobbies = await this.lobbyService.findLobbies();
+    
+    return res.status(200).json(success(lobbies));
+  }
 
-  return res.status(200).json(success(lobby));
-}));
+  /**
+   * Контроллер создания лобби
+   */
+  public async createLobby(req: Request, res: Response) {
+    const result = CreateLobbyDtoSchema.safeParse(req.body);
+    console.log(11);    
+    if (!result.success) {
 
-lobbyController.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const lobbyCodes = req.query.lobbyCodes;
+      // result.error содержит все ошибки
+      console.log("Validation failed!");
+    
+      // Перебираем и выводим все ошибки
+      result.error.issues.forEach((issue) => {
+        console.log(`Path: ${issue.path.join(".")}, Message: ${issue.message}`);
+      });
+    } 
+    console.log(11);    
 
-  if (!lobbyCodes) throw new ApiError(400, 'LOBBY_CODES_NOT_SET');
+    if (!result.success) {
+      throw new ApiError(400, "CREATE_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: CreateLobbyDto = result.data;
+    const lobby = await this.lobbyService.createLobby({ ...dto });
+    
+    return res.status(200).json(success(lobby));
+  }
 
-  const codes: string[] = Array.isArray(lobbyCodes)
-    ? lobbyCodes.map(c => String(c))
-    : String(lobbyCodes).split(',');
+  /**
+   * Контроллер обновления лобби
+  */
+  public async updateLobby(req: Request, res: Response) {
+    const result = UpdateLobbyDtoSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new ApiError(400, "UPDATE_LOBBY_DATA_INVALID");
+    }
+    const dto: UpdateLobbyDto = result.data;
 
-  const lobbies = await lobbyApi.findLobbies({ lobbyCodes: codes });
+    const lobby = await this.lobbyService.updateLobby({...dto});
+    
+    return res.status(200).json(success(lobby));
+  }
 
-  return res.status(200).json(success(lobbies));
-}));
+  /**
+   * Контроллер удаления лобби
+   */
+  public async deleteLobby(req: Request, res: Response) {
+    const result = DeleteLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
+    if (!result.success) {
+      throw new ApiError(400, "DELETE_LOBBY_DATA_INVALID");
+    }
+    const dto: DeleteLobbyDto = result.data;
 
-lobbyController.post('/', asyncHandler(async (req: Request, res: Response) => {
-  const { adminId, players, settings } = req.body;
+    const lobby = await this.lobbyService.deleteLobby(dto);
+    
+    return res.status(200).json(success(lobby));  
+  }  
 
-  const lobby = await lobbyApi.createLobby({
-    adminId,
-    players,
-    settings,
-  });
+  /**
+   * Контроллер присоединения к лобби
+  */ 
+  public async joinLobby(req: Request, res: Response) {
+    const result = JoinLobbyDtoSchema.safeParse(req.body);
 
-  return res.status(201).json(success(lobby));
-}));
+    if (!result.success) {
+      throw new Error("JOIN_LOBBY_DATA_INVALID");
+    }
+    
+    const dto: JoinLobbyDto = result.data;
+    const lobby = await this.lobbyService.joinLobby({...dto});
 
-lobbyController.put('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
-  const updateFields = req.body;
-
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-
-  const updatedLobby = await lobbyApi.updateLobby({
-    lobbyCode,
-    ...updateFields,
-  });
-
-  return res.status(200).json(success(updatedLobby));
-}));
-
-lobbyController.delete('/:lobbyCode', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
-
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-
-  const deletedLobby = await lobbyApi.deleteLobby({ lobbyCode });
-
-  return res.status(200).json(success(deletedLobby));
-}));
-
-lobbyController.post('/:lobbyCode/join', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
-  const player = req.body; 
-
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-  if (!player || !player.telegramId) throw new ApiError(400, 'PLAYER_NOT_SET');
-
-  const updatedLobby = await lobbyApi.joinLobby({ lobbyCode, player });
-
-  return res.status(200).json(success(updatedLobby));
-}));
-
-lobbyController.put('/:lobbyCode/player-ready', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
-  const { telegramId, loserTask } = req.body;
-
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-  if (!telegramId) throw new ApiError(400, "PLAYER_ID_NOT_SET");
-
-  const updatedLobby = await lobbyApi.togglePlayerReady({
-    lobbyCode,
-    telegramId,
-    loserTask
-  });
-
-  return res.status(200).json(success(updatedLobby));
-}));
-
-lobbyController.post('/:lobbyCode/start-game', asyncHandler(async (req: Request, res: Response) => {
-  const { lobbyCode } = req.params;
-  const { telegramId, loserTask } = req.body;
-
-  if (!lobbyCode) throw new ApiError(400, 'LOBBY_CODE_NOT_SET');
-  if (!telegramId) throw new ApiError(400, "PLAYER_ID_NOT_SET");
-  if (!loserTask) throw new ApiError(400, "LOSER_TASK_NOT_SET");
-
-  const lobbyStartGame = await lobbyApi.startGame({ lobbyCode, telegramId, loserTask });
-
-  return res.status(200).json(success(lobbyStartGame));
-}));
+    return res.status(200).json(success(lobby));  
+  }
+  
+  
+}

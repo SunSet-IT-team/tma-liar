@@ -1,4 +1,6 @@
+import { UserSchema } from '../../users/entities/user.entity';
 import type { User } from '../../users/entities/user.entity';
+import z from 'zod';
 
 /**
  * Сущность "Игрок"
@@ -10,5 +12,16 @@ export interface Player extends User {
   wasLiar: number;
   answer: number | null;
   likes: number;
-  secure: boolean | null;
+  isConfirmed: boolean | null;
 }
+
+/**Схема сущности "Игрок" */
+export const PlayerSchema = UserSchema.extend({
+  score: z.number().min(0).optional().default(0),
+  isReady: z.boolean(),
+  loserTask: z.string(),
+  wasLiar: z.number().min(0).optional().default(0),
+  answer: z.number().nullable().optional().default(null),
+  likes: z.number().min(0).optional().default(0),
+  isConfirmed: z.boolean().nullable().default(false)
+});

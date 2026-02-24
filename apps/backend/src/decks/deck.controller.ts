@@ -1,79 +1,87 @@
-import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { DeckService } from './deck.service';
+import { ApiError, success } from '../common/response';
+import { FindDeckDtoSchema, type FindDeckDto } from './dtos/deck-find.dto';
+import { CreateDeckDtoSchema, type CreateDeckDto } from './dtos/deck-create.dto';
+import { UpdateDeckDtoSchema, type UpdateDeckDto } from './dtos/deck-update.dto';
+import { DeleteDeckDtoSchema, type DeleteDeckDto } from './dtos/deck-delete.dto';
 
-import { DeckApi } from './deck.service';
-import type {
-  DeckApiFindDeckParams,
-  DeckApiFindDecksParams,
-  DeckApiCreateDeckParams,
-  DeckApiUpdateDeckParams,
-  DeckApiDeleteDeckParams,
-} from './deck.params';
+/**
+ * Класс контроллеров колод
+ */
+export class DeckController {
+  constructor(private deckService: DeckService) {}
 
-import { asyncHandler } from '../middlewares/asyncHandler.middleware';
-import { success, ApiError } from '../common/response';
+  /**
+   * Контроллер поиска колоды
+   */
+  findDeck = async (req: Request, res: Response) => {
+    const result = FindDeckDtoSchema.safeParse({ id: req.params.id });
 
-export const deckController = Router();
-const deckApi = new DeckApi();
+    if (!result.success) {
+      throw new ApiError(400, "FIND_DECK_DATA_INVALID");
+    }
 
-deckController.get('/:id', asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!id) throw new ApiError(400, 'DECK_ID_NOT_SET');
-
-    const deck = await deckApi.findDeck({ id });
-    if (!deck) throw new ApiError(404, 'DECK_NOT_FOUND');
+    const dto: FindDeckDto = result.data;
+    const deck = await this.deckService.findDeck({ id: dto.id });
 
     return res.status(200).json(success(deck));
-  })
-);
+  };
 
-deckController.get('/', asyncHandler(async (req: Request, res: Response) => {
-    const { ids } = req.query;
-
-    if (!ids) throw new ApiError(400, 'DECK_IDS_NOT_SET');
-
-    const deckIds: string[] = Array.isArray(ids)
-      ? ids.map(String)
-      : String(ids).split(',');
-
-    const decks = await deckApi.findDecks({
-      ids: deckIds,
-    } as DeckApiFindDecksParams);
+  /**
+   * Контроллер поиска нескольких колод
+   */
+  findDecks = async (_: Request, res: Response) => {
+    const decks = await this.deckService.findDecks();
 
     return res.status(200).json(success(decks));
-  })
-);
+  };
 
-deckController.post('/', asyncHandler(async (req: Request, res: Response) => {
-    const deck = await deckApi.createDeck(
-      req.body as DeckApiCreateDeckParams
-    );
+  /**
+   * Контроллер создания колоды
+   */
+  createDeck = async (req: Request, res: Response) => {
+    const result = CreateDeckDtoSchema.safeParse(req.body);
 
-    return res.status(201).json(success(deck));
-  })
-);
+    if (!result.success) {
+      throw new ApiError(400, "CREATE_DECK_DATA_INVALID");
+    }
 
-deckController.put('/:id', asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!id) throw new ApiError(400, 'DECK_ID_NOT_SET');
+    const dto: CreateDeckDto = result.data;
+    const deck = await this.deckService.createDeck({ ...dto });
 
-    const updatedDeck = await deckApi.updateDeck({
-      id,
-      ...req.body,
-    } as DeckApiUpdateDeckParams);
+    return res.status(200).json(success(deck));
+  };
 
-    return res.status(200).json(success(updatedDeck));
-  })
-);
+  /**
+   * Контроллер обновления колоды
+   */
+  updateDeck = async (req: Request, res: Response) => {
+    const result = UpdateDeckDtoSchema.safeParse(req.body);
 
-deckController.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!id) throw new ApiError(400, 'DECK_ID_NOT_SET');
+    if (!result.success) {
+      throw new ApiError(400, "UPDATE_DECK_DATA_INVALID");
+    }
 
-    const deletedDeck = await deckApi.deleteDeck({
-      id,
-    } as DeckApiDeleteDeckParams);
+    const dto: UpdateDeckDto = result.data;
+    const deck = await this.deckService.updateDeck({ ...dto });
 
-    return res.status(200).json(success(deletedDeck));
-  })
-);
+    return res.status(200).json(success(deck));
+  };
+
+  /**
+   * Контроллер удаления колоды
+   */
+  deleteDeck = async (req: Request, res: Response) => {
+    const result = DeleteDeckDtoSchema.safeParse({ id: req.params.id });
+
+    if (!result.success) {
+      throw new ApiError(400, "DELETE_DECK_DATA_INVALID");
+    }
+
+    const dto: DeleteDeckDto = result.data;
+    const deck = await this.deckService.deleteDeck({ id: dto.id });
+
+    return res.status(200).json(success(deck));
+  };
+}

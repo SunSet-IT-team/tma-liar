@@ -1,71 +1,107 @@
-import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { UserApi } from './user.service';
+import { UserService } from './user.service';
 import { ApiError, success } from '../common/response';
-import { asyncHandler } from '../middlewares/asyncHandler.middleware';
+import { FindUserDtoSchema, type FindUserDto } from './dtos/user-find.dto';
+import { FindUsersDtoSchema, type FindUsersDto } from './dtos/user-findUsers.dto';
+import { CreateUserDtoSchema, type CreateUserDto } from './dtos/user-create.dto';
+import { UpdateUserDtoSchema, type UpdateUserDto } from './dtos/user-update.dto';
+import { DeleteUserDtoSchema, type DeleteUserDto } from './dtos/user-delete.dto';
 
-export const userController = Router();
-const userApi = new UserApi();
+/**
+ * Класс контроллеров пользователей
+ */
+export class UserController {
+  constructor(private userService: UserService) {}
 
-userController.get('/:telegramId', asyncHandler(async (req: Request, res: Response) => {
-  const { telegramId } = req.params; 
+  /**
+   * Контроллер поиска одного пользователя
+   */
+  findUser = async (req: Request, res: Response) => {
+    const result = FindUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
-  if(!telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+    if (!result.success) {
+      throw new ApiError(400, "FIND_USER_DATA_INVALID");
+    }
 
-  const user = await userApi.findUser({ telegramId });
+    const dto: FindUserDto = result.data;
+    const user = await this.userService.findUser(dto);
 
-  if (!user) throw new ApiError(404, "USER_NOT_FOUND");
+    if (!user) throw new ApiError(404, "USER_NOT_FOUND");
 
-  return res.status(200).json(success(user));
-}));
+    return res.status(200).json(success(user));
+  };
 
-userController.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const telegramIds = req.query.telegramIds;
+  /**
+   * Контроллер поиска нескольких пользователей
+   */
+  findUsers = async (req: Request, res: Response) => {
+    const raw = req.query.telegramIds;
+    const telegramIds = Array.isArray(raw)
+      ? raw.map((id) => String(id))
+      : typeof raw === 'string'
+        ? raw.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
 
-  if (!telegramIds) throw new ApiError(400, "USER_IDS_NOT_SET");
+    const result = FindUsersDtoSchema.safeParse({ telegramIds });
 
-  const ids: string[] = Array.isArray(telegramIds)
-    ? telegramIds.map(id => String(id))
-    : String(telegramIds).split(',');
+    if (!result.success) {
+      throw new ApiError(400, "FIND_USERS_DATA_INVALID");
+    }
 
-  const users = await userApi.findUsers({ telegramIds: ids });
+    const dto: FindUsersDto = result.data;
+    const users = await this.userService.findUsers(dto);
 
-  return res.status(200).json(success(users));
-}));
+    return res.status(200).json(success(users));
+  };
 
+  /**
+   * Контроллер создания пользователя
+   */
+  createUser = async (req: Request, res: Response) => {
+    const result = CreateUserDtoSchema.safeParse(req.body);
 
-userController.post('/', asyncHandler(async (req: Request, res: Response) => {
-  const { telegramId, nickname, ...param } = req.body; 
+    if (!result.success) {
+      throw new ApiError(400, "CREATE_USER_DATA_INVALID");
+    }
 
-  const user = await userApi.createUser({ telegramId, nickname, ...param });
+    const dto: CreateUserDto = result.data;
+    const user = await this.userService.createUser(dto);
 
-  return res.status(200).json(success(user));
-}));
+    return res.status(200).json(success(user));
+  };
 
-userController.put('/:telegramId', asyncHandler(async (req: Request, res: Response) => {
-  const { telegramId } = req.params;
-  const { nickname, profileImg, passwordHash } = req.body;
+  /**
+   * Контроллер обновления пользователя
+   */
+  updateUser = async (req: Request, res: Response) => {
+    const bodyResult = UpdateUserDtoSchema.safeParse({
+      telegramId: req.params.telegramId,
+      ...req.body,
+    });
 
-  if(!telegramId) throw new ApiError(404, "USER_ID_NOT_SET");
+    if (!bodyResult.success) {
+      throw new ApiError(400, "UPDATE_USER_DATA_INVALID");
+    }
 
-  const updatedUser = await userApi.updateUser({
-    telegramId,
-    nickname,
-    profileImg,
-    passwordHash,
-  });
+    const dto: UpdateUserDto = bodyResult.data;
+    const user = await this.userService.updateUser(dto);
 
-  return res.status(200).json(success(updatedUser));
-}));
+    return res.status(200).json(success(user));
+  };
 
-userController.delete('/:telegramId', asyncHandler(async (req: Request, res: Response) => {
-  const { telegramId } = req.params;
+  /**
+   * Контроллер удаления пользователя
+   */
+  deleteUser = async (req: Request, res: Response) => {
+    const result = DeleteUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
-  if (!telegramId) {
-    throw new ApiError(400, "USER_ID_NOT_SET");
-  }
+    if (!result.success) {
+      throw new ApiError(400, "DELETE_USER_DATA_INVALID");
+    }
 
-  const deletedUser = await userApi.deleteUser({ telegramId });
+    const dto: DeleteUserDto = result.data;
+    const user = await this.userService.deleteUser(dto);
 
-  return res.status(200).json(success(deletedUser));
-}));
+    return res.status(200).json(success(user));
+  };
+}
