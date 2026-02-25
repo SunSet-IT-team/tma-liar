@@ -16,6 +16,7 @@ import { GameMessageTypes } from '../../../common/message-types/game.types';
 import { env } from '../config/env';
 import { GameRepository } from './game.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
+import { logger } from '../observability/logger';
 
 const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
 const SCORE_TRICKED = env.SCORE_TRICKED;
@@ -171,7 +172,10 @@ export class GameService implements GameMethods {
       const updatedGameobj = updatedGame.toObject();
 
       const diff = findDiff(gameSnapobj, updatedGameobj, nextStage);
-      console.log(`[nextStage] Emitting stage change: ${currentStage} → ${nextStage}, diff keys: ${Object.keys(diff).join(", ")}`);
+      logger.info(
+        { gameId, currentStage, nextStage, diffKeys: Object.keys(diff) },
+        'Game stage changed',
+      );
       
       this.io.to(gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff));
 
@@ -180,7 +184,7 @@ export class GameService implements GameMethods {
   }
 
   public async handleLobbyStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages> {
-    console.log('on stage lobby');
+    logger.debug({ gameId }, 'Processing LOBBY stage');
 
     if (!game.players.every(p => p.isReady)) throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
 
@@ -202,7 +206,7 @@ export class GameService implements GameMethods {
 
   
   public async handleLiarChoosesStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    console.log('on stage liar chooses');
+    logger.debug({ gameId }, 'Processing LIAR_CHOOSES stage');
 
     game.doLie ??= Math.random() < 0.5;
 
@@ -218,7 +222,7 @@ export class GameService implements GameMethods {
   }
 
   public async handleQuestionToLiarStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    console.log('on stage question to liar');
+    logger.debug({ gameId }, 'Processing QUESTION_TO_LIAR stage');
 
     game.players.forEach(p => { if (p.answer == null) p.answer = 2 });
 
@@ -234,7 +238,7 @@ export class GameService implements GameMethods {
   }
 
   public async handleQuestionResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    console.log(`[handleQuestionResultsStage] Processing stage: ${game.stage}`);
+    logger.debug({ gameId, stage: game.stage }, 'Processing QUESTION_RESULTS stage');
 
     await this.calculateLiarPoints(game);
     await this.calculatePlayersPoints(game);
@@ -242,8 +246,10 @@ export class GameService implements GameMethods {
 
     let nextStage : GameStages;
     if (game.questionHistory.length < game.settings.questionCount) {
-      console.log(game.questionHistory.length);
-      console.log(game.settings.questionCount);
+      logger.debug(
+        { questionHistoryLength: game.questionHistory.length, questionCount: game.settings.questionCount },
+        'Preparing next question',
+      );
       const nextQuestion = this.pickNextQuestion(game);
       if (!nextQuestion) throw new ApiError(409, 'DECK_QUESTIONS_EXHAUSTED');
 
@@ -289,7 +295,7 @@ export class GameService implements GameMethods {
   }
 
   public async handleGameResultsStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages>{ 
-    console.log('on stage game results');
+    logger.debug({ gameId }, 'Processing GAME_RESULTS stage');
     
     const nextStage = GameStages.END;
 

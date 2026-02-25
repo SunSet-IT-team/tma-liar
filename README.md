@@ -20,6 +20,8 @@ This project was created using `bun init` in bun v1.2.19. [Bun](https://bun.com)
 - Источник правды по env: `apps/backend/src/config/env.ts` и `.env.example`
 - Обязательные env (минимум): `DB_CONN_STRING`, `DB_NAME`, `SECRET`, `TELEGRAM_BOT_TOKEN`, `JWT_EXPIRES_IN`
 - Актуальный auth-контракт: `POST /api/auth/tma` с `{ initData }`
+- Observability endpoints:
+  - `GET /api/health`
 
 ## Запуск проекта с помощью Docker
 

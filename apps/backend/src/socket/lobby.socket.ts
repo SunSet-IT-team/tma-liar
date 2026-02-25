@@ -11,6 +11,7 @@ import { GameMessageTypes } from "../../../common/message-types/game.types";
 import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
+import { logger } from "../observability/logger";
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -44,12 +45,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const result = JoinLobbyDtoSchema.safeParse(data);
 
       if (!result.success) {
-        const formattedErrors = result.error.issues.map(issue => ({
+        const formattedErrors = result.error.issues.map((issue) => ({
           path: issue.path.join("."),
-          message: issue.message
+          message: issue.message,
         }));
-        console.error("Validation failed for PLAYER_JOINED:");
-        console.table(formattedErrors);
+        logger.warn({ issues: formattedErrors }, 'Validation failed for PLAYER_JOINED');
         throw new ApiError(422, "JOIN_LOBBY_DATA_INVALID", result.error.issues);
       }
 
@@ -75,12 +75,15 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       socket.join(dto.lobbyCode);
 
       const roomSize = io.sockets.adapter.rooms.get(dto.lobbyCode)?.size ?? 0;
-      console.log(`[PLAYER_JOINED] ${dto.player.nickname} → room ${dto.lobbyCode} (${roomSize} sockets in room)`);
+      logger.info(
+        { nickname: dto.player.nickname, lobbyCode: dto.lobbyCode, roomSize },
+        'Player joined lobby room',
+      );
 
       socket.emit(LobbyMessageTypes.PLAYER_JOINED, lobbyState); 
       socket.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(lobbySnap, lobby)));
     } catch (error) {
-      console.error(`Error handling player join:`, error);
+      logger.error({ error }, 'Error handling player join');
       emitSocketError(socket, "PLAYER_JOINED_ERROR", error);
     }
   });
@@ -95,11 +98,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (leaveResult.deleted) {
         io.to(lobbyCode).emit(LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
-        console.log(`[PLAYER_LEFT] Lobby ${lobbyCode} deleted — no players left`);
+        logger.info({ lobbyCode }, 'Lobby deleted after player left');
       } else if (leaveResult.newAdminId) {
-        console.log(`[PLAYER_LEFT] Admin ${telegramId} left ${lobbyCode}, new admin: ${leaveResult.newAdminId}`);
+        logger.info({ lobbyCode, previousAdmin: telegramId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
       } else {
-        console.log(`[PLAYER_LEFT] ${telegramId} left ${lobbyCode}`);
+        logger.info({ lobbyCode, telegramId }, 'Player left lobby');
       }
 
       if (leaveResult.lobby) {
@@ -107,7 +110,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
       socket.leave(lobbyCode);
     } catch (error) {
-      console.error(`[PLAYER_LEFT] Error:`, error);
+      logger.error({ error, lobbyCode, telegramId }, 'Error handling player left');
       socket.leave(lobbyCode);
     }
   });
@@ -120,7 +123,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const result = ToggleReadyDtoSchema.safeParse(data);
 
       if (!result.success) {
-        console.error("Validation failed for PLAYER_READY:", result.error.issues);
+        logger.warn({ issues: result.error.issues }, 'Validation failed for PLAYER_READY');
         throw new ApiError(422, "TOGGLE_READY_DATA_INVALID", result.error.issues);
       }
 
@@ -129,11 +132,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const lobby = await lobbyService.togglePlayerReady(dto);
 
       const roomSize = io.sockets.adapter.rooms.get(dto.lobbyCode)?.size ?? 0;
-      console.log(`[PLAYER_READY] player ${dto.playerId} → emitting to ${roomSize} sockets in room ${dto.lobbyCode}`);
+      logger.info({ playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode }, 'Player ready toggled');
 
       io.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(lobbySnap, lobby)));
     } catch (error) {
-      console.error(`Error handling player ready:`, error);
+      logger.error({ error }, 'Error handling player ready');
       emitSocketError(socket, "PLAYER_READY_ERROR", error);
     }
   });
@@ -143,9 +146,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const dtoResult = GameStartDtoSchema.safeParse(data);
 
       if (!dtoResult.success) {
-        dtoResult.error.issues.forEach((issue) => {
-          console.log(`[GAME_STARTED] Validation: ${issue.path.join(".")} — ${issue.message}`);
-        });
+        logger.warn({ issues: dtoResult.error.issues }, 'Validation failed for GAME_STARTED');
         throw new ApiError(422, "GAME_START_DATA_INVALID", dtoResult.error.issues);
       }
 
@@ -166,7 +167,10 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const gameRoomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
-      console.log(`[GAME_STARTED] lobby ${dto.lobbyCode} (${lobbySocketCount} sockets) → game ${gameId} (${gameRoomSize} sockets), status: started`);
+      logger.info(
+        { lobbyCode: dto.lobbyCode, lobbySocketCount, gameId, gameRoomSize, status: 'started' },
+        'Game room initialized',
+      );
 
       const gameStateDto = {
         gameId: createdGame.id,
@@ -175,19 +179,19 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       };
 
       io.to(gameId).emit("changeGameStatus", gameStateDto);
-      console.log(`[GAME_STARTED] changeGameStatus emitted to ${gameRoomSize} sockets`);
+      logger.info({ gameId, gameRoomSize }, 'Game start status emitted');
 
       // Запускаем игру — переходим на следующую стадию (LOBBY → LIAR_CHOOSES)
       // Это вызовет автоматическую смену стадий через таймеры
       await gameService.nextStage({ gameId });
-      console.log(`[GAME_STARTED] Game stage transition initiated for ${gameId}`);
+      logger.info({ gameId }, 'Game stage transition initiated');
     } catch (error) {
-      console.error("[GAME_STARTED] Error:", error);
+      logger.error({ error }, 'Error handling game started');
       emitSocketError(socket, "GAME_START_ERROR", error);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log(`[DISCONNECT] ${socket.id}`);
+    logger.info({ socketId: socket.id }, 'Socket disconnected (lobby handler)');
   });
 }

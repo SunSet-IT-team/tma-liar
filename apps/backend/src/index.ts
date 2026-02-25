@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import { connectToDatabase } from './database/database';
 import { corsOrigin } from './config/cors';
 import { env } from './config/env';
+import { httpLogger, logger } from './observability/logger';
 
 import { errorMiddleware } from './middlewares/errorHandler.middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
@@ -47,10 +48,18 @@ app.use(
     credentials: true,
   }),
 );
+app.use(httpLogger);
 app.use(helmet());
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/hello', (_, res) => res.status(200).json({ message: 'Hello from backend!' }));
+app.get('/api/health', (_, res) =>
+  res.status(200).json({
+    status: 'ok',
+    uptimeSec: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  }),
+);
 
 /** Роуты без авторизации */
 app.use('/api/auth', authRateLimiter, authRouter);
@@ -69,7 +78,7 @@ app.use(errorMiddleware);
 async function startServer() {
   try {
     await connectToDatabase();
-    httpServer.listen(env.PORT, () => console.log(`Server running on http://localhost:${env.PORT}`));
+    httpServer.listen(env.PORT, () => logger.info({ port: env.PORT }, 'Server started'));
   } catch (error) {
     throw error;
   }

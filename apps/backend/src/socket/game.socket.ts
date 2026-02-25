@@ -30,6 +30,7 @@ import { GameInitDtoSchema, type GameInitDto, PlayerInfoSchema } from "../game/d
 import { GameStateDtoSchema, type GameStateDto } from "../game/dtos/game-state.dto";
 import { ApiError, buildStatePayload } from "../common/response";
 import { GameStartDtoSchema, type GameStartDto } from "../game/dtos/game-start.dto";
+import { logger } from "../observability/logger";
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -79,9 +80,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
 
       socket.emit("changeGameStatus", buildStatePayload(GameMessageTypes.LIAR_CHOSE, findDiff(gameSnap, game, game.stage)));
       
-      console.log(`Liar chose in game ${dto.gameId}: ${dto.answer}`);
+      logger.info({ gameId: dto.gameId, answer: dto.answer }, 'Liar chose');
     } catch (error) {
-      console.error(`Error handling liar choice:`, error);
+      logger.error({ error }, 'Error handling liar choice');
       emitSocketError(socket, "LIAR_CHOSE_ERROR", error);
     }
   });
@@ -111,9 +112,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Оповещаем всех игроков в комнате игры об изменении
       io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_VOTED, findDiff(gameSnap, game, game.stage)));
       
-      console.log(`Player ${dto.playerId} voted in game ${dto.gameId}: ${dto.answer}`);
+      logger.info({ playerId: dto.playerId, gameId: dto.gameId, answer: dto.answer }, 'Player voted');
     } catch (error) {
-      console.error(`Error handling player vote:`, error);
+      logger.error({ error }, 'Error handling player vote');
       emitSocketError(socket, "PLAYER_VOTED_ERROR", error);
     }
   });
@@ -142,9 +143,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Оповещаем всех игроков в комнате игры об изменении
       io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_SECURED, findDiff(gameSnap, game, game.stage)));
       
-      console.log(`Player ${dto.playerId} secured answer in game ${dto.gameId}`);
+      logger.info({ playerId: dto.playerId, gameId: dto.gameId }, 'Player secured answer');
     } catch (error) {
-      console.error(`Error handling player secure:`, error);
+      logger.error({ error }, 'Error handling player secure');
       emitSocketError(socket, "PLAYER_SECURED_ERROR", error);
     }
   });
@@ -171,9 +172,12 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Оповещаем всех игроков в комнате игры об изменении
       io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_LIKED, findDiff(gameSnap, game, game.stage)));
       
-      console.log(`Player ${dto.senderId} liked answer from ${dto.receiverId} in game ${dto.gameId}`);
+      logger.info(
+        { senderId: dto.senderId, receiverId: dto.receiverId, gameId: dto.gameId },
+        'Player liked answer',
+      );
     } catch (error) {
-      console.error(`Error handling player like:`, error);
+      logger.error({ error }, 'Error handling player like');
       emitSocketError(socket, "PLAYER_LIKED_ERROR", error);
     }
   });
