@@ -5,14 +5,17 @@ import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '../../../../');
 
 /**
  * Кандидаты для загрузки env.
- * В текущей конфигурации backend использует только корневой `.env` проекта.
+ * Для тестов (`NODE_ENV=test`) сначала загружается `.env.test`,
+ * затем корневой `.env` как fallback.
  */
-const envCandidates = [
-  path.resolve(__dirname, '../../../../.env'),
-];
+const envCandidates =
+  process.env.NODE_ENV === 'test'
+    ? [path.resolve(projectRoot, '.env.test'), path.resolve(projectRoot, '.env')]
+    : [path.resolve(projectRoot, '.env')];
 
 for (const envPath of envCandidates) {
   dotenv.config({ path: envPath, override: false });

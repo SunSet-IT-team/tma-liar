@@ -1,38 +1,114 @@
-# liar
+# Лжец
 
-To install dependencies:
+## Установка зависимостей
+
+> Выполнить из корня проекта:
 
 ```bash
 bun install
 ```
 
-To run:
+## Запуск без Docker
+
+> 1. Поднять MongoDB:
 
 ```bash
-bun run index.ts
+docker compose up mongodb
 ```
 
-This project was created using `bun init` in bun v1.2.19. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+> 2. Запустить приложение:
 
-## Backend Contributing (Quick)
+```bash
+bun dev
+```
 
-- Запуск backend в dev-режиме: `bun run dev:backend`
-- Источник правды по env: `apps/backend/src/config/env.ts` и `.env.example`
-- Обязательные env (минимум): `DB_CONN_STRING`, `DB_NAME`, `SECRET`, `TELEGRAM_BOT_TOKEN`, `JWT_EXPIRES_IN`
-- Актуальный auth-контракт: `POST /api/auth/tma` с `{ initData }`
-- Observability endpoints:
-  - `GET /api/health`
+Или запускать сервисы раздельно:
 
-## Запуск проекта с помощью Docker
+```bash
+# backend
+bun dev:backend
 
-### Требования
+# frontend
+bun dev:frontend
+```
 
-- Docker
-- Docker Compose
+## Запуск в Docker (dev)
 
-### Настройка переменных окружения
+> Собрать сервисы:
 
-Перед запуском создайте файл `.env` в корне проекта со следующим содержимым:
+```bash
+docker compose build
+```
+
+> Запустить проект:
+
+```bash
+docker compose up
+```
+
+> Запустить в фоне:
+
+```bash
+docker compose up -d
+```
+
+> Остановить:
+
+```bash
+docker compose down
+```
+
+## При добавлении новой библиотеки
+
+> Пересобрать образы без кэша:
+
+```bash
+docker compose build --no-cache
+```
+
+## Тесты
+
+> Запуск тестов из корня проекта:
+
+```bash
+bun run test
+```
+
+Запускается `docker-compose.test.yml`, поднимаются только тестовые сервисы, после прохождения всё останавливается.
+
+## Переменные окружения
+
+Используемые env-файлы:
+
+- `.env` - переменные среды разработки
+- `.env.test` - переменные тестовой среды
+- `.env.prod` - переменные production-среды
+
+Чтобы получить `.env`, скопируй `.env.example` и подставь свои значения.
+
+### Обязательные переменные
+
+Строка подключения к БД:
+
+`DB_CONN_STRING`
+
+Название базы данных:
+
+`DB_NAME`
+
+Секрет для JWT:
+
+`SECRET`
+
+Токен Telegram-бота Mini App:
+
+`TELEGRAM_BOT_TOKEN`
+
+Время жизни JWT:
+
+`JWT_EXPIRES_IN`
+
+## Пример `.env`
 
 ```env
 # MongoDB Configuration (для инициализации контейнера)
@@ -44,11 +120,11 @@ DB_NAME=liar
 # Для Docker: используйте имя сервиса 'mongodb' вместо 'localhost'
 DB_CONN_STRING=mongodb://admin:password@mongodb:27017/?authSource=admin
 
-# JWT Secret Key
+# JWT
 SECRET=secret
 JWT_EXPIRES_IN=1d
 
-# Telegram Bot Token (required for /api/auth/tma)
+# Telegram
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_INITDATA_EXPIRES_IN=3600
 
@@ -71,76 +147,58 @@ LOBBY_CODE_ALPHABET=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
 LOBBY_CODE_LENGTH=6
 
 # Ngrok
-# Получите токен на https://dashboard.ngrok.com/get-started/your-authtoken
+# Получите токен: https://dashboard.ngrok.com/get-started/your-authtoken
 NGROK_AUTHTOKEN=
 ```
 
-### Режим разработки (Dev)
+## Доступы в dev-режиме
 
-Запуск с hot-reload (изменения применяются автоматически):
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3000`
+- MongoDB: `localhost:27017`
+- Ngrok Web UI: `http://localhost:4040` (если включён `NGROK_AUTHTOKEN`)
 
-```bash
-# Запуск всех сервисов
-docker compose up --build
+## Ngrok для Telegram Mini App
 
-# Или в фоновом режиме
-docker compose up -d
+Если в `.env` задан `NGROK_AUTHTOKEN`, ngrok автоматически поднимет HTTPS-туннель для frontend.
 
-# Просмотр логов
-docker compose logs -f
+Порядок действий:
 
-# Остановка
-docker compose down
-```
+1. Запустить проект: `docker compose up`
+2. Открыть `http://localhost:4040`
+3. Скопировать HTTPS URL (например, `https://abc123.ngrok-free.app`)
+4. Использовать этот URL в настройке Telegram Mini App
 
-**Доступ:**
+Без `NGROK_AUTHTOKEN` ngrok работает в ограниченном режиме (обычно сессии до 2 часов).
 
-- **Frontend (веб-интерфейс)**: http://localhost:5173 — откройте в браузере (Vite dev server с hot-reload)
-- **Backend API**: http://localhost:3000 — REST API для разработки
-- **MongoDB**: localhost:27017 — подключение к базе данных
-- **Ngrok Web UI**: http://localhost:4040 — веб-интерфейс для управления туннелями (если настроен NGROK_AUTHTOKEN)
-
-**Ngrok для Telegram Mini Apps:**
-
-Если вы настроили `NGROK_AUTHTOKEN` в `.env`, ngrok автоматически создаст HTTPS туннель к frontend.
-
-1. После запуска `docker compose up`, откройте http://localhost:4040
-2. Скопируйте HTTPS URL (например, `https://abc123.ngrok-free.app`)
-3. Используйте этот URL для настройки Telegram Mini App
-
-**ВАЖНО:** Без `NGROK_AUTHTOKEN` ngrok будет работать в ограниченном режиме (сессии по 2 часа).
-
-### Production режим
+## Production
 
 ```bash
 # Сборка production образов
 docker compose -f docker-compose.prod.yml build
 
-# Запуск в фоновом режиме
+# Запуск в фоне
 docker compose -f docker-compose.prod.yml up -d
 
 # Остановка
 docker compose -f docker-compose.prod.yml down
 ```
 
-**Доступ:**
+Доступы:
 
-- **Frontend (веб-интерфейс)**: http://localhost или http://localhost:80 — откройте в браузере для доступа к приложению
-- **Backend API**: http://localhost:3000 — REST API для разработки
-- **MongoDB**: localhost:27017 — подключение к базе данных
+- Frontend: `http://localhost` (или `http://localhost:80`)
+- Backend API: `http://localhost:3000`
+- MongoDB: `localhost:27017`
 
-### Полезные команды
+## Полезные команды
 
 ```bash
-# Пересборка с очисткой кэша
-docker compose build --no-cache
-
 # Запуск конкретного сервиса
 docker compose up mongodb
 docker compose up backend
 docker compose up frontend
 
-# Просмотр логов конкретного сервиса
+# Логи по сервисам
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose logs -f mongodb
@@ -148,16 +206,14 @@ docker compose logs -f mongodb
 # Перезапуск сервиса
 docker compose restart backend
 
-# Полная очистка (удалит все контейнеры, volumes и образы)
+# Полная очистка (контейнеры, volumes, образы)
 docker compose down -v --rmi all
 ```
 
-### Может быть будет полезным :)
+## Важно
 
-1. **Сеть Docker**: Контейнеры работают в сети `tma-liar-network-dev` (dev) или `tma-liar-network` (prod). Для обращения между сервисами используйте имена сервисов:
+1. Контейнеры общаются по именам сервисов внутри Docker-сети:
    - `backend:3000` вместо `localhost:3000`
    - `mongodb:27017` вместо `localhost:27017`
-
-2. **Volumes**: Данные MongoDB сохраняются в Docker volumes и не удаляются при перезапуске контейнеров.
-
-3. **Hot-reload**: В dev режиме изменения в коде применяются автоматически благодаря volume mounts.
+2. Данные MongoDB сохраняются в Docker volumes и переживают перезапуск контейнеров.
+3. В dev-режиме hot-reload работает через volume mounts.

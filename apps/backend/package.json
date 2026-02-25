@@ -5,7 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "test": "NODE_ENV=test RUN_INTEGRATION_TESTS=1 bun test src/tests --timeout 120000",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest",
