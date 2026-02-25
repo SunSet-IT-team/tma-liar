@@ -1,4 +1,5 @@
 import { io, type Socket as ClientSocket } from "socket.io-client";
+import jwt from 'jsonwebtoken';
 import { Server } from "socket.io";
 import http from "http";
 import { registerLobbyHandler } from "../socket/lobby.socket";
@@ -35,8 +36,14 @@ let player4TelegramId: string | undefined;
 // ─── Helpers ───
 
 function connectClient(port: number): Promise<ReturnType<typeof io>> {
+  const token = jwt.sign({ sub: 'socket-test-user' }, process.env.SECRET ?? 'super-secret');
+
   return new Promise((resolve) => {
-    const s = io(`http://localhost:${port}`);
+    const s = io(`http://localhost:${port}`, {
+      auth: {
+        token,
+      },
+    });
     s.on("connect", () => resolve(s));
   });
 }
@@ -84,6 +91,8 @@ async function waitBoth(event: string, timeoutMs = 3000): Promise<[any, any]> {
 // ─── Setup / Teardown ───
 
 async function setup() {
+  process.env.SECRET = process.env.SECRET ?? 'test-secret';
+
   await connectToDatabase();
 
   // Удаляем устаревшие/проблемные индексы
