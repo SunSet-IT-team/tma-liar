@@ -1,13 +1,14 @@
 import http from "http";
 import express from "express";
-import { connectToDatabase } from "./database/database";
-import authRouter from "./auth/auth.router";
-import { userRouter } from "./users/user.router";
-import { deckRouter } from "./decks/deck.router";
-import { errorMiddleware } from "./middlewares/errorHandler.middleware";
-import { authMiddleware } from "./middlewares/auth.middleware";
-import { DeckModel } from "./decks/deck.model";
-import { UserModel } from "./users/user.modal";
+import { sign } from "@tma.js/init-data-node";
+import { connectToDatabase } from "../database/database";
+import authRouter from "../auth/auth.router";
+import { userRouter } from "../users/user.router";
+import { deckRouter } from "../decks/deck.router";
+import { errorMiddleware } from "../middlewares/errorHandler.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { DeckModel } from "../decks/deck.model";
+import { UserModel } from "../users/user.modal";
 
 function assert(condition: unknown, msg: string, received?: unknown): asserts condition {
   if (!condition) {
@@ -25,7 +26,7 @@ let baseUrl: string;
 let authToken: string;
 
 const ts = Date.now();
-const testTelegramId = `deck-test-user-${ts}`;
+const testTelegramId = String(ts);
 const createUserBody = {
   telegramId: testTelegramId,
   nickname: `DeckTestUser${ts}`,
@@ -71,6 +72,8 @@ async function request(
 // ─── Setup / Teardown ───
 
 async function setup() {
+  process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "test-bot-token";
+
   await connectToDatabase();
 
   const app = express();
@@ -103,11 +106,23 @@ async function teardown() {
   try {
     await setup();
 
-    // 0. Создать пользователя и залогиниться
+    // 0. Создать пользователя и залогиниться через /api/auth/tma
     const createUserRes = await request("POST", "/api/users", createUserBody);
     assert(createUserRes.status === 200, "create test user 200", createUserRes);
 
-    const loginRes = await request("GET", `/api/auth/${testTelegramId}`);
+    const initData = sign(
+      {
+        user: {
+          id: Number(testTelegramId),
+          first_name: "Deck",
+          username: createUserBody.nickname,
+        },
+      },
+      process.env.TELEGRAM_BOT_TOKEN!,
+      new Date(),
+    );
+
+    const loginRes = await request("POST", "/api/auth/tma", { initData });
     assert(loginRes.status === 200, "login 200", loginRes);
     const tokenPayload = (loginRes.data as { payload?: { token?: string } }).payload;
     assert(tokenPayload?.token, "login returns token", loginRes);

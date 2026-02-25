@@ -1,15 +1,15 @@
 import { io, type Socket as ClientSocket } from "socket.io-client";
 import { Server } from "socket.io";
 import http from "http";
-import { registerLobbyHandler } from "./socket/lobby.socket";
-import { registerGameHandler } from "./socket/game.socket";
-import { LobbyMessageTypes } from "../../common/message-types/lobby.types";
-import { GameMessageTypes } from "../../common/message-types/game.types";
-import { connectToDatabase } from "./database/database";
-import { LobbyService } from "./lobby/lobby.service";
-import { LobbyStatus, GameStages } from "./lobby/entities/lobby.entity";
-import { LobbyModel } from "./lobby/lobby.model";
-import { GameModel } from "./game/game.model";
+import { registerLobbyHandler } from "../socket/lobby.socket";
+import { registerGameHandler } from "../socket/game.socket";
+import { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
+import { GameMessageTypes } from "../../../common/message-types/game.types";
+import { connectToDatabase } from "../database/database";
+import { LobbyService } from "../lobby/lobby.service";
+import { LobbyStatus, GameStages } from "../lobby/entities/lobby.entity";
+import { LobbyModel } from "../lobby/lobby.model";
+import { GameModel } from "../game/game.model";
 
 function assert(condition: any, msg: string) {
   if (!condition) throw new Error(`ASSERT: ${msg}`);

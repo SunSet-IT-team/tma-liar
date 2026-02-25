@@ -9,6 +9,10 @@ const SECRET = process.env.SECRET ?? "super-secret";
  */
 export interface AuthRequest extends Request {
   userId?: string;
+  auth?: {
+    userId: string;
+    sub: string;
+  };
 }
 
 /**
@@ -32,8 +36,18 @@ export function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, SECRET) as unknown as { userId: string };
-    req.userId = payload.userId;
+    const payload = jwt.verify(token, SECRET) as unknown as { sub?: string; userId?: string };
+    const normalizedUserId = payload.sub ?? payload.userId;
+
+    if (!normalizedUserId) {
+      throw new ApiError(401, "INVALID_TOKEN_PAYLOAD");
+    }
+
+    req.userId = normalizedUserId;
+    req.auth = {
+      userId: normalizedUserId,
+      sub: normalizedUserId,
+    };
     next();
   } catch {
     throw new ApiError(401, "INVALID_TOKEN");
