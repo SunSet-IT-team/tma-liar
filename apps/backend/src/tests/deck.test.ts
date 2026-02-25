@@ -8,7 +8,7 @@ import { deckRouter } from "../decks/deck.router";
 import { errorMiddleware } from "../middlewares/errorHandler.middleware";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { DeckModel } from "../decks/deck.model";
-import { UserModel } from "../users/user.modal";
+import { UserModel } from "../users/user.model";
 
 function assert(condition: unknown, msg: string, received?: unknown): asserts condition {
   if (!condition) {

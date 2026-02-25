@@ -9,6 +9,7 @@ import type { UpdateLobbyDto } from './dtos/lobby-update.dto';
 import type { DeleteLobbyDto } from './dtos/lobby-delete.dto';
 import type { ToggleReadyDto } from './dtos/lobby-toggleReady.dto';
 import { env } from '../config/env';
+import { LobbyStatus, type Lobby as LobbyEntity } from './entities/lobby.entity';
 
 const LOBBY_CODE_ALPHABET = env.LOBBY_CODE_ALPHABET;
 const LOBBY_CODE_LENGTH = env.LOBBY_CODE_LENGTH;
@@ -24,6 +25,11 @@ export interface LobbyServiceMethods {
   deleteLobby: (param: DeleteLobbyDto) => Promise<Lobby>;
   joinLobby: (param: JoinLobbyDto) => Promise<Lobby>;
   togglePlayerReady: (param: ToggleReadyDto) => Promise<Lobby>;
+  leaveLobby: (param: { lobbyCode: string; telegramId: string }) => Promise<{
+    lobby: LobbyEntity | null;
+    deleted: boolean;
+    newAdminId: string | null;
+  }>;
 }
 
 const nanoid6 = customAlphabet(LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH);
@@ -91,50 +97,164 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Присоединиться к лобби */
   public async joinLobby(param: JoinLobbyDto): Promise<Lobby> {
-    // Проверяем существование лобби и наличие игрока
-    const existingLobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
-    
-    if (!existingLobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
-
-    const exists = existingLobby.players.find(p => p.telegramId === param.player.telegramId);
-    if (exists) throw new ApiError(409, 'PLAYER_ALREADY_IN_LOBBY');
-
     const updatedLobby = await LobbyModel.findOneAndUpdate(
-      { lobbyCode: param.lobbyCode },
+      {
+        lobbyCode: param.lobbyCode,
+        status: LobbyStatus.WAITING,
+        currentGameId: null,
+        'players.telegramId': { $ne: param.player.telegramId },
+      },
       { $push: { players: param.player } },
       { new: true }
-    );
+    ).lean();
 
-    console.log("updatedLobby", updatedLobby);
-    if (!updatedLobby) {
-      throw new ApiError(400, 'LOBBY_UPDATE_FAILED');
+    if (updatedLobby) {
+      return updatedLobby;
     }
 
-    return updatedLobby.toObject();
+    const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
+    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
+
+    if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
+      throw new ApiError(409, 'LOBBY_ALREADY_STARTED');
+    }
+
+    const exists = lobby.players.some((p) => p.telegramId === param.player.telegramId);
+    if (exists) throw new ApiError(409, 'PLAYER_ALREADY_IN_LOBBY');
+
+    throw new ApiError(409, 'LOBBY_JOIN_CONFLICT');
   }
 
   /** Переключить готовность игрока */
   public async togglePlayerReady(param: ToggleReadyDto): Promise<Lobby> {    
     const { lobbyCode, playerId, loserTask } = param;
 
-    const lobby = await LobbyModel.findOne({ lobbyCode });
-    if (!lobby) throw new ApiError(400, "LOBBY_NOT_FOUND");
+    const lobby = await LobbyModel.findOne({ lobbyCode }).lean();
+    if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    const player = lobby.players.find(p => p.id === playerId);
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
 
-    if(!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
+    if (player.isReady === true) {
+      const updatedLobby = await LobbyModel.findOneAndUpdate(
+        {
+          lobbyCode,
+          players: { $elemMatch: { id: playerId, isReady: true } },
+        },
+        {
+          $set: {
+            'players.$[target].isReady': false,
+            'players.$[target].loserTask': null,
+          },
+        },
+        {
+          new: true,
+          arrayFilters: [{ 'target.id': playerId }],
+        }
+      ).lean();
 
-    if (player.isReady) {
-      player.isReady = false;
-      player.loserTask = null;
-    } else {
-      if (!loserTask) throw new ApiError(400, "LOSER_TASK_NOT_SET");
-
-      player.isReady = true;
-      player.loserTask = loserTask;
+      if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
+      return updatedLobby;
     }
 
-    const updatedLobby = await lobby.save();
-    return updatedLobby.toObject();
-  }  
+    if (!loserTask) throw new ApiError(422, 'LOSER_TASK_NOT_SET');
+
+    const updatedLobby = await LobbyModel.findOneAndUpdate(
+      {
+        lobbyCode,
+        players: { $elemMatch: { id: playerId, isReady: { $ne: true } } },
+      },
+      {
+        $set: {
+          'players.$[target].isReady': true,
+          'players.$[target].loserTask': loserTask,
+        },
+      },
+      {
+        new: true,
+        arrayFilters: [{ 'target.id': playerId }],
+      }
+    ).lean();
+
+    if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
+    return updatedLobby;
+  }
+
+  /** Игрок выходит из лобби с атомарным обновлением админа/удалением лобби */
+  public async leaveLobby(param: { lobbyCode: string; telegramId: string }): Promise<{
+    lobby: LobbyEntity | null;
+    deleted: boolean;
+    newAdminId: string | null;
+  }> {
+    const { lobbyCode, telegramId } = param;
+    const session = await LobbyModel.startSession();
+
+    try {
+      return await session.withTransaction(async () => {
+        const lobbySnap = await LobbyModel.findOne({ lobbyCode }).session(session).lean();
+
+        if (!lobbySnap) {
+          throw new ApiError(404, 'LOBBY_NOT_FOUND');
+        }
+
+        const isAdmin = lobbySnap.adminId === telegramId;
+        const updatedLobby = await LobbyModel.findOneAndUpdate(
+          {
+            lobbyCode,
+            'players.telegramId': telegramId,
+          },
+          { $pull: { players: { telegramId } } },
+          { new: true, session }
+        ).lean();
+
+        if (!updatedLobby) {
+          throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
+        }
+
+        if (updatedLobby.players.length === 0) {
+          await LobbyModel.deleteOne({ lobbyCode }).session(session);
+          return {
+            lobby: null,
+            deleted: true,
+            newAdminId: null,
+          };
+        }
+
+        if (!isAdmin) {
+          return {
+            lobby: updatedLobby,
+            deleted: false,
+            newAdminId: null,
+          };
+        }
+
+        const firstPlayer = updatedLobby.players[0];
+        if (!firstPlayer) {
+          throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
+        }
+
+        const lobbyWithNewAdmin = await LobbyModel.findOneAndUpdate(
+          { lobbyCode, adminId: telegramId },
+          { $set: { adminId: firstPlayer.telegramId } },
+          { new: true, session }
+        ).lean();
+
+        if (!lobbyWithNewAdmin) {
+          throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
+        }
+
+        return {
+          lobby: lobbyWithNewAdmin,
+          deleted: false,
+          newAdminId: firstPlayer.telegramId,
+        };
+      }) as {
+        lobby: LobbyEntity | null;
+        deleted: boolean;
+        newAdminId: string | null;
+      };
+    } finally {
+      await session.endSession();
+    }
+  }
 }

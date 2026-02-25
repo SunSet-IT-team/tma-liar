@@ -3,7 +3,7 @@ import type { Question } from '../decks/entities/question.entity';
 import type { Player } from '../lobby/entities/player.entity';
 import { ApiError, buildStatePayload } from "../common/response";
 import { LobbyModel } from "../lobby/lobby.model";
-import { GameStages } from "../lobby/entities/lobby.entity";
+import { GameStages, LobbyStatus } from "../lobby/entities/lobby.entity";
 import type { Game } from './entities/game.entity';
 import { GameModel } from './game.model';
 import type { GameStartDto } from './dtos/game-start.dto';
@@ -20,6 +20,7 @@ import { env } from '../config/env';
 const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
 const SCORE_TRICKED = env.SCORE_TRICKED;
 const GAME_STAGE_TIMER_MS = env.GAME_STAGE_TIMER_MS;
+const stageTransitionLocks = new Map<string, Promise<void>>();
 
 export interface GameMethods { 
   createGame: (dto: GameStartDto) => Promise<Game>,
@@ -30,6 +31,26 @@ export interface GameMethods {
 
 export class GameService implements GameMethods { 
   constructor(private io: Server) {}
+
+  private async withStageTransitionLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
+    const previous = stageTransitionLocks.get(gameId) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    stageTransitionLocks.set(gameId, previous.then(() => current));
+    await previous;
+
+    try {
+      return await fn();
+    } finally {
+      release();
+      if (stageTransitionLocks.get(gameId) === current) {
+        stageTransitionLocks.delete(gameId);
+      }
+    }
+  }
   /**
    * Функция поиска игры
    * @param gameId id игры
@@ -47,17 +68,54 @@ export class GameService implements GameMethods {
      * 
      */
   public async createGame( dto: GameStartDto ): Promise<Game> {
-    const lobby = await LobbyModel.findOne({ lobbyCode: dto.lobbyCode }).lean();
-    if (!lobby) throw new ApiError(400, "LOBBY_NOT_FOUND");
+    const session = await GameModel.startSession();
+    let createdGame: Game | null = null;
 
-    if (dto.player.id !== lobby.adminId) throw new ApiError(400, "PLAYER_IS_NOT_ADMIN");
+    try {
+      await session.withTransaction(async () => {
+        const lobby = await LobbyModel.findOne({ lobbyCode: dto.lobbyCode }).session(session).lean();
+        if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    const playersInGame = lobby.players;
+        if (dto.player.id !== lobby.adminId) throw new ApiError(403, 'PLAYER_IS_NOT_ADMIN');
+        if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
+          throw new ApiError(409, 'GAME_ALREADY_STARTED');
+        }
 
-    const game = await GameModel.create({lobbyCode: dto.lobbyCode, players: playersInGame, settings: lobby.settings});
+        const [game] = await GameModel.create(
+          [{
+            lobbyCode: dto.lobbyCode,
+            players: lobby.players,
+            settings: lobby.settings,
+          }],
+          { session }
+        );
 
-    if (!game) throw new ApiError(400, 'LOBBY_NOT_CREATED');
-    return game.toObject();
+        if (!game) throw new ApiError(500, 'GAME_NOT_CREATED');
+
+        const updatedLobby = await LobbyModel.findOneAndUpdate(
+          {
+            lobbyCode: dto.lobbyCode,
+            status: LobbyStatus.WAITING,
+            currentGameId: null,
+          },
+          {
+            $set: {
+              status: LobbyStatus.STARTED,
+              currentGameId: game.id,
+            },
+          },
+          { new: true, session }
+        ).lean();
+
+        if (!updatedLobby) throw new ApiError(409, 'LOBBY_STATE_CONFLICT');
+        createdGame = game.toObject();
+      });
+
+      if (!createdGame) throw new ApiError(500, 'GAME_NOT_CREATED');
+      return createdGame;
+    } finally {
+      await session.endSession();
+    }
   }
 
   /**
@@ -66,64 +124,66 @@ export class GameService implements GameMethods {
    */ 
   public async nextStage(dto: GameNextStageDto): Promise<GameStages> {
     const { gameId } = dto;
-    const game = await GameModel.findById(gameId);
-    if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
+    return this.withStageTransitionLock(gameId, async () => {
+      const game = await GameModel.findById(gameId);
+      if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
 
-    const gameSnapobj = game.toObject();
-    
-    if (game.timerId) {
-      clearTimeout(game.timerId);
-      game.timerId = null;
-    }
+      const gameSnapobj = game.toObject();
+      
+      if (game.timerId) {
+        clearTimeout(game.timerId);
+        game.timerId = null;
+      }
 
-    const currentStage = game.stage;
+      const currentStage = game.stage;
 
-    let nextStage: GameStages;
+      let nextStage: GameStages;
 
-    switch (currentStage) {
-      case GameStages.LOBBY:
-        nextStage = await this.handleLobbyStage(game, gameId);
-        break;
+      switch (currentStage) {
+        case GameStages.LOBBY:
+          nextStage = await this.handleLobbyStage(game, gameId);
+          break;
 
-      case GameStages.LIAR_CHOOSES:
-        nextStage = await this.handleLiarChoosesStage(game, gameId);
-        break;
+        case GameStages.LIAR_CHOOSES:
+          nextStage = await this.handleLiarChoosesStage(game, gameId);
+          break;
 
-      case GameStages.QUESTION_TO_LIAR:
-        nextStage = await this.handleQuestionToLiarStage(game, gameId);
-        break;
+        case GameStages.QUESTION_TO_LIAR:
+          nextStage = await this.handleQuestionToLiarStage(game, gameId);
+          break;
 
-      case GameStages.QUESTION_RESULTS:
-        nextStage = await this.handleQuestionResultsStage(game, gameId);
-        break;
+        case GameStages.QUESTION_RESULTS:
+          nextStage = await this.handleQuestionResultsStage(game, gameId);
+          break;
 
-      case GameStages.GAME_RESULTS:
-        nextStage = await this.handleGameResultsStage(game, gameId);
-        break;
+        case GameStages.GAME_RESULTS:
+          nextStage = await this.handleGameResultsStage(game, gameId);
+          break;
 
-      case GameStages.END:
-        nextStage = await this.handleEndStage(game, gameId);
-        break;
+        case GameStages.END:
+          nextStage = await this.handleEndStage(game, gameId);
+          break;
 
-      default:
-        throw new ApiError(400, 'UNKNOWN_STAGE');
-    }
+        default:
+          throw new ApiError(400, 'UNKNOWN_STAGE');
+      }
 
-    game.stage = nextStage;
+      game.stage = nextStage;
 
-    game.markModified('stage');
-    await game.save();
-    
-    const updatedGame = await GameModel.findById(gameId);
-    if(!updatedGame) throw new ApiError(404, 'GAME_AFTER_UPDATE_NOT_FOUND');
-    const updatedGameobj = updatedGame.toObject();
+      game.markModified('stage');
+      await game.save();
+      
+      const updatedGame = await GameModel.findById(gameId);
+      if(!updatedGame) throw new ApiError(404, 'GAME_AFTER_UPDATE_NOT_FOUND');
+      const updatedGameobj = updatedGame.toObject();
 
-    const diff = findDiff(gameSnapobj, updatedGameobj, nextStage);
-    console.log(`[nextStage] Emitting stage change: ${currentStage} → ${nextStage}, diff keys: ${Object.keys(diff).join(", ")}`);
-    
-    this.io.to(gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff));
+      const diff = findDiff(gameSnapobj, updatedGameobj, nextStage);
+      console.log(`[nextStage] Emitting stage change: ${currentStage} → ${nextStage}, diff keys: ${Object.keys(diff).join(", ")}`);
+      
+      this.io.to(gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff));
 
-    return nextStage;
+      return nextStage;
+    });
   }
 
   public async handleLobbyStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages> {
@@ -132,8 +192,7 @@ export class GameService implements GameMethods {
     if (!game.players.every(p => p.isReady)) throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
 
     const nextQuestion = this.pickNextQuestion(game);
-    if (!nextQuestion) game.questionHistory = [];
-    
+    if (!nextQuestion) throw new ApiError(409, 'DECK_QUESTIONS_EXHAUSTED');
 
     game.activeQuestion = nextQuestion.id;
     game.stage = GameStages.LIAR_CHOOSES;
@@ -193,12 +252,17 @@ export class GameService implements GameMethods {
       console.log(game.questionHistory.length);
       console.log(game.settings.questionCount);
       const nextQuestion = this.pickNextQuestion(game);
+      if (!nextQuestion) throw new ApiError(409, 'DECK_QUESTIONS_EXHAUSTED');
 
-      game.activeQuestion = nextQuestion.content;
+      game.activeQuestion = nextQuestion.id;
       game.questionHistory.push(nextQuestion.id);
       
       await this.chooseLiar(game);
-      game.players.forEach(p => { p.answer = null; p.isConfirmed == null });
+      game.players.forEach(p => {
+        p.answer = null;
+        p.isConfirmed = false;
+        p.likes = 0;
+      });
       game.doLie = null;
       nextStage = GameStages.LIAR_CHOOSES;
 
@@ -252,8 +316,8 @@ export class GameService implements GameMethods {
    * @param game mongoose-документ игры
    * @returns объект следующего вопроса
    */
-  public pickNextQuestion(game: HydratedDocument<Game>): Question {
-    return game.settings.deck.questions.find(q => !game.questionHistory.includes(q.id))!;
+  public pickNextQuestion(game: HydratedDocument<Game>): Question | undefined {
+    return game.settings.deck.questions.find(q => !game.questionHistory.includes(q.id));
   }
   
   /**
@@ -261,13 +325,13 @@ export class GameService implements GameMethods {
    * @param game mongoose-документ игры
    */
   public async chooseLiar(game: HydratedDocument<Game>) {
-    const minCount = Math.min(...game.players.map(p => p.wasLiar!));
+    const minCount = Math.min(...game.players.map((p) => p.wasLiar ?? 0));
  
-    const candidates = game.players.filter(p => p.wasLiar === minCount);
+    const candidates = game.players.filter((p) => (p.wasLiar ?? 0) === minCount);
     const liar = candidates[Math.floor(Math.random() * candidates.length)];
     
     if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND');
-    liar.wasLiar += 1;
+    liar.wasLiar = (liar.wasLiar ?? 0) + 1;
     game.liarId = liar.id;
 
     game.markModified('players');

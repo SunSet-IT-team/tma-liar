@@ -1,6 +1,6 @@
 import type { User } from './entities/user.entity';
 import { ApiError } from '../common/response';
-import { UserModel } from './user.modal';
+import { UserModel } from './user.model';
 import type { FindUserDto } from './dtos/user-find.dto';
 import type { FindUsersDto } from './dtos/user-findUsers.dto';
 import type { CreateUserDto } from './dtos/user-create.dto';

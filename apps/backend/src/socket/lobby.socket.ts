@@ -1,4 +1,3 @@
-import { LobbyModel } from "../lobby/lobby.model";
 import { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
 import { LobbyService } from "../lobby/lobby.service";
 import type { Server, Socket } from "socket.io";
@@ -12,7 +11,6 @@ import { GameMessageTypes } from "../../../common/message-types/game.types";
 import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
-import { LobbyStatus } from "../lobby/entities/lobby.entity";
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -93,43 +91,20 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
   socket.on(LobbyMessageTypes.PLAYER_LEFT, async ({ lobbyCode, telegramId }: { lobbyCode: string; telegramId: string }) => {
     try {
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
-      const isAdmin = lobbySnap.adminId === telegramId;
-      
-      const updatedLobby = await LobbyModel.findOneAndUpdate(
-        { lobbyCode },
-        { $pull: { players: { telegramId } } },
-        { new: true }
-      ).lean();
+      const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
 
-      if (!updatedLobby) {
-        console.error(`[PLAYER_LEFT] Lobby ${lobbyCode} not found`);
-        return;
-      }
-
-      const remainingPlayers = updatedLobby.players || [];
-      const shouldDeleteLobby = remainingPlayers.length === 0;
-
-      if (shouldDeleteLobby) {
-        await lobbyService.deleteLobby({ lobbyCode });
+      if (leaveResult.deleted) {
         io.to(lobbyCode).emit(LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
         console.log(`[PLAYER_LEFT] Lobby ${lobbyCode} deleted — no players left`);
-      } else if (isAdmin && remainingPlayers.length > 0) {
-        const firstPlayer = remainingPlayers[0];
-        if (!firstPlayer) {
-          console.error(`[PLAYER_LEFT] No players in lobby ${lobbyCode} after admin left`);
-          return;
-        }
-        const newAdminId = firstPlayer.telegramId;
-        await LobbyModel.updateOne(
-          { lobbyCode },
-          { $set: { adminId: newAdminId } }
-        );        
-        console.log(`[PLAYER_LEFT] Admin ${telegramId} left ${lobbyCode}, new admin: ${newAdminId}`);
+      } else if (leaveResult.newAdminId) {
+        console.log(`[PLAYER_LEFT] Admin ${telegramId} left ${lobbyCode}, new admin: ${leaveResult.newAdminId}`);
       } else {
         console.log(`[PLAYER_LEFT] ${telegramId} left ${lobbyCode}`);
       }
 
-      io.to(lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(lobbySnap, updatedLobby)));
+      if (leaveResult.lobby) {
+        io.to(lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(lobbySnap, leaveResult.lobby)));
+      }
       socket.leave(lobbyCode);
     } catch (error) {
       console.error(`[PLAYER_LEFT] Error:`, error);
@@ -175,17 +150,8 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const dto: GameStartDto = dtoResult.data;
-      const lobbySnap = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
-
       const createdGame = await gameService.createGame({...dto});
       const gameId = createdGame.id;
-
-      // Обновляем статус лобби на STARTED и устанавливаем currentGameId
-      await lobbyService.updateLobby({
-        lobbyCode: dto.lobbyCode,
-        status: LobbyStatus.STARTED,
-        currentGameId: gameId,
-      });
 
       // Присоединяем всех игроков к игровой комнате
       const lobbySockets = io.sockets.adapter.rooms.get(dto.lobbyCode);
@@ -200,7 +166,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const gameRoomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
-      console.log(`[GAME_STARTED] lobby ${dto.lobbyCode} (${lobbySocketCount} sockets) → game ${gameId} (${gameRoomSize} sockets), status: ${LobbyStatus.STARTED}`);
+      console.log(`[GAME_STARTED] lobby ${dto.lobbyCode} (${lobbySocketCount} sockets) → game ${gameId} (${gameRoomSize} sockets), status: started`);
 
       const gameStateDto = {
         gameId: createdGame.id,

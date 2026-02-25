@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import type { AuthLoginDto } from "./dtos/auth-login.dto";
 import { ApiError } from "../common/response";
-import { UserModel } from "../users/user.modal";
+import { UserModel } from "../users/user.model";
 import { TelegramAuthService } from './telegram-auth.service';
 import { env } from "../config/env";
 

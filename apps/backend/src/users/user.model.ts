@@ -1,6 +1,5 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model } from "mongoose";
 import type { User } from "./entities/user.entity";
-import { required } from "zod/mini";
 
 const UserSchema = new Schema<User>(
   {
@@ -23,4 +22,3 @@ UserSchema.virtual('id').get(function () {
 });
 
 export const UserModel = model<User>("User", UserSchema);
-

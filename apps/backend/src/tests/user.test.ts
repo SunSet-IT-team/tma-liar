@@ -3,7 +3,7 @@ import express from "express";
 import { connectToDatabase } from "../database/database";
 import { userRouter } from "../users/user.router";
 import { errorMiddleware } from "../middlewares/errorHandler.middleware";
-import { UserModel } from "../users/user.modal";
+import { UserModel } from "../users/user.model";
 
 function assert(condition: unknown, msg: string, received?: unknown): asserts condition {
   if (!condition) {
