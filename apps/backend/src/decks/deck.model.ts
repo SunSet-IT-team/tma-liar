@@ -1,6 +1,5 @@
 import { Schema, model } from 'mongoose';
 import type { Deck } from './entities/deck.entity';
-import { QuestionModel } from './question.model';
 import { QuestionSchema } from './question.model';
 
 /**

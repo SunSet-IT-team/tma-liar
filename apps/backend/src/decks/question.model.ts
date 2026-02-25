@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
 import type { Question } from './entities/question.entity';
 
 /**
@@ -30,5 +30,3 @@ export const QuestionSchema = new Schema<Question>(
         _id: false,
     }
 );
-
-export const QuestionModel = model<Question>('Question', QuestionSchema);

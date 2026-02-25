@@ -2,10 +2,8 @@ import type { HydratedDocument } from 'mongoose';
 import type { Question } from '../decks/entities/question.entity';
 import type { Player } from '../lobby/entities/player.entity';
 import { ApiError, buildStatePayload } from "../common/response";
-import { LobbyModel } from "../lobby/lobby.model";
 import { GameStages, LobbyStatus } from "../lobby/entities/lobby.entity";
 import type { Game } from './entities/game.entity';
-import { GameModel } from './game.model';
 import type { GameStartDto } from './dtos/game-start.dto';
 import type { GameNextStageDto } from './dtos/game-next-stage.dto';
 import type { GamePlayerLikedDto } from './dtos/game-player-liked.dto';
@@ -16,6 +14,8 @@ import type { Server } from 'socket.io';
 import { findDiff } from '../common/diff';
 import { GameMessageTypes } from '../../../common/message-types/game.types';
 import { env } from '../config/env';
+import { GameRepository } from './game.repository';
+import { LobbyRepository } from '../lobby/lobby.repository';
 
 const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
 const SCORE_TRICKED = env.SCORE_TRICKED;
@@ -30,7 +30,11 @@ export interface GameMethods {
 }
 
 export class GameService implements GameMethods { 
-  constructor(private io: Server) {}
+  constructor(
+    private io: Server,
+    private readonly gameRepository: GameRepository = new GameRepository(),
+    private readonly lobbyRepository: LobbyRepository = new LobbyRepository(),
+  ) {}
 
   private async withStageTransitionLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
     const previous = stageTransitionLocks.get(gameId) ?? Promise.resolve();
@@ -57,7 +61,7 @@ export class GameService implements GameMethods {
    * @returns 
    */  
   public async findGame(gameId: string): Promise<Game> {
-    const game = await GameModel.findById(gameId).lean();
+    const game = await this.gameRepository.findByIdLean(gameId);
     if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
 
     return game;
@@ -68,12 +72,12 @@ export class GameService implements GameMethods {
      * 
      */
   public async createGame( dto: GameStartDto ): Promise<Game> {
-    const session = await GameModel.startSession();
+    const session = await this.gameRepository.startSession();
     let createdGame: Game | null = null;
 
     try {
       await session.withTransaction(async () => {
-        const lobby = await LobbyModel.findOne({ lobbyCode: dto.lobbyCode }).session(session).lean();
+        const lobby = await this.lobbyRepository.findByCode(dto.lobbyCode, session);
         if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
         if (dto.player.id !== lobby.adminId) throw new ApiError(403, 'PLAYER_IS_NOT_ADMIN');
@@ -81,34 +85,23 @@ export class GameService implements GameMethods {
           throw new ApiError(409, 'GAME_ALREADY_STARTED');
         }
 
-        const [game] = await GameModel.create(
-          [{
-            lobbyCode: dto.lobbyCode,
-            players: lobby.players,
-            settings: lobby.settings,
-          }],
-          { session }
+        const game = await this.gameRepository.createForLobby(
+          dto.lobbyCode,
+          lobby.players,
+          lobby.settings,
+          session,
         );
 
         if (!game) throw new ApiError(500, 'GAME_NOT_CREATED');
 
-        const updatedLobby = await LobbyModel.findOneAndUpdate(
-          {
-            lobbyCode: dto.lobbyCode,
-            status: LobbyStatus.WAITING,
-            currentGameId: null,
-          },
-          {
-            $set: {
-              status: LobbyStatus.STARTED,
-              currentGameId: game.id,
-            },
-          },
-          { new: true, session }
-        ).lean();
+        const updatedLobby = await this.lobbyRepository.markStartedIfWaiting(
+          dto.lobbyCode,
+          game.id,
+          session,
+        );
 
         if (!updatedLobby) throw new ApiError(409, 'LOBBY_STATE_CONFLICT');
-        createdGame = game.toObject();
+        createdGame = game;
       });
 
       if (!createdGame) throw new ApiError(500, 'GAME_NOT_CREATED');
@@ -125,7 +118,7 @@ export class GameService implements GameMethods {
   public async nextStage(dto: GameNextStageDto): Promise<GameStages> {
     const { gameId } = dto;
     return this.withStageTransitionLock(gameId, async () => {
-      const game = await GameModel.findById(gameId);
+      const game = await this.gameRepository.findByIdDocument(gameId);
       if (!game) throw new ApiError(404, 'GAME_NOT_FOUND');
 
       const gameSnapobj = game.toObject();
@@ -173,7 +166,7 @@ export class GameService implements GameMethods {
       game.markModified('stage');
       await game.save();
       
-      const updatedGame = await GameModel.findById(gameId);
+      const updatedGame = await this.gameRepository.findByIdDocument(gameId);
       if(!updatedGame) throw new ApiError(404, 'GAME_AFTER_UPDATE_NOT_FOUND');
       const updatedGameobj = updatedGame.toObject();
 
@@ -345,7 +338,7 @@ export class GameService implements GameMethods {
    */
   public async liarChooses(dto: GameLiarChoosesDto) {
     const { gameId, answer } = dto;
-    const game = await GameModel.findById(gameId);
+    const game = await this.gameRepository.findByIdDocument(gameId);
     if (!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
@@ -420,7 +413,7 @@ export class GameService implements GameMethods {
     const { senderId, receiverId, gameId } = dto;
     if(receiverId == senderId) throw new ApiError(400, 'RECEIVER_EQUALS_SENDER_IDS');
 
-    const game = await GameModel.findById(gameId);
+    const game = await this.gameRepository.findByIdDocument(gameId);
     
     if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
@@ -450,7 +443,7 @@ export class GameService implements GameMethods {
    */
   public async setAnswer(dto: GamePlayerVotedDto): Promise<Player>{ 
     const { gameId, playerId, answer } = dto;
-    const game = await GameModel.findById(gameId); 
+    const game = await this.gameRepository.findByIdDocument(gameId); 
     if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
@@ -475,7 +468,7 @@ export class GameService implements GameMethods {
    */
   public async confirmAnswer(dto: GamePlayerSecuredDto): Promise<Player>{ 
     const { gameId, playerId } = dto;
-    const game = await GameModel.findById(gameId); 
+    const game = await this.gameRepository.findByIdDocument(gameId); 
     if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');

@@ -1,10 +1,10 @@
 import type { Deck } from './entities/deck.entity';
 import { ApiError } from '../common/response';
-import { DeckModel } from './deck.model';
 import type { FindDeckDto } from './dtos/deck-find.dto';
 import type { CreateDeckDto } from './dtos/deck-create.dto';
 import type { UpdateDeckDto } from './dtos/deck-update.dto';
 import type { DeleteDeckDto } from './dtos/deck-delete.dto';
+import { DeckRepository } from './deck.repository';
 
 /**
  * Интерфейс для сервиса колод
@@ -21,20 +21,22 @@ export interface DeckServiceMethods {
  * Сервис колод
  */
 export class DeckService implements DeckServiceMethods {
+  constructor(private readonly deckRepository: DeckRepository = new DeckRepository()) {}
+
   /** Найти одну колоду */
   public async findDeck(param: FindDeckDto): Promise<Deck> {
-    const deck = await DeckModel.findOne({ _id: param.id });
+    const deck = await this.deckRepository.findById(param.id);
 
     if (!deck) {
       throw new ApiError(404, 'DECK_NOT_FOUND');
     }
 
-    return deck.toObject();
+    return deck;
   }
 
   /** Найти несколько колод */
   public async findDecks(): Promise<Deck[]> {
-    const decks = await DeckModel.find().lean();
+    const decks = await this.deckRepository.findAll();
 
     if (!decks || decks.length === 0) throw new ApiError(404, 'DECKS_NOT_FOUND');
     return decks;
@@ -42,21 +44,15 @@ export class DeckService implements DeckServiceMethods {
 
   /** Создать колоду */
   public async createDeck(param: CreateDeckDto): Promise<Deck> {
-    const deck = await DeckModel.create(param);
+    const deck = await this.deckRepository.create(param);
 
     if (!deck) throw new ApiError(400, 'DECK_NOT_CREATED');
-    return deck.toObject();
+    return deck;
   }
 
   /** Обновить колоду */
   public async updateDeck(param: UpdateDeckDto): Promise<Deck> {
-    const { id, ...updateFields } = param;
-
-    const updatedDeck = await DeckModel.findOneAndUpdate(
-      { _id: id },
-      { $set: updateFields },
-      { new: true }
-    ).lean();
+    const updatedDeck = await this.deckRepository.updateById(param);
 
     if (!updatedDeck) {
       throw new ApiError(404, 'DECK_NOT_FOUND');
@@ -67,7 +63,7 @@ export class DeckService implements DeckServiceMethods {
 
   /** Удалить колоду */
   public async deleteDeck(param: DeleteDeckDto): Promise<Deck> {
-    const deletedDeck = await DeckModel.findOneAndDelete({ _id: param.id }).lean();
+    const deletedDeck = await this.deckRepository.deleteById(param.id);
 
     if (!deletedDeck) {
       throw new ApiError(404, 'DECK_NOT_FOUND');

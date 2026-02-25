@@ -1,7 +1,6 @@
 import { customAlphabet } from 'nanoid';
 import { type Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
-import { LobbyModel } from './lobby.model';
 import type { CreateLobbyDto } from './dtos/lobby-create.dto';
 import type { JoinLobbyDto } from './dtos/lobby-join.dto';
 import type { FindLobbyDto } from './dtos/lobby-find.dto';
@@ -10,6 +9,7 @@ import type { DeleteLobbyDto } from './dtos/lobby-delete.dto';
 import type { ToggleReadyDto } from './dtos/lobby-toggleReady.dto';
 import { env } from '../config/env';
 import { LobbyStatus, type Lobby as LobbyEntity } from './entities/lobby.entity';
+import { LobbyRepository } from './lobby.repository';
 
 const LOBBY_CODE_ALPHABET = env.LOBBY_CODE_ALPHABET;
 const LOBBY_CODE_LENGTH = env.LOBBY_CODE_LENGTH;
@@ -37,9 +37,11 @@ const nanoid6 = customAlphabet(LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH);
  * Сервис лобби
  */
 export class LobbyService implements LobbyServiceMethods {
+  constructor(private readonly lobbyRepository: LobbyRepository = new LobbyRepository()) {}
+
   /** Найти одно лобби */
     public async findLobby(param: FindLobbyDto): Promise<Lobby> {
-      const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode });
+      const lobby = await this.lobbyRepository.findByCodeDocument(param.lobbyCode);
 
       if (!lobby) {
         throw new ApiError(404, 'LOBBY_NOT_FOUND');
@@ -50,7 +52,7 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Найти несколько лобби */
   public async findLobbies(): Promise<Lobby[]> {
-    const lobbies = await LobbyModel.find().lean();
+    const lobbies = await this.lobbyRepository.findAll();
 
     if (!lobbies || lobbies.length === 0) throw new ApiError(404, 'LOBBIES_NOT_FOUND');
     return lobbies;
@@ -58,24 +60,18 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Создать лобби */
   public async createLobby( param: CreateLobbyDto): Promise<Lobby> {
-    const lobby = await LobbyModel.create({
+    const lobby = await this.lobbyRepository.create({
       lobbyCode: nanoid6(),
       ...param
     });
 
     if (!lobby) throw new ApiError(400, 'LOBBY_NOT_CREATED');
-    return lobby.toObject();
+    return lobby;
   }
 
   /** Обновить лобби */
   public async updateLobby(param: UpdateLobbyDto): Promise<Lobby> {
-    const { lobbyCode, ...updateFields } = param;
-
-    const updatedLobby = await LobbyModel.findOneAndUpdate(
-      { lobbyCode },
-      { $set: updateFields },
-      { new: true }
-    ).lean();
+    const updatedLobby = await this.lobbyRepository.updateByCode(param);
 
     if (!updatedLobby) {
       throw new ApiError(404, 'LOBBY_NOT_EXIST');
@@ -86,7 +82,7 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Удалить лобби */
   public async deleteLobby(param: DeleteLobbyDto): Promise<Lobby> {
-    const deletedLobby = await LobbyModel.findOneAndDelete({ lobbyCode: param.lobbyCode }).lean();
+    const deletedLobby = await this.lobbyRepository.deleteByCode(param.lobbyCode);
 
     if (!deletedLobby) {
       throw new ApiError(404, 'LOBBY_NOT_EXIST');
@@ -97,22 +93,13 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Присоединиться к лобби */
   public async joinLobby(param: JoinLobbyDto): Promise<Lobby> {
-    const updatedLobby = await LobbyModel.findOneAndUpdate(
-      {
-        lobbyCode: param.lobbyCode,
-        status: LobbyStatus.WAITING,
-        currentGameId: null,
-        'players.telegramId': { $ne: param.player.telegramId },
-      },
-      { $push: { players: param.player } },
-      { new: true }
-    ).lean();
+    const updatedLobby = await this.lobbyRepository.joinIfAllowed(param);
 
     if (updatedLobby) {
       return updatedLobby;
     }
 
-    const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode }).lean();
+    const lobby = await this.lobbyRepository.findByCode(param.lobbyCode);
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
     if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
@@ -129,29 +116,14 @@ export class LobbyService implements LobbyServiceMethods {
   public async togglePlayerReady(param: ToggleReadyDto): Promise<Lobby> {    
     const { lobbyCode, playerId, loserTask } = param;
 
-    const lobby = await LobbyModel.findOne({ lobbyCode }).lean();
+    const lobby = await this.lobbyRepository.findByCode(lobbyCode);
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     const player = lobby.players.find((p) => p.id === playerId);
     if (!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
 
     if (player.isReady === true) {
-      const updatedLobby = await LobbyModel.findOneAndUpdate(
-        {
-          lobbyCode,
-          players: { $elemMatch: { id: playerId, isReady: true } },
-        },
-        {
-          $set: {
-            'players.$[target].isReady': false,
-            'players.$[target].loserTask': null,
-          },
-        },
-        {
-          new: true,
-          arrayFilters: [{ 'target.id': playerId }],
-        }
-      ).lean();
+      const updatedLobby = await this.lobbyRepository.setPlayerNotReady(lobbyCode, playerId);
 
       if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
       return updatedLobby;
@@ -159,22 +131,7 @@ export class LobbyService implements LobbyServiceMethods {
 
     if (!loserTask) throw new ApiError(422, 'LOSER_TASK_NOT_SET');
 
-    const updatedLobby = await LobbyModel.findOneAndUpdate(
-      {
-        lobbyCode,
-        players: { $elemMatch: { id: playerId, isReady: { $ne: true } } },
-      },
-      {
-        $set: {
-          'players.$[target].isReady': true,
-          'players.$[target].loserTask': loserTask,
-        },
-      },
-      {
-        new: true,
-        arrayFilters: [{ 'target.id': playerId }],
-      }
-    ).lean();
+    const updatedLobby = await this.lobbyRepository.setPlayerReady(lobbyCode, playerId, loserTask);
 
     if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
     return updatedLobby;
@@ -187,32 +144,25 @@ export class LobbyService implements LobbyServiceMethods {
     newAdminId: string | null;
   }> {
     const { lobbyCode, telegramId } = param;
-    const session = await LobbyModel.startSession();
+    const session = await this.lobbyRepository.startSession();
 
     try {
       return await session.withTransaction(async () => {
-        const lobbySnap = await LobbyModel.findOne({ lobbyCode }).session(session).lean();
+        const lobbySnap = await this.lobbyRepository.findByCode(lobbyCode, session);
 
         if (!lobbySnap) {
           throw new ApiError(404, 'LOBBY_NOT_FOUND');
         }
 
         const isAdmin = lobbySnap.adminId === telegramId;
-        const updatedLobby = await LobbyModel.findOneAndUpdate(
-          {
-            lobbyCode,
-            'players.telegramId': telegramId,
-          },
-          { $pull: { players: { telegramId } } },
-          { new: true, session }
-        ).lean();
+        const updatedLobby = await this.lobbyRepository.removePlayer(lobbyCode, telegramId, session);
 
         if (!updatedLobby) {
           throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
         }
 
         if (updatedLobby.players.length === 0) {
-          await LobbyModel.deleteOne({ lobbyCode }).session(session);
+          await this.lobbyRepository.deleteByCode(lobbyCode, session);
           return {
             lobby: null,
             deleted: true,
@@ -233,11 +183,12 @@ export class LobbyService implements LobbyServiceMethods {
           throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
         }
 
-        const lobbyWithNewAdmin = await LobbyModel.findOneAndUpdate(
-          { lobbyCode, adminId: telegramId },
-          { $set: { adminId: firstPlayer.telegramId } },
-          { new: true, session }
-        ).lean();
+        const lobbyWithNewAdmin = await this.lobbyRepository.transferAdmin(
+          lobbyCode,
+          telegramId,
+          firstPlayer.telegramId,
+          session,
+        );
 
         if (!lobbyWithNewAdmin) {
           throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');

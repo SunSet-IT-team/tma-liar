@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import type { AuthLoginDto } from "./dtos/auth-login.dto";
 import { ApiError } from "../common/response";
-import { UserModel } from "../users/user.model";
 import { TelegramAuthService } from './telegram-auth.service';
 import { env } from "../config/env";
+import { UserRepository } from "../users/user.repository";
 
 /*
  * Интерфейс для сервиса авторизации
@@ -16,15 +16,18 @@ export interface AuthServiceMethods {
  * Сервис авторизации
  */
 export class AuthService implements AuthServiceMethods {
-  constructor(private telegramAuthService: TelegramAuthService = new TelegramAuthService()) {}
+  constructor(
+    private telegramAuthService: TelegramAuthService = new TelegramAuthService(),
+    private userRepository: UserRepository = new UserRepository(),
+  ) {}
 
   public async login(param: AuthLoginDto): Promise<string> {
     const telegramUser = this.telegramAuthService.getValidatedUser(param.initData);
 
-    let user = await UserModel.findOne({ telegramId: telegramUser.telegramId });
+    let user = await this.userRepository.findByTelegramId(telegramUser.telegramId);
 
     if (!user) {
-      user = await UserModel.create({
+      user = await this.userRepository.create({
         telegramId: telegramUser.telegramId,
         nickname: telegramUser.nickname,
         profileImg: telegramUser.profileImg,
