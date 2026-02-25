@@ -16,7 +16,7 @@ export class AuthController {
     const result = AuthLoginDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "LOGIN_DATA_INVALID");
+      throw new ApiError(422, "LOGIN_DATA_INVALID");
     }
 
     const dto: AuthLoginDto = result.data;

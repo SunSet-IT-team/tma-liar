@@ -1,12 +1,11 @@
 import jwt from 'jsonwebtoken';
 import type { Socket } from 'socket.io';
+import { env } from '../config/env';
 
 export type SocketAuthPayload = {
   sub?: string;
   userId?: string;
 };
-
-const SECRET = process.env.SECRET ?? 'super-secret';
 
 export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void) {
   try {
@@ -21,7 +20,7 @@ export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void
       return next(new Error('INVALID_AUTH_HEADER'));
     }
 
-    const payload = jwt.verify(token, SECRET) as SocketAuthPayload;
+    const payload = jwt.verify(token, env.SECRET) as SocketAuthPayload;
     const userId = payload.sub ?? payload.userId;
 
     if (!userId) {

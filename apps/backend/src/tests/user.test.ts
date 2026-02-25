@@ -73,17 +73,17 @@ async function teardown() {
   try {
     await setup();
 
-    // 1. GET /api/users — без query telegramIds → 400
+    // 1. GET /api/users — без query telegramIds → 422
     const findUsersNoQueryRes = await request("GET", "/api/users");
-    assert(findUsersNoQueryRes.status === 400, "findUsers 400 when no telegramIds", findUsersNoQueryRes);
+    assert(findUsersNoQueryRes.status === 422, "findUsers 422 when no telegramIds", findUsersNoQueryRes);
 
-    // 2. GET /api/users?telegramIds= — пустой массив после парсинга → 400
+    // 2. GET /api/users?telegramIds= — пустой массив после парсинга → 422
     const findUsersEmptyRes = await request("GET", "/api/users?telegramIds=");
-    assert(findUsersEmptyRes.status === 400, "findUsers 400 for empty telegramIds", findUsersEmptyRes);
+    assert(findUsersEmptyRes.status === 422, "findUsers 422 for empty telegramIds", findUsersEmptyRes);
 
-    // 3. GET /api/users?telegramIds=nonExistent — валидный query, но пользователей нет → 400 (USERS_NOT_FOUND)
+    // 3. GET /api/users?telegramIds=nonExistent — валидный query, но пользователей нет → 404 (USERS_NOT_FOUND)
     const findUsersEmptyListRes = await request("GET", `/api/users?telegramIds=${testTelegramId}`);
-    assert(findUsersEmptyListRes.status === 400, "findUsers 400 when no users match", findUsersEmptyListRes);
+    assert(findUsersEmptyListRes.status === 404, "findUsers 404 when no users match", findUsersEmptyListRes);
 
     // 4. POST /api/users — создание пользователя
     const createRes = await request("POST", "/api/users", createUserBody);
@@ -98,9 +98,9 @@ async function teardown() {
     const findPayload = (findUserRes.data as { payload?: { telegramId?: string } }).payload;
     assert(findPayload?.telegramId === testTelegramId, "findUser returns same telegramId", findUserRes);
 
-    // 6. GET /api/users/:telegramId — несуществующий пользователь → 400 (сервис USER_NOT_FOUND)
+    // 6. GET /api/users/:telegramId — несуществующий пользователь → 404 (сервис USER_NOT_FOUND)
     const notFoundRes = await request("GET", "/api/users/non-existent-telegram-id-12345");
-    assert(notFoundRes.status === 400, "findUser 400 when not found", notFoundRes);
+    assert(notFoundRes.status === 404, "findUser 404 when not found", notFoundRes);
 
     // 7. GET /api/users?telegramIds=... — список с созданным пользователем
     const listAfterRes = await request("GET", `/api/users?telegramIds=${testTelegramId}`);
@@ -121,23 +121,23 @@ async function teardown() {
       telegramId: "some-id",
       nickname: "",
     });
-    assert(invalidCreateRes.status === 400, "createUser 400 for invalid body", invalidCreateRes);
+    assert(invalidCreateRes.status === 422, "createUser 422 for invalid body", invalidCreateRes);
 
     // 10. PUT — невалидное тело (нет ни одного поля для обновления)
     const invalidUpdateRes = await request("PUT", `/api/users/${testTelegramId}`, {});
-    assert(invalidUpdateRes.status === 400, "updateUser 400 when no update fields", invalidUpdateRes);
+    assert(invalidUpdateRes.status === 422, "updateUser 422 when no update fields", invalidUpdateRes);
 
     // 11. DELETE /api/users/:telegramId
     const deleteRes = await request("DELETE", `/api/users/${testTelegramId}`);
     assert(deleteRes.status === 200, `deleteUser 200, got ${deleteRes.status}`, deleteRes);
 
-    // 12. GET /api/users/:telegramId после удаления → 400 (сервис USER_NOT_FOUND)
+    // 12. GET /api/users/:telegramId после удаления → 404 (сервис USER_NOT_FOUND)
     const afterDeleteRes = await request("GET", `/api/users/${testTelegramId}`);
-    assert(afterDeleteRes.status === 400, "findUser 400 after delete", afterDeleteRes);
+    assert(afterDeleteRes.status === 404, "findUser 404 after delete", afterDeleteRes);
 
-    // 13. DELETE — несуществующий пользователь → 400 (USER_NOT_FOUND из сервиса)
+    // 13. DELETE — несуществующий пользователь → 404 (USER_NOT_FOUND из сервиса)
     const invalidDeleteRes = await request("DELETE", "/api/users/non-existent-telegram-id-12345");
-    assert(invalidDeleteRes.status === 400, "deleteUser 400 when not found", invalidDeleteRes);
+    assert(invalidDeleteRes.status === 404, "deleteUser 404 when not found", invalidDeleteRes);
 
     console.log("All user endpoint tests passed.");
     process.exit(0);

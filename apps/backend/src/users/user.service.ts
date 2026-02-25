@@ -26,7 +26,7 @@ export class UserService implements UserServiceMethods {
     const user = await UserModel.findOne({ telegramId: param.telegramId });
 
     if (!user) {
-      throw new ApiError(400, 'USER_NOT_FOUND');
+      throw new ApiError(404, 'USER_NOT_FOUND');
     }
 
     return user.toObject();
@@ -35,7 +35,7 @@ export class UserService implements UserServiceMethods {
   public async findUsers(param: FindUsersDto): Promise<User[]> {
     const users = await UserModel.find({ telegramId: { $in: param.telegramIds } });
 
-    if (!users || users.length === 0) throw new ApiError(400, 'USERS_NOT_FOUND');
+    if (!users || users.length === 0) throw new ApiError(404, 'USERS_NOT_FOUND');
     return users;
   }
 
@@ -55,7 +55,7 @@ export class UserService implements UserServiceMethods {
       { new: true }
     );
 
-    if (!updatedUser) throw new ApiError(400, 'USER_NOT_FOUND');
+    if (!updatedUser) throw new ApiError(404, 'USER_NOT_FOUND');
 
     return updatedUser.toObject();
   }
@@ -63,7 +63,7 @@ export class UserService implements UserServiceMethods {
   public async deleteUser(param: DeleteUserDto): Promise<User> {
     const deletedUser = await UserModel.findOneAndDelete({ telegramId: param.telegramId });
 
-    if (!deletedUser) throw new ApiError(400, 'USER_NOT_FOUND');
+    if (!deletedUser) throw new ApiError(404, 'USER_NOT_FOUND');
 
     return deletedUser.toObject();
   }

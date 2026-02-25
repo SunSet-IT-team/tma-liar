@@ -21,7 +21,7 @@ export class LobbyController {
     const result = FindLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_LOBBY_DATA_INVALID");
+      throw new ApiError(422, "FIND_LOBBY_DATA_INVALID");
     }
     
     const dto: FindLobbyDto = result.data;
@@ -33,7 +33,7 @@ export class LobbyController {
   /**
    * Контроллер поиска нескольких лобби
    */
-  public async findLobbies(req: Request, res: Response) {
+  public async findLobbies(_: Request, res: Response) {
     const lobbies = await this.lobbyService.findLobbies();
     
     return res.status(200).json(success(lobbies));
@@ -44,21 +44,9 @@ export class LobbyController {
    */
   public async createLobby(req: Request, res: Response) {
     const result = CreateLobbyDtoSchema.safeParse(req.body);
-    console.log(11);    
-    if (!result.success) {
-
-      // result.error содержит все ошибки
-      console.log("Validation failed!");
-    
-      // Перебираем и выводим все ошибки
-      result.error.issues.forEach((issue) => {
-        console.log(`Path: ${issue.path.join(".")}, Message: ${issue.message}`);
-      });
-    } 
-    console.log(11);    
 
     if (!result.success) {
-      throw new ApiError(400, "CREATE_LOBBY_DATA_INVALID");
+      throw new ApiError(422, "CREATE_LOBBY_DATA_INVALID");
     }
     
     const dto: CreateLobbyDto = result.data;
@@ -73,7 +61,7 @@ export class LobbyController {
   public async updateLobby(req: Request, res: Response) {
     const result = UpdateLobbyDtoSchema.safeParse(req.body);
     if (!result.success) {
-      throw new ApiError(400, "UPDATE_LOBBY_DATA_INVALID");
+      throw new ApiError(422, "UPDATE_LOBBY_DATA_INVALID");
     }
     const dto: UpdateLobbyDto = result.data;
 
@@ -88,7 +76,7 @@ export class LobbyController {
   public async deleteLobby(req: Request, res: Response) {
     const result = DeleteLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
     if (!result.success) {
-      throw new ApiError(400, "DELETE_LOBBY_DATA_INVALID");
+      throw new ApiError(422, "DELETE_LOBBY_DATA_INVALID");
     }
     const dto: DeleteLobbyDto = result.data;
 
@@ -104,7 +92,7 @@ export class LobbyController {
     const result = JoinLobbyDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new Error("JOIN_LOBBY_DATA_INVALID");
+      throw new ApiError(422, "JOIN_LOBBY_DATA_INVALID");
     }
     
     const dto: JoinLobbyDto = result.data;

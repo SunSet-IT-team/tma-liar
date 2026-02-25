@@ -1,8 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../common/response";
-
-const SECRET = process.env.SECRET ?? "super-secret";
+import { env } from "../config/env";
 
 /**
  * Интерфейс для авторизации
@@ -36,7 +35,7 @@ export function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, SECRET) as unknown as { sub?: string; userId?: string };
+    const payload = jwt.verify(token, env.SECRET) as unknown as { sub?: string; userId?: string };
     const normalizedUserId = payload.sub ?? payload.userId;
 
     if (!normalizedUserId) {
@@ -49,7 +48,10 @@ export function authMiddleware(
       sub: normalizedUserId,
     };
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     throw new ApiError(401, "INVALID_TOKEN");
   }
 }

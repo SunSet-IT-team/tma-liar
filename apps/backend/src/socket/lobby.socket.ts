@@ -7,13 +7,36 @@ import { ToggleReadyDtoSchema, type ToggleReadyDto } from "../lobby/dtos/lobby-t
 import { LobbyStateDtoSchema } from "../lobby/dtos/lobby-state.dto";
 import { PlayerInfoSchema } from "../game/dtos/game-init.dto";
 import { findDiff } from "../common/diff";
-import { buildStatePayload } from "../common/response";
+import { ApiError, buildStatePayload } from "../common/response";
 import { GameMessageTypes } from "../../../common/message-types/game.types";
 import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
 import { LobbyStatus } from "../lobby/entities/lobby.entity";
 
+/**
+ * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
+ */
+function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unknown) {
+  if (error instanceof ApiError) {
+    socket.emit("error", {
+      errorCode: error.errorCode,
+      message: error.message,
+      details: error.details,
+    });
+    return;
+  }
+
+  socket.emit("error", {
+    errorCode: fallbackErrorCode,
+    message: fallbackErrorCode,
+    details: error instanceof Error ? error.message : undefined,
+  });
+}
+
+/**
+ * Регистрирует обработчики lobby socket-событий.
+ */
 export function registerLobbyHandler(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
@@ -29,7 +52,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         }));
         console.error("Validation failed for PLAYER_JOINED:");
         console.table(formattedErrors);
-        throw new Error("JOIN_LOBBY_DATA_INVALID");
+        throw new ApiError(422, "JOIN_LOBBY_DATA_INVALID", result.error.issues);
       }
 
       const dto: JoinLobbyDto = result.data; 
@@ -60,7 +83,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       socket.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(lobbySnap, lobby)));
     } catch (error) {
       console.error(`Error handling player join:`, error);
-      socket.emit("error", { message: "PLAYER_JOINED_ERROR" });
+      emitSocketError(socket, "PLAYER_JOINED_ERROR", error);
     }
   });
 
@@ -123,7 +146,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (!result.success) {
         console.error("Validation failed for PLAYER_READY:", result.error.issues);
-        throw new Error("TOGGLE_READY_DATA_INVALID");
+        throw new ApiError(422, "TOGGLE_READY_DATA_INVALID", result.error.issues);
       }
 
       const dto: ToggleReadyDto = result.data;
@@ -136,7 +159,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       io.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(lobbySnap, lobby)));
     } catch (error) {
       console.error(`Error handling player ready:`, error);
-      socket.emit("error", { message: "PLAYER_READY_ERROR" });
+      emitSocketError(socket, "PLAYER_READY_ERROR", error);
     }
   });
 
@@ -148,7 +171,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         dtoResult.error.issues.forEach((issue) => {
           console.log(`[GAME_STARTED] Validation: ${issue.path.join(".")} — ${issue.message}`);
         });
-        throw new Error("GAME_START_DATA_INVALID");
+        throw new ApiError(422, "GAME_START_DATA_INVALID", dtoResult.error.issues);
       }
 
       const dto: GameStartDto = dtoResult.data;
@@ -194,7 +217,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       console.log(`[GAME_STARTED] Game stage transition initiated for ${gameId}`);
     } catch (error) {
       console.error("[GAME_STARTED] Error:", error);
-      socket.emit("error", { message: "GAME_START_ERROR" });
+      emitSocketError(socket, "GAME_START_ERROR", error);
     }
   });
 

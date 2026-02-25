@@ -3,13 +3,7 @@ import type { AuthLoginDto } from "./dtos/auth-login.dto";
 import { ApiError } from "../common/response";
 import { UserModel } from "../users/user.modal";
 import { TelegramAuthService } from './telegram-auth.service';
-
-const SECRET = process.env.SECRET ?? "super-secret";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "1d";
-
-if (!SECRET) {
-  throw new Error("SECRET_UNDEFINED");
-}
+import { env } from "../config/env";
 
 /*
  * Интерфейс для сервиса авторизации
@@ -39,8 +33,8 @@ export class AuthService implements AuthServiceMethods {
 
     const token = jwt.sign(
       { sub: user.id, userId: user.id },
-      SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+      env.SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions
     );
 
     if (!token) throw new ApiError(401, "AUTH_FAILED");

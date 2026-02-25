@@ -14,6 +14,13 @@ bun run index.ts
 
 This project was created using `bun init` in bun v1.2.19. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
 
+## Backend Contributing (Quick)
+
+- Запуск backend в dev-режиме: `bun run dev:backend`
+- Источник правды по env: `apps/backend/src/config/env.ts` и `.env.example`
+- Обязательные env (минимум): `DB_CONN_STRING`, `DB_NAME`, `SECRET`, `TELEGRAM_BOT_TOKEN`, `JWT_EXPIRES_IN`
+- Актуальный auth-контракт: `POST /api/auth/tma` с `{ initData }`
+
 ## Запуск проекта с помощью Docker
 
 ### Требования
@@ -37,6 +44,29 @@ DB_CONN_STRING=mongodb://admin:password@mongodb:27017/?authSource=admin
 
 # JWT Secret Key
 SECRET=secret
+JWT_EXPIRES_IN=1d
+
+# Telegram Bot Token (required for /api/auth/tma)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_INITDATA_EXPIRES_IN=3600
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+# Auth rate limit
+AUTH_RATE_LIMIT_WINDOW_MS=60000
+AUTH_RATE_LIMIT_MAX=30
+
+# Game settings
+SCORE_NOT_STATED=50
+SCORE_TRICKED=100
+GAME_STAGE_TIMER_MS=1000
+HIDDEN_DURING_GAME_FIELDS=doLie,questionHistory,liarId,timerId
+GAME_RESULTS_FIELDS=doLie,loserTask,winnerId,loserId
+
+# Lobby code settings
+LOBBY_CODE_ALPHABET=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+LOBBY_CODE_LENGTH=6
 
 # Ngrok
 # Получите токен на https://dashboard.ngrok.com/get-started/your-authtoken

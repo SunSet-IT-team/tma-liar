@@ -26,7 +26,7 @@ export class DeckService implements DeckServiceMethods {
     const deck = await DeckModel.findOne({ _id: param.id });
 
     if (!deck) {
-      throw new ApiError(400, 'DECK_NOT_FOUND');
+      throw new ApiError(404, 'DECK_NOT_FOUND');
     }
 
     return deck.toObject();
@@ -36,7 +36,7 @@ export class DeckService implements DeckServiceMethods {
   public async findDecks(): Promise<Deck[]> {
     const decks = await DeckModel.find().lean();
 
-    if (!decks || decks.length === 0) throw new ApiError(400, 'DECKS_NOT_FOUND');
+    if (!decks || decks.length === 0) throw new ApiError(404, 'DECKS_NOT_FOUND');
     return decks;
   }
 
@@ -59,7 +59,7 @@ export class DeckService implements DeckServiceMethods {
     ).lean();
 
     if (!updatedDeck) {
-      throw new ApiError(400, 'DECK_NOT_FOUND');
+      throw new ApiError(404, 'DECK_NOT_FOUND');
     }
 
     return updatedDeck;
@@ -70,7 +70,7 @@ export class DeckService implements DeckServiceMethods {
     const deletedDeck = await DeckModel.findOneAndDelete({ _id: param.id }).lean();
 
     if (!deletedDeck) {
-      throw new ApiError(400, 'DECK_NOT_FOUND');
+      throw new ApiError(404, 'DECK_NOT_FOUND');
     }
 
     return deletedDeck;

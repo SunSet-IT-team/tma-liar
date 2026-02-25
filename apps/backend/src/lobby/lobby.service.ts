@@ -8,9 +8,10 @@ import type { FindLobbyDto } from './dtos/lobby-find.dto';
 import type { UpdateLobbyDto } from './dtos/lobby-update.dto';
 import type { DeleteLobbyDto } from './dtos/lobby-delete.dto';
 import type { ToggleReadyDto } from './dtos/lobby-toggleReady.dto';
+import { env } from '../config/env';
 
-const LOBBY_CODE_ALPHABET = process.env.LOBBY_CODE_ALPHABET ?? "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const LOBBY_CODE_LENGTH = parseInt(process.env.LOBBY_CODE_LENGTH ?? "6", 10);
+const LOBBY_CODE_ALPHABET = env.LOBBY_CODE_ALPHABET;
+const LOBBY_CODE_LENGTH = env.LOBBY_CODE_LENGTH;
 
 /**
  * Интерфейс для сервиса лобби
@@ -35,7 +36,7 @@ export class LobbyService implements LobbyServiceMethods {
       const lobby = await LobbyModel.findOne({ lobbyCode: param.lobbyCode });
 
       if (!lobby) {
-        throw new ApiError(400, 'LOBBY_NOT_FOUND');
+        throw new ApiError(404, 'LOBBY_NOT_FOUND');
       }
 
       return lobby.toObject();
@@ -45,7 +46,7 @@ export class LobbyService implements LobbyServiceMethods {
   public async findLobbies(): Promise<Lobby[]> {
     const lobbies = await LobbyModel.find().lean();
 
-    if (!lobbies || lobbies.length === 0) throw new ApiError(400, 'LOBBIES_NOT_FOUND');
+    if (!lobbies || lobbies.length === 0) throw new ApiError(404, 'LOBBIES_NOT_FOUND');
     return lobbies;
   }
 
@@ -71,7 +72,7 @@ export class LobbyService implements LobbyServiceMethods {
     ).lean();
 
     if (!updatedLobby) {
-      throw new ApiError(400, 'LOBBY_NOT_EXIST');
+      throw new ApiError(404, 'LOBBY_NOT_EXIST');
     }
 
     return updatedLobby;
@@ -82,7 +83,7 @@ export class LobbyService implements LobbyServiceMethods {
     const deletedLobby = await LobbyModel.findOneAndDelete({ lobbyCode: param.lobbyCode }).lean();
 
     if (!deletedLobby) {
-      throw new ApiError(400, 'LOBBY_NOT_EXIST');
+      throw new ApiError(404, 'LOBBY_NOT_EXIST');
     }
 
     return deletedLobby;
@@ -96,7 +97,7 @@ export class LobbyService implements LobbyServiceMethods {
     if (!existingLobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
     const exists = existingLobby.players.find(p => p.telegramId === param.player.telegramId);
-    if (exists) throw new ApiError(400, 'PLAYER_ALREADY_IN_LOBBY');
+    if (exists) throw new ApiError(409, 'PLAYER_ALREADY_IN_LOBBY');
 
     const updatedLobby = await LobbyModel.findOneAndUpdate(
       { lobbyCode: param.lobbyCode },
@@ -121,7 +122,7 @@ export class LobbyService implements LobbyServiceMethods {
 
     const player = lobby.players.find(p => p.id === playerId);
 
-    if(!player) throw new ApiError(400, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
+    if(!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
 
     if (player.isReady) {
       player.isReady = false;

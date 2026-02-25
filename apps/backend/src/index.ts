@@ -1,4 +1,3 @@
-import "./config/loadEnv";
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
@@ -7,10 +6,8 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import { connectToDatabase } from './database/database';
 import { corsOrigin } from './config/cors';
+import { env } from './config/env';
 
-const PORT = parseInt(process.env.PORT ?? "3000", 10);
-const AUTH_RATE_LIMIT_WINDOW_MS = parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? '60000', 10);
-const AUTH_RATE_LIMIT_MAX = parseInt(process.env.AUTH_RATE_LIMIT_MAX ?? '30', 10);
 import { errorMiddleware } from './middlewares/errorHandler.middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
 import authRouter from './auth/auth.router';
@@ -23,13 +20,14 @@ import { registerSocketHandlers } from './socket';
 const app = express();
 export const httpServer = createServer(app);
 const authRateLimiter = rateLimit({
-  windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
-  limit: AUTH_RATE_LIMIT_MAX,
+  windowMs: env.AUTH_RATE_LIMIT_WINDOW_MS,
+  limit: env.AUTH_RATE_LIMIT_MAX,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: {
     status: 'error',
     code: 429,
+    errorCode: 'TOO_MANY_AUTH_REQUESTS',
     message: 'TOO_MANY_AUTH_REQUESTS',
     payload: null,
   },
@@ -71,7 +69,7 @@ app.use(errorMiddleware);
 async function startServer() {
   try {
     await connectToDatabase();
-    httpServer.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+    httpServer.listen(env.PORT, () => console.log(`Server running on http://localhost:${env.PORT}`));
   } catch (error) {
     throw error;
   }

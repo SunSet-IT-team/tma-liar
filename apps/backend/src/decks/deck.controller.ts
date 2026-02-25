@@ -19,7 +19,7 @@ export class DeckController {
     const result = FindDeckDtoSchema.safeParse({ id: req.params.id });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_DECK_DATA_INVALID");
+      throw new ApiError(422, "FIND_DECK_DATA_INVALID");
     }
 
     const dto: FindDeckDto = result.data;
@@ -44,7 +44,7 @@ export class DeckController {
     const result = CreateDeckDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "CREATE_DECK_DATA_INVALID");
+      throw new ApiError(422, "CREATE_DECK_DATA_INVALID");
     }
 
     const dto: CreateDeckDto = result.data;
@@ -60,7 +60,7 @@ export class DeckController {
     const result = UpdateDeckDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "UPDATE_DECK_DATA_INVALID");
+      throw new ApiError(422, "UPDATE_DECK_DATA_INVALID");
     }
 
     const dto: UpdateDeckDto = result.data;
@@ -76,7 +76,7 @@ export class DeckController {
     const result = DeleteDeckDtoSchema.safeParse({ id: req.params.id });
 
     if (!result.success) {
-      throw new ApiError(400, "DELETE_DECK_DATA_INVALID");
+      throw new ApiError(422, "DELETE_DECK_DATA_INVALID");
     }
 
     const dto: DeleteDeckDto = result.data;

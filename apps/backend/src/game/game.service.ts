@@ -15,10 +15,11 @@ import type { GameLiarChoosesDto } from './dtos/game-liar-chooses.dto';
 import type { Server } from 'socket.io';
 import { findDiff } from '../common/diff';
 import { GameMessageTypes } from '../../../common/message-types/game.types';
+import { env } from '../config/env';
 
-const SCORE_NOT_STATED = parseInt(process.env.SCORE_NOT_STATED ?? "50", 10);
-const SCORE_TRICKED = parseInt(process.env.SCORE_TRICKED ?? "100", 10);
-const GAME_STAGE_TIMER_MS = parseInt(process.env.GAME_STAGE_TIMER_MS ?? "1000", 10);
+const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
+const SCORE_TRICKED = env.SCORE_TRICKED;
+const GAME_STAGE_TIMER_MS = env.GAME_STAGE_TIMER_MS;
 
 export interface GameMethods { 
   createGame: (dto: GameStartDto) => Promise<Game>,
@@ -211,10 +212,10 @@ export class GameService implements GameMethods {
       const sortedPlayers = [...game.players].sort((a, b) => b.score - a.score);
 
       const loser = sortedPlayers[sortedPlayers.length - 1];
-      if(!loser) throw new ApiError(400, 'LOSER_NOT_FOUND')
+      if(!loser) throw new ApiError(404, 'LOSER_NOT_FOUND')
 
       const winner = sortedPlayers[0];
-      if(!winner) throw new ApiError(400, 'WINNER_NOT_FOUND')
+      if(!winner) throw new ApiError(404, 'WINNER_NOT_FOUND')
         
       game.winnerId = winner.id;
       game.loserId = loser.id;  
@@ -265,7 +266,7 @@ export class GameService implements GameMethods {
     const candidates = game.players.filter(p => p.wasLiar === minCount);
     const liar = candidates[Math.floor(Math.random() * candidates.length)];
     
-    if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND');
+    if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND');
     liar.wasLiar += 1;
     game.liarId = liar.id;
 
@@ -299,7 +300,7 @@ export class GameService implements GameMethods {
    */
   public async calculateLiarPoints(game: HydratedDocument<Game>) { 
     const liar = game.players.find(p => p.id == game.liarId);
-    if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
+    if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
       if(player.id == game.liarId) return;
@@ -318,7 +319,7 @@ export class GameService implements GameMethods {
    */
   public async calculatePlayersPoints(game: HydratedDocument<Game>) { 
     const liar = game.players.find(p => p.id == game.liarId);
-    if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
+    if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
       if(player.id == game.liarId) return;
@@ -335,7 +336,7 @@ export class GameService implements GameMethods {
    */
   public async calculatePlayersPointsWithLikes(game: HydratedDocument<Game>) { 
     const liar = game.players.find(p => p.id == game.liarId);
-    if(!liar) throw new ApiError(400, 'LIAR_NOT_FOUND')
+    if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
       if(player.id == game.liarId) return;
@@ -357,18 +358,18 @@ export class GameService implements GameMethods {
 
     const game = await GameModel.findById(gameId);
     
-    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+    if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
     if(receiverId == game.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
 
     const sender = game.players.find(p => p.id == senderId);
     
-    if(!sender) throw new ApiError(400, 'SENDER_NOT_FOUND');
+    if(!sender) throw new ApiError(404, 'SENDER_NOT_FOUND');
     if(sender.answer == 2) throw new ApiError(400, 'SENDER_DIDNT_ANSWER'); 
 
     const receiver = game.players.find(p => p.id == receiverId);
 
-    if(!receiver) throw new ApiError(400, 'RECEIVER_NOT_FOUND');
+    if(!receiver) throw new ApiError(404, 'RECEIVER_NOT_FOUND');
 
     receiver.likes += 1;
 
@@ -386,12 +387,12 @@ export class GameService implements GameMethods {
   public async setAnswer(dto: GamePlayerVotedDto): Promise<Player>{ 
     const { gameId, playerId, answer } = dto;
     const game = await GameModel.findById(gameId); 
-    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+    if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
 
     const player = game.players.find(p => p.id == playerId);
-    if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
+    if(!player) throw new ApiError(404, 'PLAYER_NOT_FOUND');
 
     if(player.isConfirmed == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED');
     
@@ -411,12 +412,12 @@ export class GameService implements GameMethods {
   public async confirmAnswer(dto: GamePlayerSecuredDto): Promise<Player>{ 
     const { gameId, playerId } = dto;
     const game = await GameModel.findById(gameId); 
-    if(!game) throw new ApiError(400, 'LOBBY_NOT_FOUND');
+    if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
 
     const player = game.players.find(p => p.id == playerId);
-    if(!player) throw new ApiError(400, 'PLAYER_NOT_FOUND');
+    if(!player) throw new ApiError(404, 'PLAYER_NOT_FOUND');
 
     if(player.answer == 2) throw new ApiError(400, 'PLAYER_DIDNT_ANSWER'); 
 

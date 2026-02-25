@@ -1,5 +1,6 @@
 import { parse, validate } from '@tma.js/init-data-node';
 import { ApiError } from '../common/response';
+import { env } from '../config/env';
 
 export type TelegramAuthUser = {
   telegramId: string;
@@ -9,19 +10,9 @@ export type TelegramAuthUser = {
 
 export class TelegramAuthService {
   public getValidatedUser(initData: string): TelegramAuthUser {
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN ?? '';
-    const telegramInitDataExpiresIn = parseInt(
-      process.env.TELEGRAM_INITDATA_EXPIRES_IN ?? '3600',
-      10,
-    );
-
-    if (!telegramBotToken) {
-      throw new ApiError(500, 'INTERNAL_SERVER_ERROR');
-    }
-
     try {
-      validate(initData, telegramBotToken, {
-        expiresIn: telegramInitDataExpiresIn,
+      validate(initData, env.TELEGRAM_BOT_TOKEN, {
+        expiresIn: env.TELEGRAM_INITDATA_EXPIRES_IN,
       });
     } catch {
       throw new ApiError(401, 'INIT_DATA_INVALID');
@@ -31,7 +22,7 @@ export class TelegramAuthService {
     const telegramUser = parsed.user;
 
     if (!telegramUser?.id) {
-      throw new ApiError(400, 'TELEGRAM_USER_NOT_FOUND');
+      throw new ApiError(422, 'TELEGRAM_USER_NOT_FOUND');
     }
 
     const telegramId = String(telegramUser.id);

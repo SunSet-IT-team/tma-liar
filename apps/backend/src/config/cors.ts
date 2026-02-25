@@ -1,3 +1,5 @@
+import { env } from './env';
+
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -25,7 +27,7 @@ function matchesWildcardOrigin(origin: string, pattern: string): boolean {
   return origin.endsWith(`.${domain}`) || origin === domain;
 }
 
-export const allowedOrigins = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
+export const allowedOrigins = parseAllowedOrigins(env.CORS_ALLOWED_ORIGINS);
 
 export function isOriginAllowed(origin?: string): boolean {
   if (!origin) return true;

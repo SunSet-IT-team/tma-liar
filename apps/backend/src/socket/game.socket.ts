@@ -31,6 +31,29 @@ import { GameStateDtoSchema, type GameStateDto } from "../game/dtos/game-state.d
 import { ApiError, buildStatePayload } from "../common/response";
 import { GameStartDtoSchema, type GameStartDto } from "../game/dtos/game-start.dto";
 
+/**
+ * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
+ */
+function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unknown) {
+  if (error instanceof ApiError) {
+    socket.emit("error", {
+      errorCode: error.errorCode,
+      message: error.message,
+      details: error.details,
+    });
+    return;
+  }
+
+  socket.emit("error", {
+    errorCode: fallbackErrorCode,
+    message: fallbackErrorCode,
+    details: error instanceof Error ? error.message : undefined,
+  });
+}
+
+/**
+ * Регистрирует обработчики игровых socket-событий.
+ */
 export function registerGameHandler(io: Server, socket: Socket) {
   const gameService = new GameService(io);
   /**
@@ -41,7 +64,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GameLiarChoosesDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(400, "LIAR_CHOOSES_DATA_INVALID");
+        throw new ApiError(422, "LIAR_CHOOSES_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GameLiarChoosesDto = dtoResult.data;
       
@@ -59,9 +82,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       console.log(`Liar chose in game ${dto.gameId}: ${dto.answer}`);
     } catch (error) {
       console.error(`Error handling liar choice:`, error);
-      socket.emit("error", {
-        message: "LIAR_CHOSE_ERROR",
-      });
+      emitSocketError(socket, "LIAR_CHOSE_ERROR", error);
     }
   });
 
@@ -73,7 +94,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerVotedDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(400, "PLAYER_VOTED_DATA_INVALID");
+        throw new ApiError(422, "PLAYER_VOTED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerVotedDto = dtoResult.data;
       
@@ -93,9 +114,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       console.log(`Player ${dto.playerId} voted in game ${dto.gameId}: ${dto.answer}`);
     } catch (error) {
       console.error(`Error handling player vote:`, error);
-      socket.emit("error", {
-        message: "PLAYER_VOTED_ERROR",
-      });
+      emitSocketError(socket, "PLAYER_VOTED_ERROR", error);
     }
   });
 
@@ -107,7 +126,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerSecuredDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(400, "PLAYER_SECURED_DATA_INVALID");
+        throw new ApiError(422, "PLAYER_SECURED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerSecuredDto = dtoResult.data;
       
@@ -126,9 +145,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       console.log(`Player ${dto.playerId} secured answer in game ${dto.gameId}`);
     } catch (error) {
       console.error(`Error handling player secure:`, error);
-      socket.emit("error", {
-        message: "PLAYER_SECURED_ERROR",
-      });
+      emitSocketError(socket, "PLAYER_SECURED_ERROR", error);
     }
   });
 
@@ -140,7 +157,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerLikedDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(400, "PLAYER_LIKED_DATA_INVALID");
+        throw new ApiError(422, "PLAYER_LIKED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerLikedDto = dtoResult.data;
       
@@ -157,9 +174,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       console.log(`Player ${dto.senderId} liked answer from ${dto.receiverId} in game ${dto.gameId}`);
     } catch (error) {
       console.error(`Error handling player like:`, error);
-      socket.emit("error", {
-        message: "PLAYER_LIKED_ERROR",
-      });   
+      emitSocketError(socket, "PLAYER_LIKED_ERROR", error);
     }
   });
 }

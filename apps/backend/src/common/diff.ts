@@ -1,9 +1,7 @@
-const HIDDEN_DURING_GAME_FIELDS =
-  process.env.HIDDEN_DURING_GAME_FIELDS?.split(",").map((s) => s.trim()).filter(Boolean) ??
-  ["doLie", "questionHistory", "liarId", "timerId"];
-const GAME_RESULTS_FIELDS =
-  process.env.GAME_RESULTS_FIELDS?.split(",").map((s) => s.trim()).filter(Boolean) ??
-  ["doLie", "loserTask", "winnerId", "loserId"];
+import { env } from "../config/env";
+
+const HIDDEN_DURING_GAME_FIELDS = env.hiddenDuringGameFields;
+const GAME_RESULTS_FIELDS = env.gameResultsFields;
 
 /**
  * Вычисляет diff между двумя объектами.

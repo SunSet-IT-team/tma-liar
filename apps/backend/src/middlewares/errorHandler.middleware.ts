@@ -3,21 +3,22 @@ import { ApiError } from "../common/response";
 import { error } from "../common/response";
 
 /**
- * Мидлварь для хендла ошибок 
+ * Глобальный обработчик ошибок HTTP.
+ * Возвращает единый формат: `errorCode`, `message`, `details`.
  */
 export function errorMiddleware(
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction, 
+  _next: NextFunction, 
 ) {
   if (err instanceof ApiError) {
-  return res
-    .status(err.code)
-    .json(error(err.code, err.message));
+    return res
+      .status(err.code)
+      .json(error(err.code, err.errorCode, err.message, err.details));
   }
 
   return res
     .status(500)
-    .json(error(500, "INTERNAL_ERROR" ));
+    .json(error(500, "INTERNAL_ERROR"));
 }

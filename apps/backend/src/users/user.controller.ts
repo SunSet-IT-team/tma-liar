@@ -20,7 +20,7 @@ export class UserController {
     const result = FindUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_USER_DATA_INVALID");
+      throw new ApiError(422, "FIND_USER_DATA_INVALID");
     }
 
     const dto: FindUserDto = result.data;
@@ -45,7 +45,7 @@ export class UserController {
     const result = FindUsersDtoSchema.safeParse({ telegramIds });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_USERS_DATA_INVALID");
+      throw new ApiError(422, "FIND_USERS_DATA_INVALID");
     }
 
     const dto: FindUsersDto = result.data;
@@ -61,7 +61,7 @@ export class UserController {
     const result = CreateUserDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "CREATE_USER_DATA_INVALID");
+      throw new ApiError(422, "CREATE_USER_DATA_INVALID");
     }
 
     const dto: CreateUserDto = result.data;
@@ -80,7 +80,7 @@ export class UserController {
     });
 
     if (!bodyResult.success) {
-      throw new ApiError(400, "UPDATE_USER_DATA_INVALID");
+      throw new ApiError(422, "UPDATE_USER_DATA_INVALID");
     }
 
     const dto: UpdateUserDto = bodyResult.data;
@@ -96,7 +96,7 @@ export class UserController {
     const result = DeleteUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
     if (!result.success) {
-      throw new ApiError(400, "DELETE_USER_DATA_INVALID");
+      throw new ApiError(422, "DELETE_USER_DATA_INVALID");
     }
 
     const dto: DeleteUserDto = result.data;

@@ -133,7 +133,7 @@ async function teardown() {
     if (listRes.status === 200) {
       assert(Array.isArray((listRes.data as { payload?: unknown }).payload), "findDecks returns array", listRes);
     } else {
-      assert(listRes.status === 400, "findDecks returns 400 when no decks", listRes);
+      assert(listRes.status === 404, "findDecks returns 404 when no decks", listRes);
     }
 
     // 2. POST /api/decks — создание колоды
@@ -158,7 +158,7 @@ async function teardown() {
 
     // 5. GET /api/decks/:id — несуществующий id
     const notFoundRes = await request("GET", "/api/decks/000000000000000000000000", undefined, authToken);
-    assert(notFoundRes.status === 400, "findDeck 400 for invalid id", notFoundRes);
+    assert(notFoundRes.status === 404, "findDeck 404 for non-existent id", notFoundRes);
 
     // 6. PUT /api/decks — обновление
     const updateRes = await request(
@@ -178,7 +178,7 @@ async function teardown() {
       { name: "", questionsCount: -1, cover: "", questions: [] },
       authToken
     );
-    assert(invalidCreateRes.status === 400, "createDeck 400 for invalid body", invalidCreateRes);
+    assert(invalidCreateRes.status === 422, "createDeck 422 for invalid body", invalidCreateRes);
 
     // 8. DELETE /api/decks/:id
     const deleteRes = await request("DELETE", `/api/decks/${deckId}`, undefined, authToken);
@@ -186,11 +186,11 @@ async function teardown() {
 
     // 9. GET /api/decks/:id после удаления
     const afterDeleteRes = await request("GET", `/api/decks/${deckId}`, undefined, authToken);
-    assert(afterDeleteRes.status === 400, "findDeck 400 after delete", afterDeleteRes);
+    assert(afterDeleteRes.status === 404, "findDeck 404 after delete", afterDeleteRes);
 
-    // 10. DELETE — невалидный id
+    // 10. DELETE — несуществующий id
     const invalidDeleteRes = await request("DELETE", "/api/decks/000000000000000000000000", undefined, authToken);
-    assert(invalidDeleteRes.status === 400, "deleteDeck 400 for invalid id", invalidDeleteRes);
+    assert(invalidDeleteRes.status === 404, "deleteDeck 404 for non-existent id", invalidDeleteRes);
 
     console.log("All deck endpoint tests passed.");
     process.exit(0);

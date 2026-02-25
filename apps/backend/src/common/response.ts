@@ -12,11 +12,15 @@ enum ApiResponseStatus {
 export interface ApiResponse<T> { 
     status: ApiResponseStatus, 
     code?: number, 
+    errorCode?: string,
     message?: string, 
+    details?: unknown,
     payload: T | null,
 }
 
-
+/**
+ * Формирует успешный ответ API в едином формате.
+ */
 export function success<T>(payload: T): ApiResponse<T> { 
     return {
         status: ApiResponseStatus.SUCCESS, 
@@ -40,17 +44,35 @@ export function buildStatePayload<T>(
     };
   }
 
-export function error(code: number, message?: string): ApiResponse<null> {
+export function error(
+  code: number,
+  errorCode: string,
+  message?: string,
+  details?: unknown,
+): ApiResponse<null> {
   return {
     status: ApiResponseStatus.ERROR,
     code,
-    message: message,
+    errorCode,
+    message: message ?? errorCode,
+    details,
     payload: null,
   };
 }
 
+/**
+ * Бизнес-ошибка приложения.
+ * Пробрасывается из сервисов/контроллеров и преобразуется в HTTP/socket ответ.
+ */
 export class ApiError extends Error { 
-    constructor(public code: number, message?: string) {
-        super(message); 
+    public code: number;
+    public errorCode: string;
+    public details?: unknown;
+
+    constructor(code: number, errorCode: string, details?: unknown, message?: string) {
+        super(message ?? errorCode);
+        this.code = code;
+        this.errorCode = errorCode;
+        this.details = details;
     }
 }
