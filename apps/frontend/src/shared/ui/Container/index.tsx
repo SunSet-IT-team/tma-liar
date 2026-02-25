@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
-import { type FC, ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import styles from './style/containerStyle.module.scss';
 

@@ -2,7 +2,7 @@ import whiteArrow from '../../../shared/ui/icons/whiteArrow.svg';
 import redArrow from '../../../shared/ui/icons/redArrow.svg';
 import blackArrow from '../../../shared/ui/icons/blackArrow.svg';
 import styles from './style/arrowStyle.module.scss';
-import { ButtonHTMLAttributes, type FC } from 'react';
+import type { ButtonHTMLAttributes, FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
 

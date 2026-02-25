@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type FC, ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
 import styles from './style/popupStyle.module.scss';
 

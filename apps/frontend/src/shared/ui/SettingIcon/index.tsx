@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, type FC } from 'react';
+import type { ButtonHTMLAttributes, FC } from 'react';
 import styles from './style/settingsStyle.module.scss';
 import whiteSettings from '../icons/whiteSettings.svg';
 import blackSettings from '../icons/settingsIcon.svg';

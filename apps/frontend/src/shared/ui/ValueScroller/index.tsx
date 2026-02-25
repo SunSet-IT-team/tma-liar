@@ -1,4 +1,5 @@
-import { type FC, ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 
@@ -50,7 +51,6 @@ export const ValueScroller: FC<ScrollerProps> = ({
   children,
 }) => {
   const [values, setValues] = useState<number[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
   const initialValue = (defaultValue - step) / step;
 
@@ -62,8 +62,6 @@ export const ValueScroller: FC<ScrollerProps> = ({
     }
     setValues(arr);
 
-    const minIndex = arr.findIndex((v) => v === min);
-    setCurrentIndex(minIndex >= 0 ? minIndex : 0);
   }, [min, max, step]);
 
   const playSound = usePlaySound();

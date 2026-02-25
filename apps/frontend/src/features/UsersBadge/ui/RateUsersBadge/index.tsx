@@ -1,4 +1,4 @@
-import { type FC, useState } from 'react';
+import { type FC } from 'react';
 import styles from '../../style/usersBadgeStyle.module.scss';
 import type { Player } from '../../../../entities/user/model/types';
 import { UserBadge } from '../../../../entities/user/ui/UserBadge';
@@ -48,8 +48,6 @@ const testUsers = [
  * Получаем оценки игроков
  */
 export const RateUsersBadge: FC = () => {
-  const [rated, setRated] = useState<boolean>(false);
-
   return (
     <div className={clsx(styles.content, styles.answersContent, styles.limitedBlock, styles.ratePlayers)}>
       {testUsers.map((user: Player) => (
@@ -61,7 +59,7 @@ export const RateUsersBadge: FC = () => {
             className={styles.userContent}
             isRated={user.isRated}
           />
-          <Checkbox onChange={(value: boolean) => setRated(value)} />
+          <Checkbox onChange={() => {}} />
         </div>
       ))}
     </div>

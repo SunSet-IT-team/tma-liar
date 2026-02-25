@@ -110,7 +110,7 @@ export const DecksBlock: FC<DecksProps> = ({ loop = true, onChangeActiveDeck }) 
           onChangeActiveDeck?.(swiper.realIndex);
         }}
       >
-        {testDecks.map((value, i) => (
+        {testDecks.map((_, i) => (
           <SwiperSlide key={i} className="swiperSlide deckSwiperSlide">
             <div className="deckSlideItem">
               <img src={deckIcon} alt="" className="deckIcon" />

@@ -1,6 +1,6 @@
 import styles from './style/inputStyle.module.scss';
 import clsx from 'clsx';
-import { type FC, InputHTMLAttributes } from 'react';
+import type { FC, InputHTMLAttributes } from 'react';
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   placeholder: string;

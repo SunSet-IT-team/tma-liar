@@ -15,6 +15,7 @@ export const Checkbox: FC<CheckboxProps> = ({ onChange }) => {
   const playSound = usePlaySound();
 
   const onCheckbox = () => {
+    setChecked((prev) => !prev);
     playSound();
     onChange(!checked);
   };

@@ -1,4 +1,5 @@
-import { ChangeEvent, type FC, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent, FC } from 'react';
 import styles from './style/loadAvatarStyle.module.scss';
 import noPhoto from '/icons/blackPhoto.svg';
 import { Typography } from '../Typography';

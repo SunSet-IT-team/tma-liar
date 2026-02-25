@@ -1,4 +1,4 @@
-import { type FC, JSX, ReactNode } from 'react';
+import type { FC, JSX, ReactNode } from 'react';
 import clsx from 'clsx';
 import styles from './style/buttonsStyle.module.scss';
 import { usePlaySound } from '../../lib/sound/usePlaySound';

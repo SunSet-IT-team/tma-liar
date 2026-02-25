@@ -4,6 +4,7 @@ import { Static } from './static/Static';
 import { AppRouter } from './routes/AppRouter';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './providers/Auth/AuthProvider';
+import '../shared/assets/fonts/fonts.module.scss';
 
 function App() {
   return (
@@ -15,8 +16,6 @@ function App() {
         </AuthProvider>
       </Provider>
     </BrowserRouter>
-    
-    
   );
 }
 

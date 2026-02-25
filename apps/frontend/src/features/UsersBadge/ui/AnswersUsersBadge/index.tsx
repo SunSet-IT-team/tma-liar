@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { FC } from 'react';
+import type { FC } from 'react';
 import type { Player } from '../../../../entities/user/model/types';
 import { UserBadge } from '../../../../entities/user/ui/UserBadge';
 import { Typography } from '../../../../shared/ui/Typography';
