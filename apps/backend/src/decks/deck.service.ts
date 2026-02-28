@@ -5,6 +5,7 @@ import type { CreateDeckDto } from './dtos/deck-create.dto';
 import type { UpdateDeckDto } from './dtos/deck-update.dto';
 import type { DeleteDeckDto } from './dtos/deck-delete.dto';
 import { DeckRepository } from './deck.repository';
+import { getMockDeckById, getMockDecks } from './mock-decks';
 
 /**
  * Интерфейс для сервиса колод
@@ -27,19 +28,28 @@ export class DeckService implements DeckServiceMethods {
   public async findDeck(param: FindDeckDto): Promise<Deck> {
     const deck = await this.deckRepository.findById(param.id);
 
-    if (!deck) {
-      throw new ApiError(404, 'DECK_NOT_FOUND');
+    if (deck) {
+      return deck;
     }
 
-    return deck;
+    const mockDeck = getMockDeckById(param.id);
+
+    if (mockDeck) {
+      return mockDeck;
+    }
+
+    throw new ApiError(404, 'DECK_NOT_FOUND');
   }
 
   /** Найти несколько колод */
   public async findDecks(): Promise<Deck[]> {
     const decks = await this.deckRepository.findAll();
 
-    if (!decks || decks.length === 0) throw new ApiError(404, 'DECKS_NOT_FOUND');
-    return decks;
+    if (decks && decks.length > 0) {
+      return decks;
+    }
+
+    return getMockDecks();
   }
 
   /** Создать колоду */

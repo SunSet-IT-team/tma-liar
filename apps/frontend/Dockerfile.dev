@@ -2,6 +2,9 @@ FROM oven/bun:1.3.5-alpine
 
 WORKDIR /app
 
+# Vite dev proxy в Bun падает на socket.destroySoon, поэтому dev-сервер запускаем через Node runtime.
+RUN apk add --no-cache nodejs npm
+
 # Копируем только манифесты workspace для максимального кеширования install слоя
 COPY package.json bun.lock ./
 COPY apps/backend/package.json ./apps/backend/package.json
@@ -15,4 +18,4 @@ EXPOSE 5173
 
 # Запуск Vite dev server (код монтируется volume'ами из docker-compose)
 WORKDIR /app/apps/frontend
-CMD ["bun", "run", "dev"]
+CMD ["npm", "run", "dev"]

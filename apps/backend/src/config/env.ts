@@ -30,6 +30,7 @@ const envSchema = z.object({
   DB_CONN_STRING: z.string().min(1, 'DB_CONN_STRING is required'),
   DB_NAME: z.string().min(1).default('liar'),
   SECRET: z.string().min(1, 'SECRET is required'),
+  DISABLE_AUTH: z.enum(['true', 'false']).default('false'),
   JWT_EXPIRES_IN: z.string().min(1).default('1d'),
   TELEGRAM_BOT_TOKEN: z.string().min(1, 'TELEGRAM_BOT_TOKEN is required'),
   TELEGRAM_INITDATA_EXPIRES_IN: z.coerce.number().int().positive().default(3600),
@@ -66,6 +67,7 @@ const splitCsv = (value: string): string[] =>
  */
 export const env = {
   ...parsedEnv.data,
+  disableAuth: parsedEnv.data.DISABLE_AUTH === 'true',
   corsAllowedOrigins: splitCsv(parsedEnv.data.CORS_ALLOWED_ORIGINS),
   hiddenDuringGameFields: splitCsv(parsedEnv.data.HIDDEN_DURING_GAME_FIELDS),
   gameResultsFields: splitCsv(parsedEnv.data.GAME_RESULTS_FIELDS),

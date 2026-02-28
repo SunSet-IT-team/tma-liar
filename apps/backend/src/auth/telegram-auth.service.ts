@@ -10,15 +10,17 @@ export type TelegramAuthUser = {
 
 export class TelegramAuthService {
   public getValidatedUser(initData: string): TelegramAuthUser {
+    let parsed: ReturnType<typeof parse>;
+
     try {
       validate(initData, env.TELEGRAM_BOT_TOKEN, {
         expiresIn: env.TELEGRAM_INITDATA_EXPIRES_IN,
       });
+      parsed = parse(initData);
     } catch {
       throw new ApiError(401, 'INIT_DATA_INVALID');
     }
 
-    const parsed = parse(initData);
     const telegramUser = parsed.user;
 
     if (!telegramUser?.id) {

@@ -22,6 +22,8 @@ services:
       dockerfile: apps/backend/Dockerfile.dev
     container_name: tma-liar-backend-dev
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - '3000:3000'
     environment:
@@ -30,6 +32,7 @@ services:
       DB_CONN_STRING: ${DB_CONN_STRING:-mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin}
       DB_NAME: ${DB_NAME:-liar}
       SECRET: ${SECRET:-dev-secret-key}
+      DISABLE_AUTH: ${DISABLE_AUTH:-false}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_INITDATA_EXPIRES_IN: ${TELEGRAM_INITDATA_EXPIRES_IN:-3600}
     depends_on:

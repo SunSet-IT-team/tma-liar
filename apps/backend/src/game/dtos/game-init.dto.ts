@@ -11,7 +11,9 @@ import { GameStages } from "../../lobby/entities/lobby.entity";
 export const PlayerInfoSchema = z.object({
     id: z.string().min(1),
     nickname: z.string().min(1),
-    profileImg: z.string().min(1),
+    profileImg: z.string().optional().default(''),
+    isReady: z.boolean().optional().default(false),
+    loserTask: z.string().nullable().optional().default(null),
 })
 
 

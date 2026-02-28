@@ -2,6 +2,8 @@ import clsx from 'clsx';
 import { type FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../../app/store/hook';
+import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
+import { leaveLobbyBySocket } from '../../../../shared/services/socket/lobby.socket';
 import { Button } from '../../../../shared/ui/Button';
 import { Popup } from '../../../../shared/ui/Popup';
 import { Typography } from '../../../../shared/ui/Typography';
@@ -29,6 +31,15 @@ export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow
   const dispatch = useAppDispatch();
 
   const leaveGame = () => {
+    const session = lobbySessionService.get();
+
+    if (session) {
+      leaveLobbyBySocket({
+        lobbyCode: session.lobbyCode,
+      });
+      lobbySessionService.clear();
+    }
+
     setTimeout(() => {
       dispatch(resetTimer());
     }, 0);

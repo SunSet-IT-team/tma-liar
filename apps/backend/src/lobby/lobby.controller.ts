@@ -1,11 +1,30 @@
 import type { Request, Response } from 'express';
+import z from 'zod';
 import { LobbyService } from './lobby.service';
 import { ApiError, success } from '../common/response';
-import { CreateLobbyDtoSchema, type CreateLobbyDto } from './dtos/lobby-create.dto';
+import type { CreateLobbyDto } from './dtos/lobby-create.dto';
 import { FindLobbyDtoSchema, type FindLobbyDto } from './dtos/lobby-find.dto';
 import { JoinLobbyDtoSchema, type JoinLobbyDto } from './dtos/lobby-join.dto';
 import { UpdateLobbyDtoSchema, type UpdateLobbyDto } from './dtos/lobby-update.dto';
 import { DeleteLobbyDtoSchema, type DeleteLobbyDto } from './dtos/lobby-delete.dto';
+import type { AuthRequest } from '../middlewares/auth.middleware';
+import { SettingsSchema } from './entities/settings.entity';
+
+const CreateLobbyRequestSchema = z.object({
+  settings: SettingsSchema,
+  nickname: z.string().min(1).optional(),
+  profileImg: z.string().optional(),
+  loserTask: z.string().optional(),
+  players: z
+    .array(
+      z.object({
+        nickname: z.string().min(1).optional(),
+        profileImg: z.string().optional(),
+        loserTask: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
 
 /**
  * Класс контроллеров лобби
@@ -43,14 +62,45 @@ export class LobbyController {
    * Контроллер создания лобби
    */
   public async createLobby(req: Request, res: Response) {
-    const result = CreateLobbyDtoSchema.safeParse(req.body);
+    const result = CreateLobbyRequestSchema.safeParse(req.body);
 
     if (!result.success) {
       throw new ApiError(422, "CREATE_LOBBY_DATA_INVALID");
     }
-    
-    const dto: CreateLobbyDto = result.data;
-    const lobby = await this.lobbyService.createLobby({ ...dto });
+
+    const authReq = req as AuthRequest;
+    const userId = authReq.userId;
+
+    if (!userId) {
+      throw new ApiError(401, 'UNAUTHORIZED');
+    }
+
+    const sourcePlayer = result.data.players?.[0];
+    const nicknameFromPayload = result.data.nickname ?? sourcePlayer?.nickname;
+    const profileImgFromPayload = result.data.profileImg ?? sourcePlayer?.profileImg;
+    const loserTaskFromPayload = result.data.loserTask ?? sourcePlayer?.loserTask;
+
+    const dto: CreateLobbyDto = {
+      adminId: userId,
+      players: [
+        {
+          id: userId,
+          telegramId: userId,
+          nickname: nicknameFromPayload?.trim() ? nicknameFromPayload.trim() : `Guest_${userId.slice(-4)}`,
+          profileImg: profileImgFromPayload ?? '',
+          score: 0,
+          isReady: false,
+          loserTask: loserTaskFromPayload ?? 'task',
+          wasLiar: 0,
+          answer: null,
+          likes: 0,
+          isConfirmed: false,
+        },
+      ],
+      settings: result.data.settings,
+    };
+
+    const lobby = await this.lobbyService.createLobby(dto);
     
     return res.status(200).json(success(lobby));
   }

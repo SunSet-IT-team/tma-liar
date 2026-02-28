@@ -1,8 +1,8 @@
 import { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
 import { LobbyService } from "../lobby/lobby.service";
 import type { Server, Socket } from "socket.io";
-import { JoinLobbyDtoSchema, type JoinLobbyDto } from "../lobby/dtos/lobby-join.dto";
-import { ToggleReadyDtoSchema, type ToggleReadyDto } from "../lobby/dtos/lobby-toggleReady.dto";
+import type { JoinLobbyDto } from "../lobby/dtos/lobby-join.dto";
+import type { ToggleReadyDto } from "../lobby/dtos/lobby-toggleReady.dto";
 import { LobbyStateDtoSchema } from "../lobby/dtos/lobby-state.dto";
 import { PlayerInfoSchema } from "../game/dtos/game-init.dto";
 import { findDiff } from "../common/diff";
@@ -12,6 +12,70 @@ import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
 import { logger } from "../observability/logger";
+import z from 'zod';
+import { UserRepository } from '../users/user.repository';
+
+const LobbySubscribeDtoSchema = z.object({
+  lobbyCode: z.string().min(1),
+});
+
+const JoinLobbySocketSchema = z.object({
+  lobbyCode: z.string().min(1),
+  nickname: z.string().min(1).optional(),
+  profileImg: z.string().optional(),
+  loserTask: z.string().optional(),
+  player: z
+    .object({
+      nickname: z.string().min(1).optional(),
+      profileImg: z.string().optional(),
+      loserTask: z.string().optional(),
+    })
+    .optional(),
+});
+
+const LeaveLobbySocketSchema = z.object({
+  lobbyCode: z.string().min(1),
+});
+
+const ToggleReadySocketSchema = z.object({
+  lobbyCode: z.string().min(1),
+  loserTask: z.string().nullable().optional(),
+});
+
+const StartGameSocketSchema = z.object({
+  lobbyCode: z.string().min(1),
+});
+
+function buildLobbyState(lobby: {
+  lobbyCode: string;
+  adminId: string;
+  currentGameId: string | null;
+  status: string;
+  players: Array<{
+    id?: string;
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    loserTask?: string | null;
+  }>;
+}) {
+  return LobbyStateDtoSchema.parse({
+    lobbyCode: lobby.lobbyCode,
+    adminId: lobby.adminId,
+    currentGameId: lobby.currentGameId,
+    status: lobby.status,
+    players: lobby.players.map((player) =>
+      PlayerInfoSchema.parse({
+        id: player.id ?? player.telegramId,
+        nickname: player.nickname,
+        profileImg: player.profileImg ?? '',
+        isReady: player.isReady ?? false,
+        loserTask: player.loserTask ?? null,
+      }),
+    ),
+  });
+}
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -39,10 +103,33 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
 export function registerLobbyHandler(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
+  const userRepository = new UserRepository();
+
+  socket.on(LobbyMessageTypes.LOBBY_SUBSCRIBE, async (data: unknown) => {
+    try {
+      const dtoResult = LobbySubscribeDtoSchema.safeParse(data);
+
+      if (!dtoResult.success) {
+        throw new ApiError(422, 'LOBBY_SUBSCRIBE_DATA_INVALID', dtoResult.error.issues);
+      }
+
+      const { lobbyCode } = dtoResult.data;
+      const lobby = await lobbyService.findLobby({ lobbyCode });
+
+      socket.join(lobbyCode);
+      socket.emit(LobbyMessageTypes.LOBBY_STATE, buildLobbyState(lobby));
+
+      const roomSize = io.sockets.adapter.rooms.get(lobbyCode)?.size ?? 0;
+      logger.info({ lobbyCode, roomSize, socketId: socket.id }, 'Socket subscribed to lobby room');
+    } catch (error) {
+      logger.error({ error }, 'Error handling lobby subscribe');
+      emitSocketError(socket, 'LOBBY_SUBSCRIBE_ERROR', error);
+    }
+  });
 
   socket.on(LobbyMessageTypes.PLAYER_JOINED, async (data: unknown) => {
     try {
-      const result = JoinLobbyDtoSchema.safeParse(data);
+      const result = JoinLobbySocketSchema.safeParse(data);
 
       if (!result.success) {
         const formattedErrors = result.error.issues.map((issue) => ({
@@ -53,23 +140,42 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         throw new ApiError(422, "JOIN_LOBBY_DATA_INVALID", result.error.issues);
       }
 
-      const dto: JoinLobbyDto = result.data; 
+      const socketUserId = socket.data.userId;
+
+      if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const normalizedUserId = socketUserId.trim();
+      const user = await userRepository.findByTelegramId(normalizedUserId);
+      const requestedNickname = result.data.nickname ?? result.data.player?.nickname;
+      const requestedProfileImg = result.data.profileImg ?? result.data.player?.profileImg;
+      const requestedLoserTask = result.data.loserTask ?? result.data.player?.loserTask;
+
+      const dto: JoinLobbyDto = {
+        lobbyCode: result.data.lobbyCode,
+        player: {
+          id: normalizedUserId,
+          telegramId: normalizedUserId,
+          nickname:
+            user?.nickname ??
+            (typeof requestedNickname === 'string' && requestedNickname.trim().length > 0
+              ? requestedNickname.trim()
+              : `Guest_${normalizedUserId.slice(-4)}`),
+          profileImg: user?.profileImg ?? requestedProfileImg ?? '',
+          score: 0,
+          isReady: false,
+          loserTask: requestedLoserTask ?? 'task',
+          wasLiar: 0,
+          answer: null,
+          likes: 0,
+          isConfirmed: false,
+        },
+      };
+
       const lobbySnap = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
       const lobby = await lobbyService.joinLobby(dto);
-
-      const lobbyState = LobbyStateDtoSchema.parse({
-        lobbyCode: lobby.lobbyCode,
-        adminId: lobby.adminId,
-        currentGameId: lobby.currentGameId,
-        status: lobby.status,
-        players: lobby.players.map(player => 
-          PlayerInfoSchema.parse({
-            id: player.id,
-            nickname: player.nickname,
-            profileImg: player.profileImg, 
-          })
-        ), 
-      });
+      const lobbyState = buildLobbyState(lobby);
 
       // Подключаем сокет к комнате лобби
       socket.join(dto.lobbyCode);
@@ -91,8 +197,20 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
   /**
    * Игрок выходит из лобби
    */
-  socket.on(LobbyMessageTypes.PLAYER_LEFT, async ({ lobbyCode, telegramId }: { lobbyCode: string; telegramId: string }) => {
+  socket.on(LobbyMessageTypes.PLAYER_LEFT, async (data: unknown) => {
     try {
+      const result = LeaveLobbySocketSchema.safeParse(data);
+      if (!result.success) {
+        throw new ApiError(422, 'LEAVE_LOBBY_DATA_INVALID', result.error.issues);
+      }
+
+      const socketUserId = socket.data.userId;
+      if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const telegramId = socketUserId.trim();
+      const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
       const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
 
@@ -110,8 +228,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
       socket.leave(lobbyCode);
     } catch (error) {
-      logger.error({ error, lobbyCode, telegramId }, 'Error handling player left');
-      socket.leave(lobbyCode);
+      logger.error({ error, socketUserId: socket.data.userId }, 'Error handling player left');
     }
   });
 
@@ -120,14 +237,23 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
    */
   socket.on(LobbyMessageTypes.PLAYER_READY, async (data: unknown) => {
     try {
-      const result = ToggleReadyDtoSchema.safeParse(data);
+      const result = ToggleReadySocketSchema.safeParse(data);
 
       if (!result.success) {
         logger.warn({ issues: result.error.issues }, 'Validation failed for PLAYER_READY');
         throw new ApiError(422, "TOGGLE_READY_DATA_INVALID", result.error.issues);
       }
 
-      const dto: ToggleReadyDto = result.data;
+      const socketUserId = socket.data.userId;
+      if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const dto: ToggleReadyDto = {
+        lobbyCode: result.data.lobbyCode,
+        playerId: socketUserId.trim(),
+        loserTask: result.data.loserTask ?? null,
+      };
       const lobbySnap = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
       const lobby = await lobbyService.togglePlayerReady(dto);
 
@@ -143,14 +269,37 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
   socket.on(GameMessageTypes.GAME_STARTED, async (data: unknown) => {
     try {
-      const dtoResult = GameStartDtoSchema.safeParse(data);
+      const dtoResult = StartGameSocketSchema.safeParse(data);
 
       if (!dtoResult.success) {
         logger.warn({ issues: dtoResult.error.issues }, 'Validation failed for GAME_STARTED');
         throw new ApiError(422, "GAME_START_DATA_INVALID", dtoResult.error.issues);
       }
 
-      const dto: GameStartDto = dtoResult.data;
+      const socketUserId = socket.data.userId;
+      if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const lobby = await lobbyService.findLobby({ lobbyCode: dtoResult.data.lobbyCode });
+
+      const dto: GameStartDto = GameStartDtoSchema.parse({
+        lobbyCode: dtoResult.data.lobbyCode,
+        player: {
+          id: socketUserId.trim(),
+          telegramId: socketUserId.trim(),
+          nickname: '',
+          profileImg: '',
+          score: 0,
+          isReady: false,
+          loserTask: 'task',
+          wasLiar: 0,
+          answer: null,
+          likes: 0,
+          isConfirmed: false,
+        },
+        settings: lobby.settings,
+      });
       const createdGame = await gameService.createGame({...dto});
       const gameId = createdGame.id;
 

@@ -129,7 +129,7 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_INITDATA_EXPIRES_IN=3600
 
 # CORS
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,*.trycloudflare.com
 
 # Auth rate limit
 AUTH_RATE_LIMIT_WINDOW_MS=60000
@@ -146,9 +146,9 @@ GAME_RESULTS_FIELDS=doLie,loserTask,winnerId,loserId
 LOBBY_CODE_ALPHABET=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
 LOBBY_CODE_LENGTH=6
 
-# Ngrok
-# Получите токен: https://dashboard.ngrok.com/get-started/your-authtoken
-NGROK_AUTHTOKEN=
+# Cloudflare Tunnel
+# Используется для named tunnel (опционально, вручную)
+CF_TUNNEL_TOKEN=
 ```
 
 ## Доступы в dev-режиме
@@ -156,20 +156,29 @@ NGROK_AUTHTOKEN=
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:3000`
 - MongoDB: `localhost:27017`
-- Ngrok Web UI: `http://localhost:4040` (если включён `NGROK_AUTHTOKEN`)
+- Cloudflare Tunnel URL: смотри в логах сервиса `cloudflared`
 
-## Ngrok для Telegram Mini App
+## Cloudflare Tunnel для Telegram Mini App
 
-Если в `.env` задан `NGROK_AUTHTOKEN`, ngrok автоматически поднимет HTTPS-туннель для frontend.
+Cloudflare Tunnel запускается автоматически вместе с `docker compose up`.
 
-Порядок действий:
+По умолчанию используется quick tunnel:
+- сервис `cloudflared` выдаёт временный `https://...trycloudflare.com`
+- этого достаточно для локальной разработки и Telegram Mini App тестов
 
-1. Запустить проект: `docker compose up`
-2. Открыть `http://localhost:4040`
-3. Скопировать HTTPS URL (например, `https://abc123.ngrok-free.app`)
-4. Использовать этот URL в настройке Telegram Mini App
+Как получить URL в quick режиме:
 
-Без `NGROK_AUTHTOKEN` ngrok работает в ограниченном режиме (обычно сессии до 2 часов).
+```bash
+docker compose logs -f cloudflared
+```
+
+В логах будет строка с публичным HTTPS URL. Используй его для Telegram Mini App.
+
+Если нужен named tunnel (постоянный домен), запусти cloudflared отдельно с token:
+
+```bash
+cloudflared tunnel run --token <CF_TUNNEL_TOKEN>
+```
 
 ## Production
 
@@ -197,11 +206,13 @@ docker compose -f docker-compose.prod.yml down
 docker compose up mongodb
 docker compose up backend
 docker compose up frontend
+docker compose up cloudflared
 
 # Логи по сервисам
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose logs -f mongodb
+docker compose logs -f cloudflared
 
 # Перезапуск сервиса
 docker compose restart backend

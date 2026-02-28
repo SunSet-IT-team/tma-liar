@@ -8,6 +8,18 @@ export type SocketAuthPayload = {
 };
 
 export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void) {
+  if (env.disableAuth) {
+    const userIdFromAuth = socket.handshake.auth?.userId;
+    const userIdFromQuery = socket.handshake.query?.userId;
+    const normalizedUserId =
+      (typeof userIdFromAuth === 'string' && userIdFromAuth.trim().length > 0 && userIdFromAuth.trim()) ||
+      (typeof userIdFromQuery === 'string' && userIdFromQuery.trim().length > 0 && userIdFromQuery.trim()) ||
+      'dev-user';
+
+    socket.data.userId = normalizedUserId;
+    return next();
+  }
+
   try {
     const raw = socket.handshake.auth?.token ?? socket.handshake.headers.authorization;
 

@@ -22,6 +22,21 @@ export function authMiddleware(
   res: Response,
   next: NextFunction
 ) {
+  if (env.disableAuth) {
+    const devUserIdHeader = req.headers['x-dev-user-id'];
+    const devUserId =
+      typeof devUserIdHeader === "string" && devUserIdHeader.trim().length > 0
+        ? devUserIdHeader.trim()
+        : "dev-user";
+
+    req.userId = devUserId;
+    req.auth = {
+      userId: devUserId,
+      sub: devUserId,
+    };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {

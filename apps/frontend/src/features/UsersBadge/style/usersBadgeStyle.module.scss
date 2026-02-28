@@ -46,6 +46,26 @@
     width: 45%;
 }
 
+.userCard {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.statusText {
+    font-size: 12px;
+    color: #a2a2a2;
+}
+
+.readyText {
+    color: var(--red-color);
+}
+
+.taskText {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
 .userContent:nth-child(2n) {
     justify-content: flex-end;
 }

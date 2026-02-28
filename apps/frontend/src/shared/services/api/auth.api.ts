@@ -1,10 +1,15 @@
-import axios from "axios";
+import { apiClient } from './client';
 
-/** 
+type AuthResponse = {
+  payload: {
+    token: string;
+  };
+};
+
+/**
  * Запрос токена с backend
-*/
+ */
 export const fetchToken = async (initData: string) => {
-  const res = await axios.post('/api/auth/tma', { initData });
-
-  return res.data.payload.token;
+  const response = await apiClient.post<AuthResponse>('/api/auth/tma', { initData });
+  return response.data.payload.token;
 };

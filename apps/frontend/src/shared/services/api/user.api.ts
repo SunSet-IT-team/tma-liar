@@ -1,11 +1,18 @@
-import axios from 'axios';
+import { apiClient } from './client';
 
-/** 
- * Запрос на регистрацию пользователя
-*/
-export const createUser = async (telegramId: string, nickname?: string) => {
-  return axios.post('http://localhost:3000/api/users', {
-    telegramId,
-    nickname,
-  });
+type UserResponse = {
+  payload: {
+    id: string;
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+  };
+};
+
+/**
+ * Получение пользователя по telegramId
+ */
+export const findUserByTelegramId = async (telegramId: string) => {
+  const response = await apiClient.get<UserResponse>(`/api/users/${telegramId}`);
+  return response.data.payload;
 };

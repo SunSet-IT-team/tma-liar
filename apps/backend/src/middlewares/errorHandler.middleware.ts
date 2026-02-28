@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "../common/response";
 import { error } from "../common/response";
+import { logger } from "../observability/logger";
 
 /**
  * Глобальный обработчик ошибок HTTP.
@@ -8,7 +9,7 @@ import { error } from "../common/response";
  */
 export function errorMiddleware(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction, 
 ) {
@@ -17,6 +18,16 @@ export function errorMiddleware(
       .status(err.code)
       .json(error(err.code, err.errorCode, err.message, err.details));
   }
+
+  logger.error(
+    {
+      method: req.method,
+      url: req.originalUrl,
+      message: err.message,
+      stack: err.stack,
+    },
+    'Unhandled application error',
+  );
 
   return res
     .status(500)

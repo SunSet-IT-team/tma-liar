@@ -9,6 +9,12 @@ export enum LobbyMessageTypes {
     /** Вошёл игрок */
     PLAYER_JOINED = "lobby:player:joined", 
 
+    /** Подписка на комнату лобби */
+    LOBBY_SUBSCRIBE = "lobby:subscribe",
+
+    /** Полное состояние лобби для подписавшегося сокета */
+    LOBBY_STATE = "lobby:state",
+
     /** Игрок готов */
     PLAYER_READY = "lobby:player:ready",
 

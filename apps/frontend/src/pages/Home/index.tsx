@@ -18,13 +18,6 @@ import { useNavigate } from 'react-router-dom';
 export const Home: FC = () => {
   const navigate = useNavigate();
 
-  fetch('/api/hello', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
   return (
     <Container>
       <img className={styles.circleIcon} src={homeCircle} alt="" />
@@ -35,7 +28,7 @@ export const Home: FC = () => {
         className={styles.homeBtn}
         onClick={() => navigate(`/${PageRoutes.CREATE_LOBBY}`)}
       >
-        Создатьzz2
+        Создать
       </Button>
       <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
         Присоедениться

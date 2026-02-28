@@ -17,6 +17,7 @@ export interface BtnProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 /**
@@ -28,6 +29,7 @@ export const Button: FC<BtnProps> = ({
   as: Component = 'button',
   children,
   onClick,
+  disabled,
 }) => {
   const playSound = usePlaySound();
 
@@ -40,6 +42,7 @@ export const Button: FC<BtnProps> = ({
     <Component
       className={clsx(styles.buttonBase, styles[variant], className)}
       onClick={handleClick}
+      disabled={disabled}
     >
       {children}
     </Component>

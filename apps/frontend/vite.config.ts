@@ -19,6 +19,10 @@ export default defineConfig({
         // changeOrigin: true,
         // rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/socket.io': {
+        target: 'http://backend:3000',
+        ws: true,
+      },
     },
     hmr: process.env.HMR_HOST
       ? {
