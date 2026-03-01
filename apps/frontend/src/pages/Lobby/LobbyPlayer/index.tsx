@@ -5,7 +5,7 @@ import { Typography } from '../../../shared/ui/Typography';
 import { LobbyUsersBadge } from '../../../features/UsersBadge/ui/LobbyUsersBadge';
 import { TextInput } from '../../../shared/ui/TextInput';
 import { Container } from '../../../shared/ui/Container';
-import { Button } from '../../../shared/ui/Button';
+import { ReadyToggle } from '../../../features/ReadyToggle/ui';
 import { useNavigate } from 'react-router-dom';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
 import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
@@ -135,10 +135,14 @@ export const LobbyPlayer: FC = () => {
       <div className={styles.lobbyBlock}>
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
-          <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
         </Typography>
+        <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
       </div>
-      <LobbyUsersBadge players={session.players} className={styles.players} currentUserId={user.telegramId} />
+      <LobbyUsersBadge
+        playersClassName={styles.lobbyPlayers}
+        players={session.players}
+        currentUserId={user.telegramId}
+      />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput
@@ -149,10 +153,13 @@ export const LobbyPlayer: FC = () => {
           readOnly
         />
       </div>
-      <Button className={styles.readyBtn} onClick={toggleReady}>
-        {ready ? 'Готов' : 'Не готов'}
-      </Button>
-      {readyError ? <Typography>{readyError}</Typography> : null}
+      <Typography className={styles.statusHint}>
+        Готовы: {session.players.filter((player) => player.isReady).length}/{session.players.length}
+      </Typography>
+      {readyError ? <Typography className={styles.errorText}>{readyError}</Typography> : null}
+      <div className={styles.actions}>
+        <ReadyToggle className={styles.readyBtn} ready={ready} onToggle={toggleReady} />
+      </div>
     </Container>
   );
 };

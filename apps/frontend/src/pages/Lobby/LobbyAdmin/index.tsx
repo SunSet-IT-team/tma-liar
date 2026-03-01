@@ -6,6 +6,7 @@ import { LobbyUsersBadge } from '../../../features/UsersBadge/ui/LobbyUsersBadge
 import { TextInput } from '../../../shared/ui/TextInput';
 import { Container } from '../../../shared/ui/Container';
 import { Button } from '../../../shared/ui/Button';
+import { ReadyToggle } from '../../../features/ReadyToggle/ui';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../../app/routes/pages';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
@@ -198,12 +199,11 @@ export const LobbyAdmin: FC = () => {
       <div className={styles.lobbyBlock}>
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
-          <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
         </Typography>
+        <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
       </div>
       <LobbyUsersBadge
         playersClassName={styles.lobbyPlayers}
-        className={styles.players}
         players={session.players}
         currentUserId={user.telegramId}
       />
@@ -218,14 +218,21 @@ export const LobbyAdmin: FC = () => {
         />
         <Typography className={styles.connectedPlayers}>{session.players.length}/7</Typography>
       </div>
-      {startError ? <Typography>{startError}</Typography> : null}
-      {readyError ? <Typography>{readyError}</Typography> : null}
-      <Button className={styles.readyBtn} onClick={toggleReady}>
-        {adminReady ? 'Снять готовность' : 'Я готов'}
-      </Button>
-      <Button className={styles.readyBtn} onClick={startGame} disabled={isStarting || !allPlayersReady}>
-        {isStarting ? 'Запуск...' : 'Начать'}
-      </Button>
+      <Typography className={styles.statusHint}>
+        Готовы: {session.players.filter((player) => player.isReady).length}/{session.players.length}
+      </Typography>
+      {startError ? <Typography className={styles.errorText}>{startError}</Typography> : null}
+      {readyError ? <Typography className={styles.errorText}>{readyError}</Typography> : null}
+      <div className={styles.actions}>
+        <ReadyToggle className={styles.readyBtn} ready={adminReady} onToggle={toggleReady} />
+        <Button
+          className={`${styles.readyBtn} ${styles.secondaryAction}`}
+          onClick={startGame}
+          disabled={isStarting || !allPlayersReady}
+        >
+          {isStarting ? 'Запуск...' : 'Начать'}
+        </Button>
+      </div>
     </Container>
   );
 };
