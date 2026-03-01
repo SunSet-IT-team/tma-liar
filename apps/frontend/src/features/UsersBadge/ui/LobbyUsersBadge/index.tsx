@@ -61,7 +61,6 @@ export const LobbyUsersBadge: FC<UsersProps> = ({
             <Typography className={clsx(styles.statusText, user.isReady && styles.readyText)}>
               {user.isReady ? 'Готов' : 'Не готов'}
             </Typography>
-            {user.loserTask ? <Typography className={styles.taskText}>{user.loserTask}</Typography> : null}
           </div>
         );
       })}
