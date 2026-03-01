@@ -1,6 +1,6 @@
-import { LobbyMessageTypes } from "../../../common/message-types/enums/lobby.types";
-import { SocketSystemEvents } from "../../../common/message-types/events/socket.events";
-import type { SocketAck, SocketErrorPayload } from "../../../common/message-types/contracts/socket.contracts";
+import { LobbyMessageTypes } from "../../../common/message-types";
+import { SocketSystemEvents } from "../../../common/message-types";
+import type { SocketAck, SocketErrorPayload } from "../../../common/message-types";
 import { LobbyService } from "../lobby/lobby.service";
 import type { Server, Socket } from "socket.io";
 import type { JoinLobbyDto } from "../lobby/dtos/lobby-join.dto";
@@ -9,7 +9,7 @@ import { LobbyStateDtoSchema } from "../lobby/dtos/lobby-state.dto";
 import { PlayerInfoSchema } from "../game/dtos/game-init.dto";
 import { findDiff } from "../common/diff";
 import { ApiError, buildStatePayload } from "../common/response";
-import { GameMessageTypes } from "../../../common/message-types/enums/game.types";
+import { GameMessageTypes } from "../../../common/message-types";
 import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
@@ -19,6 +19,7 @@ import { UserRepository } from '../users/user.repository';
 import { env } from '../config/env';
 import { SettingsSchema } from '../lobby/entities/settings.entity';
 import { GameStages, LobbyStatus } from '../lobby/entities/lobby.entity';
+import { emitToRoom, emitToRoomFromSocket, emitToSocket } from "./typed-socket";
 
 const LobbySubscribeDtoSchema = z.object({
   lobbyCode: z.string().min(1),
@@ -147,7 +148,7 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
       message: error.message,
       details: error.details,
     };
-    socket.emit(SocketSystemEvents.ERROR, payload);
+    emitToSocket(socket, SocketSystemEvents.ERROR, payload);
     return;
   }
 
@@ -156,7 +157,7 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
     message: fallbackErrorCode,
     details: error instanceof Error ? error.message : undefined,
   };
-  socket.emit(SocketSystemEvents.ERROR, payload);
+  emitToSocket(socket, SocketSystemEvents.ERROR, payload);
 }
 
 /**
@@ -179,7 +180,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const lobby = await lobbyService.findLobby({ lobbyCode });
 
       socket.join(lobbyCode);
-      socket.emit(LobbyMessageTypes.LOBBY_STATE, buildLobbyState(lobby));
+      emitToSocket(socket, LobbyMessageTypes.LOBBY_STATE, buildLobbyState(lobby));
 
       const roomSize = io.sockets.adapter.rooms.get(lobbyCode)?.size ?? 0;
       logger.info({ lobbyCode, roomSize, socketId: socket.id }, 'Socket subscribed to lobby room');
@@ -251,8 +252,10 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         'Player joined lobby room',
       );
 
-      socket.emit(LobbyMessageTypes.PLAYER_JOINED, lobbyState); 
-      socket.to(dto.lobbyCode).emit(
+      emitToSocket(socket, LobbyMessageTypes.PLAYER_JOINED, lobbyState);
+      emitToRoomFromSocket(
+        socket,
+        dto.lobbyCode,
         SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(snapForDiff, nextForDiff)),
       );
@@ -324,7 +327,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       if (leaveResult.deleted) {
-        io.to(lobbyCode).emit(LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
+        emitToRoom(io, lobbyCode, LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
         logger.info({ lobbyCode }, 'Lobby deleted after player left');
       } else if (leaveResult.newAdminId) {
         logger.info({ lobbyCode, previousAdmin: telegramId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
@@ -339,13 +342,17 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           currentGameId: null,
         });
         const nextForDiff = buildLobbyDiffState(resetLobby);
-        io.to(lobbyCode).emit(
+        emitToRoom(
+          io,
+          lobbyCode,
           SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
       } else if (leaveResult.lobby) {
         const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
-        io.to(lobbyCode).emit(
+        emitToRoom(
+          io,
+          lobbyCode,
           SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
@@ -412,7 +419,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       });
 
       const nextForDiff = buildLobbyDiffState(resetLobby);
-      io.to(lobbyCode).emit(
+      emitToRoom(
+        io,
+        lobbyCode,
         SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_EXIT_GAME, findDiff(snapForDiff, nextForDiff)),
       );
@@ -497,7 +506,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const roomSize = io.sockets.adapter.rooms.get(dto.lobbyCode)?.size ?? 0;
       logger.info({ playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode }, 'Player ready toggled');
 
-      io.to(dto.lobbyCode).emit(
+      emitToRoom(
+        io,
+        dto.lobbyCode,
         SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(snapForDiff, nextForDiff)),
       );

@@ -17,6 +17,16 @@ export type LobbyPlayerPayload = {
 };
 
 /**
+ * Допустимые статусы лобби в протоколе.
+ */
+export const LobbyStatusValues = ['waiting', 'started', 'finished'] as const;
+
+/**
+ * Статус лобби.
+ */
+export type LobbyStatus = (typeof LobbyStatusValues)[number];
+
+/**
  * Полный снимок состояния лобби.
  * Обычно возвращается при подписке на комнату лобби.
  */
@@ -27,8 +37,8 @@ export type LobbyStatePayload = {
   adminId: string;
   /** Идентификатор активной игры в лобби, если игра запущена. */
   currentGameId?: string | null;
-  /** Статус лобби (`waiting`, `started`, `finished` и т.д.). */
-  status: string;
+  /** Статус лобби (`waiting`, `started`, `finished`). */
+  status: LobbyStatus;
   /** Актуальный список игроков в лобби. */
   players: LobbyPlayerPayload[];
 };
@@ -89,7 +99,7 @@ export type LobbyDiffPayload = {
   /** Новый active game id или `null` при завершении/сбросе. */
   currentGameId?: string | null;
   /** Новый статус лобби. */
-  status?: string;
+  status?: LobbyStatus;
   /** Частичные изменения по игрокам. */
   players?: LobbyDiffPlayerPayload[];
   /** Текущая стадия игры, если сервер шлет связанное обновление. */

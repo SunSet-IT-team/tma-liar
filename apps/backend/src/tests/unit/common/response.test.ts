@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { GameMessageTypes } from '../../../../../common/message-types/enums/game.types';
+import { GameMessageTypes } from '../../../../../common/message-types';
 import { ApiError, buildStatePayload, error, success } from '../../../common/response';
 
 describe('response helpers', () => {

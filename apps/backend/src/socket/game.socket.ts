@@ -1,7 +1,14 @@
-import { GameMessageTypes } from "../../../common/message-types/enums/game.types";
-import { SocketSystemEvents } from "../../../common/message-types/events/socket.events";
-import type { GameStatePayload, GameStatusChangedPayload } from "../../../common/message-types/contracts/game.contracts";
-import type { SocketErrorPayload } from "../../../common/message-types/contracts/socket.contracts";
+import { GameMessageTypes } from "../../../common/message-types";
+import { SocketSystemEvents } from "../../../common/message-types";
+import {
+  GameStageValues,
+  type GameMessageType,
+  type GameStage,
+  type GameStatePayload,
+  type GameStatusChangedPayload,
+  type SolverVoteAnswer,
+} from "../../../common/message-types";
+import type { SocketErrorPayload } from "../../../common/message-types";
 import { GameService } from "../game/game.service";
 import type { Server, Socket } from "socket.io";
 import { findDiff } from "../common/diff";
@@ -29,6 +36,7 @@ import { ApiError, buildStatePayload } from "../common/response";
 import { logger } from "../observability/logger";
 import { env } from "../config/env";
 import { GameStages } from "../lobby/entities/lobby.entity";
+import { emitToRoom, emitToSocket } from "./typed-socket";
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -40,7 +48,7 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
       message: error.message,
       details: error.details,
     };
-    socket.emit(SocketSystemEvents.ERROR, payload);
+    emitToSocket(socket, SocketSystemEvents.ERROR, payload);
     return;
   }
 
@@ -49,7 +57,7 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
     message: fallbackErrorCode,
     details: error instanceof Error ? error.message : undefined,
   };
-  socket.emit(SocketSystemEvents.ERROR, payload);
+  emitToSocket(socket, SocketSystemEvents.ERROR, payload);
 }
 
 /**
@@ -57,6 +65,13 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
  */
 export function registerGameHandler(io: Server, socket: Socket) {
   const gameService = new GameService(io);
+  const normalizeStage = (stage?: string): GameStage | undefined => {
+    if (!stage) return undefined;
+    return GameStageValues.includes(stage as GameStage) ? (stage as GameStage) : undefined;
+  };
+  const normalizeAnswer = (answer?: number | null): SolverVoteAnswer | null =>
+    answer === 0 || answer === 1 ? answer : null;
+
   const getStageDurationMs = (stage?: string): number | null => {
     if (!stage) return null;
     if (stage === GameStages.LIAR_CHOOSES) return env.LIAR_CHOOSES_TIMER_MS;
@@ -88,7 +103,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       isReady: player.isReady,
       inGame: player.inGame ?? true,
       loserTask: player.loserTask ?? null,
-      answer: player.answer ?? null,
+      answer: normalizeAnswer(player.answer),
       likes: player.likes ?? 0,
       isConfirmed: player.isConfirmed ?? false,
       score: player.score ?? 0,
@@ -112,7 +127,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
   };
 
   const buildGameStatusPayload = (
-    status: GameMessageTypes,
+    status: GameMessageType,
     diff: Record<string, unknown>,
     game: {
       id: string;
@@ -140,7 +155,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
   ): GameStatusChangedPayload => ({
     ...buildStatePayload(status, diff),
     gameId: game.id,
-    stage: game.stage,
+    stage: normalizeStage(game.stage),
     stageStartedAt: game.stageStartedAt ?? Date.now(),
     stageDurationMs: getStageDurationMs(game.stage),
     liarId: game.liarId ?? null,
@@ -165,7 +180,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       socket.join(gameId);
       const statePayload: GameStatePayload = {
         gameId: game.id,
-        stage: game.stage,
+        stage: normalizeStage(game.stage),
         stageStartedAt: game.stageStartedAt ?? Date.now(),
         stageDurationMs: getStageDurationMs(game.stage),
         liarId: game.liarId,
@@ -176,7 +191,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
           isReady: player.isReady,
           inGame: player.inGame ?? true,
           loserTask: player.loserTask ?? null,
-          answer: player.answer ?? null,
+          answer: normalizeAnswer(player.answer),
           likes: player.likes ?? 0,
           isConfirmed: player.isConfirmed ?? false,
           score: player.score ?? 0,
@@ -187,7 +202,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
         loserId: game.loserId ?? null,
         loserTask: game.loserTask ?? null,
       };
-      socket.emit(GameMessageTypes.GAME_STATE, statePayload);
+      emitToSocket(socket, GameMessageTypes.GAME_STATE, statePayload);
 
       const roomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
       logger.info({ gameId, roomSize, socketId: socket.id }, 'Socket subscribed to game room');
@@ -218,7 +233,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       const game = await gameService.findGame(dto.gameId);
       
       socket.join(dto.gameId);
-      io.to(dto.gameId).emit(
+      emitToRoom(
+        io,
+        dto.gameId,
         SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.LIAR_CHOSE,
@@ -255,7 +272,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       const game = await gameService.findGame(dto.gameId);
       
       socket.join(dto.gameId);
-      io.to(dto.gameId).emit(
+      emitToRoom(
+        io,
+        dto.gameId,
         SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_VOTED,
@@ -292,7 +311,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       const game = await gameService.findGame(dto.gameId);
       
       socket.join(dto.gameId);
-      io.to(dto.gameId).emit(
+      emitToRoom(
+        io,
+        dto.gameId,
         SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_SECURED,
@@ -327,7 +348,9 @@ export function registerGameHandler(io: Server, socket: Socket) {
       const game = await gameService.findGame(dto.gameId);
 
       socket.join(dto.gameId);
-      io.to(dto.gameId).emit(
+      emitToRoom(
+        io,
+        dto.gameId,
         SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_LIKED,

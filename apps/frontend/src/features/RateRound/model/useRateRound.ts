@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GameSocketEvents } from '@common/message-types/events/game.events';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import { GameSocketEvents } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
+import type { SocketErrorPayload } from '@common/message-types';
 import { useAppSelector } from '@app/store/hook';
 import { getCurrentTmaUser } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
 import { toUserSocketError } from '@shared/services/socket/socket-error';
+import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 export function useRateRound() {
   const user = useMemo(() => getCurrentTmaUser(), []);
@@ -59,13 +60,13 @@ export function useRateRound() {
       ) {
         setErrorText(toUserSocketError(error, 'Не удалось поставить лайк'));
       }
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
     for (const receiverId of pendingIds) {
       sentLikeIdsRef.current.add(receiverId);
-      socket.emit(GameSocketEvents.PLAYER_LIKED, {
+      emitEvent(socket, GameSocketEvents.PLAYER_LIKED, {
         gameId: session.currentGameId,
         senderId: user.telegramId,
         receiverId,
@@ -73,7 +74,7 @@ export function useRateRound() {
     }
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
     }, 900);
   };
 
@@ -105,18 +106,18 @@ export function useRateRound() {
           finalizedRef.current = false;
         }
       }
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
-    socket.emit(GameSocketEvents.PLAYER_SECURED, {
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
+    emitEvent(socket, GameSocketEvents.PLAYER_SECURED, {
       gameId: session.currentGameId,
       playerId: user.telegramId,
     });
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     }, 900);
   };

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types/events/game.events';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
-import type { GameStatusChangedPayload } from '@common/message-types/contracts/game.contracts';
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import { GameSocketEvents } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
+import type { StatusChangedPayload } from '@common/message-types';
+import { isGameStatusChangedPayload } from '@common/message-types';
+import type { SocketErrorPayload } from '@common/message-types';
 import { PageRoutes } from '@app/routes/pages';
 import { getCurrentTmaUser } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
 import { toUserSocketError } from '@shared/services/socket/socket-error';
+import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 export function useSolverAnswer() {
   const navigate = useNavigate();
@@ -40,7 +42,9 @@ export function useSolverAnswer() {
 
   useEffect(() => {
     const socket = getLobbySocket();
-    const onStatusChanged = (payload: GameStatusChangedPayload) => {
+    const onStatusChanged = (payload: StatusChangedPayload) => {
+      if (!isGameStatusChangedPayload(payload)) return;
+
       const me = payload.diff?.players?.find((player) => player.id === user.telegramId);
       if (!me) return;
 
@@ -52,9 +56,9 @@ export function useSolverAnswer() {
       }
     };
 
-    socket.on(SocketSystemEvents.STATUS_CHANGED, onStatusChanged);
+    onEvent(socket, SocketSystemEvents.STATUS_CHANGED, onStatusChanged);
     return () => {
-      socket.off(SocketSystemEvents.STATUS_CHANGED, onStatusChanged);
+      offEvent(socket, SocketSystemEvents.STATUS_CHANGED, onStatusChanged);
     };
   }, [user.telegramId]);
 
@@ -81,19 +85,19 @@ export function useSolverAnswer() {
       ) {
         setErrorText(toUserSocketError(error, 'Не удалось отправить выбор'));
       }
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
-    socket.emit(GameSocketEvents.PLAYER_VOTED, {
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
+    emitEvent(socket, GameSocketEvents.PLAYER_VOTED, {
       gameId: session.currentGameId,
       playerId: user.telegramId,
       answer: value ? 1 : 0,
     });
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     }, 900);
   };
@@ -123,18 +127,18 @@ export function useSolverAnswer() {
         setErrorText(toUserSocketError(error, 'Не удалось зафиксировать ответ'));
         setFixed(false);
       }
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
-    socket.emit(GameSocketEvents.PLAYER_SECURED, {
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
+    emitEvent(socket, GameSocketEvents.PLAYER_SECURED, {
       gameId: session.currentGameId,
       playerId: user.telegramId,
     });
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
     }, 900);
   };

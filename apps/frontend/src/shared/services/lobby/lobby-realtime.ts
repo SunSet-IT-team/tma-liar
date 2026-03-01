@@ -1,7 +1,7 @@
 import type {
   LobbyDiffPlayerPayload,
   LobbyStatusChangedPayload,
-} from '@common/message-types/contracts/lobby.contracts';
+} from '@common/message-types';
 import type { LobbySession } from './lobby-session.service';
 export type ChangeGameStatusPayload = LobbyStatusChangedPayload;
 

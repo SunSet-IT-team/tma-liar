@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LobbySocketEvents } from '@common/message-types/events/lobby.events';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import { LobbySocketEvents } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
+import type { LobbyStatePayload } from '@common/message-types';
+import type { SocketErrorPayload } from '@common/message-types';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
 import { getCurrentTmaUser } from '@shared/lib/tma/user';
@@ -15,42 +16,7 @@ import {
   lobbySessionService,
 } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';
-
-/**
- * Состояние лобби
- */
-type LobbyState = {
-  /**
-   * Код для подключения к лобби
-   */
-  lobbyCode: string;
-
-  /**
-   * id админа
-   */
-  adminId: string;
-
-  /**
-   * Текущий id игры, если есть
-   */
-  currentGameId?: string | null;
-
-  /**
-   * Статус
-   */
-  status: string;
-
-  /**
-   * Массив игроков
-   */
-  players: {
-    id: string;
-    nickname: string;
-    profileImg?: string;
-    isReady?: boolean;
-    loserTask?: string | null;
-  }[];
-};
+import { offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 type Mode = 'admin' | 'player';
 
@@ -59,6 +25,23 @@ function isReadyErrorCode(code: string): boolean {
     code === 'PLAYER_READY_ERROR' ||
     code === 'USER_NOT_FOUND_OR_LOBBY_EMPTY' ||
     code === 'PLAYER_READY_FORBIDDEN'
+  );
+}
+
+function isLobbyMissingError(error: unknown): boolean {
+  const maybeError = error as {
+    message?: string;
+    response?: { status?: number; data?: { errorCode?: string; message?: string } };
+  };
+  const codeFromResponse = maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
+  const message = maybeError?.message ?? '';
+  const status = maybeError?.response?.status;
+
+  return (
+    status === 404 ||
+    codeFromResponse === 'LOBBY_NOT_FOUND' ||
+    message.includes('LOBBY_NOT_FOUND') ||
+    message.includes('LOBBY_SUBSCRIBE_ERROR')
   );
 }
 
@@ -94,7 +77,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
    * Синхронизация состояния лобби
    */
   const syncLobbyState = useCallback(
-    (state: LobbyState) => {
+    (state: LobbyStatePayload) => {
       setSession((prev) => {
         if (!prev) return prev;
 
@@ -146,9 +129,12 @@ export function useLobbyRealtimeSession(mode: Mode) {
           return;
         }
         syncLobbyState(state);
-      } catch {
+      } catch (error) {
         lobbySessionService.clear();
-        navigate('/', { replace: true });
+        navigate(
+          isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/',
+          { replace: true },
+        );
       }
     },
     [navigate, syncLobbyState, user.telegramId],
@@ -178,8 +164,11 @@ export function useLobbyRealtimeSession(mode: Mode) {
           navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
         }
       })
-      .catch(() => {
-        navigate('/', { replace: true });
+      .catch((error) => {
+        navigate(
+          isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/',
+          { replace: true },
+        );
       });
 
     const onGameStatusChanged = (payload: ChangeGameStatusPayload) => {
@@ -208,7 +197,8 @@ export function useLobbyRealtimeSession(mode: Mode) {
     };
 
     const onLobbyDeleted = () => {
-      void refreshLobby(lobbyCode);
+      lobbySessionService.clear();
+      navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
     };
 
     const onSocketError = (error: SocketErrorPayload) => {
@@ -220,14 +210,14 @@ export function useLobbyRealtimeSession(mode: Mode) {
       }
     };
 
-    socket.on(SocketSystemEvents.STATUS_CHANGED, onGameStatusChanged);
-    socket.on(LobbySocketEvents.LOBBY_DELETED, onLobbyDeleted);
-    socket.on(SocketSystemEvents.ERROR, onSocketError);
+    onEvent(socket, SocketSystemEvents.STATUS_CHANGED, onGameStatusChanged);
+    onEvent(socket, LobbySocketEvents.LOBBY_DELETED, onLobbyDeleted);
+    onEvent(socket, SocketSystemEvents.ERROR, onSocketError);
 
     return () => {
-      socket.off(SocketSystemEvents.STATUS_CHANGED, onGameStatusChanged);
-      socket.off(LobbySocketEvents.LOBBY_DELETED, onLobbyDeleted);
-      socket.off(SocketSystemEvents.ERROR, onSocketError);
+      offEvent(socket, SocketSystemEvents.STATUS_CHANGED, onGameStatusChanged);
+      offEvent(socket, LobbySocketEvents.LOBBY_DELETED, onLobbyDeleted);
+      offEvent(socket, SocketSystemEvents.ERROR, onSocketError);
     };
   }, [mode, navigate, refreshLobby, session?.lobbyCode, syncLobbyState, user.telegramId]);
 

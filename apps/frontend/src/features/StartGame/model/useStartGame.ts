@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types/events/game.events';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import { GameSocketEvents } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
+import type { SocketErrorPayload } from '@common/message-types';
 import { PageRoutes } from '@app/routes/pages';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';
+import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 type LobbySnapshot = Awaited<ReturnType<typeof subscribeLobbyRoom>>;
 
@@ -50,14 +51,14 @@ export function useStartGame({ lobbyCode, onSyncLobbyState }: UseStartGameParams
       }
 
       setIsStarting(false);
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
-    socket.emit(GameSocketEvents.GAME_STARTED, { lobbyCode });
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
+    emitEvent(socket, GameSocketEvents.GAME_STARTED, { lobbyCode });
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsStarting(false);
     }, 5000);
   };

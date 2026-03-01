@@ -21,5 +21,5 @@ export function toUserSocketError(
   if (!code) return fallback;
   return SOCKET_ERROR_MESSAGES[code] ?? `${fallback} (${code}).`;
 }
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import type { SocketErrorPayload } from '@common/message-types';
 

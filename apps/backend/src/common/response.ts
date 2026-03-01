@@ -1,5 +1,5 @@
-import type { GameMessageTypes } from "../../../common/message-types/enums/game.types";
-import type { LobbyMessageTypes } from "../../../common/message-types/enums/lobby.types";
+import type { GameMessageType } from "../../../common/message-types";
+import type { LobbyMessageType } from "../../../common/message-types";
 
 /**
  * Типизация ответов АПИ
@@ -35,7 +35,7 @@ export function success<T>(payload: T): ApiResponse<T> {
  * @returns Объект с состоянием и разницей
  */
 export function buildStatePayload<T>(
-    messageType: GameMessageTypes | LobbyMessageTypes,
+    messageType: GameMessageType | LobbyMessageType,
     diff: T
   ) {
     return {

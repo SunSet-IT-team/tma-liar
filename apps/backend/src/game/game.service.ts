@@ -12,12 +12,14 @@ import type { GamePlayerSecuredDto } from './dtos/game-player-secured.dto';
 import type { GameLiarChoosesDto } from './dtos/game-liar-chooses.dto';
 import type { Server } from 'socket.io';
 import { findDiff } from '../common/diff';
-import { GameMessageTypes } from '../../../common/message-types/enums/game.types';
-import { SocketSystemEvents } from '../../../common/message-types/events/socket.events';
+import { GameMessageTypes } from '../../../common/message-types';
+import { SocketSystemEvents } from '../../../common/message-types';
+import type { SolverVoteAnswer } from '../../../common/message-types';
 import { env } from '../config/env';
 import { GameRepository } from './game.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
 import { logger } from '../observability/logger';
+import { emitToRoom } from '../socket/typed-socket';
 
 const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
 const SCORE_TRICKED = env.SCORE_TRICKED;
@@ -105,6 +107,9 @@ export class GameService implements GameMethods {
   }
 
   private serializePlayersForClient(game: Pick<Game, 'players'>) {
+    const normalizeAnswer = (answer?: number | null): SolverVoteAnswer | null =>
+      answer === 0 || answer === 1 ? answer : null;
+
     return game.players.map((player) => ({
       id: player.telegramId,
       nickname: player.nickname,
@@ -112,7 +117,7 @@ export class GameService implements GameMethods {
       isReady: player.isReady,
       inGame: player.inGame ?? true,
       loserTask: player.loserTask ?? null,
-      answer: player.answer ?? null,
+      answer: normalizeAnswer(player.answer),
       likes: player.likes ?? 0,
       isConfirmed: player.isConfirmed ?? false,
       score: player.score ?? 0,
@@ -327,7 +332,7 @@ export class GameService implements GameMethods {
         'Game stage changed',
       );
       
-      this.io.to(gameId).emit(SocketSystemEvents.STATUS_CHANGED, {
+      emitToRoom(this.io, gameId, SocketSystemEvents.STATUS_CHANGED, {
         ...buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff),
         gameId,
         stage: nextStage,
@@ -396,7 +401,7 @@ export class GameService implements GameMethods {
       const updatedGameobj = updatedGame.toObject();
 
       const diff = findDiff(gameSnapobj, updatedGameobj, GameStages.GAME_RESULTS);
-      this.io.to(gameId).emit(SocketSystemEvents.STATUS_CHANGED, {
+      emitToRoom(this.io, gameId, SocketSystemEvents.STATUS_CHANGED, {
         ...buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff),
         gameId,
         stage: GameStages.GAME_RESULTS,

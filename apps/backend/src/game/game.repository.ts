@@ -9,8 +9,15 @@ export class GameRepository {
   }
 
   public async findByIdLean(gameId: string): Promise<Game | null> {
-    const game = await GameModel.findById(gameId).lean();
-    return (game as Game | null) ?? null;
+    const game = await GameModel.findById(gameId).lean({ virtuals: true });
+    if (!game) return null;
+
+    const normalized = game as Game & { _id?: { toString: () => string } };
+    if (!normalized.id && normalized._id) {
+      normalized.id = normalized._id.toString();
+    }
+
+    return normalized;
   }
 
   public findByIdDocument(gameId: string) {

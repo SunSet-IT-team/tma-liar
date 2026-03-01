@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { PROTOCOL_VERSION } from '../../../common/message-types';
 import type { Socket } from 'socket.io';
 import { env } from '../config/env';
 
@@ -8,6 +9,16 @@ export type SocketAuthPayload = {
 };
 
 export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void) {
+  const protocolVersion =
+    socket.handshake.auth?.protocolVersion ?? socket.handshake.query?.protocolVersion;
+  if (
+    protocolVersion !== undefined &&
+    String(protocolVersion).trim().length > 0 &&
+    Number(protocolVersion) !== PROTOCOL_VERSION
+  ) {
+    return next(new Error('PROTOCOL_VERSION_MISMATCH'));
+  }
+
   const authorizeByToken = (raw: string) => {
     const token = raw.startsWith('Bearer ') ? raw.slice(7) : raw;
     if (!token) {

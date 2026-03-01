@@ -1,6 +1,7 @@
 import type { FC } from 'react';
-import { LobbySocketEvents } from '@common/message-types/events/lobby.events';
+import { LobbySocketEvents } from '@common/message-types';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
+import { emitEvent } from '@shared/services/socket/typed-socket';
 import { Button } from '../../../shared/ui/Button';
 
 type ReadyToggleProps = {
@@ -53,7 +54,7 @@ export const ReadyToggle: FC<ReadyToggleProps> = ({
     onBeforeToggle?.();
 
     const socket = getLobbySocket();
-    socket.emit(LobbySocketEvents.PLAYER_READY, {
+    emitEvent(socket, LobbySocketEvents.PLAYER_READY, {
       lobbyCode,
       playerId,
       loserTask: normalizedTask || fallbackLoserTask || null,

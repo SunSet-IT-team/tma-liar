@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types/events/game.events';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
-import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
+import { GameSocketEvents } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
+import type { SocketErrorPayload } from '@common/message-types';
 import { useAppDispatch } from '@app/store/hook';
 import { PageRoutes } from '@app/routes/pages';
 import { updateTimer } from '@entities/game/model/timerSlice';
@@ -11,6 +11,7 @@ import { findLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket, subscribeGameRoom } from '@shared/services/socket/lobby.socket';
 import { toUserSocketError } from '@shared/services/socket/socket-error';
+import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 export function useChooseLiar() {
   const dispatch = useAppDispatch();
@@ -40,7 +41,9 @@ export function useChooseLiar() {
 
     if (!freshSession?.currentGameId) {
       const targetRoute =
-        freshSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+        freshSession?.adminId === user.telegramId
+          ? PageRoutes.LOBBY_ADMIN
+          : PageRoutes.LOBBY_PLAYER;
       navigate(`/${targetRoute}`, { replace: true });
       return;
     }
@@ -67,7 +70,9 @@ export function useChooseLiar() {
     } catch {
       const fallbackSession = lobbySessionService.get();
       const targetRoute =
-        fallbackSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+        fallbackSession?.adminId === user.telegramId
+          ? PageRoutes.LOBBY_ADMIN
+          : PageRoutes.LOBBY_PLAYER;
       navigate(`/${targetRoute}`, { replace: true });
       setIsSubmitting(false);
       return;
@@ -87,27 +92,29 @@ export function useChooseLiar() {
         if (code === 'GAME_NOT_FOUND') {
           const fallbackSession = lobbySessionService.get();
           const targetRoute =
-            fallbackSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+            fallbackSession?.adminId === user.telegramId
+              ? PageRoutes.LOBBY_ADMIN
+              : PageRoutes.LOBBY_PLAYER;
           navigate(`/${targetRoute}`, { replace: true });
           setIsSubmitting(false);
-          socket.off(SocketSystemEvents.ERROR, onError);
+          offEvent(socket, SocketSystemEvents.ERROR, onError);
           return;
         }
         setErrorText(toUserSocketError(error, 'Не удалось отправить выбор'));
         setIsSubmitting(false);
       }
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
     };
 
-    socket.on(SocketSystemEvents.ERROR, onError);
-    socket.emit(GameSocketEvents.LIAR_CHOSE, {
+    onEvent(socket, SocketSystemEvents.ERROR, onError);
+    emitEvent(socket, GameSocketEvents.LIAR_CHOSE, {
       gameId: freshSession.currentGameId,
       playerId: user.telegramId,
       answer,
     });
 
     window.setTimeout(() => {
-      socket.off(SocketSystemEvents.ERROR, onError);
+      offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSubmitting(false);
       dispatch(updateTimer());
     }, 1500);

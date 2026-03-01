@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import type { GameStatusChangedPayload } from '@common/message-types/contracts/game.contracts';
-import { SocketSystemEvents } from '@common/message-types/events/socket.events';
+import { isGameStatusChangedPayload } from '@common/message-types';
+import type { StatusChangedPayload } from '@common/message-types';
+import { SocketSystemEvents } from '@common/message-types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../routes/pages';
 import { store } from '../../store';
@@ -15,6 +16,7 @@ import {
   subscribeLobbyRoom,
 } from '../../../shared/services/socket/lobby.socket';
 import type { LobbySession } from '../../../shared/services/lobby/lobby-session.service';
+import { offEvent, onEvent } from '../../../shared/services/socket/typed-socket';
 
 type RouteTarget = {
   // Маршрут, на который нужно перевести пользователя после анализа состояния.
@@ -25,6 +27,23 @@ type RouteTarget = {
 
 // Снимок одного игрока внутри игрового состояния, которое хранится в сессии лобби.
 type GamePlayerState = NonNullable<LobbySession['gamePlayers']>[number];
+
+function isLobbyMissingError(error: unknown): boolean {
+  const maybeError = error as {
+    message?: string;
+    response?: { status?: number; data?: { errorCode?: string; message?: string } };
+  };
+  const codeFromResponse = maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
+  const message = maybeError?.message ?? '';
+  const status = maybeError?.response?.status;
+
+  return (
+    status === 404 ||
+    codeFromResponse === 'LOBBY_NOT_FOUND' ||
+    message.includes('LOBBY_NOT_FOUND') ||
+    message.includes('LOBBY_SUBSCRIBE_ERROR')
+  );
+}
 
 function mergeGamePlayers(
   currentPlayers: LobbySession['gamePlayers'] | undefined,
@@ -273,11 +292,12 @@ export function SessionRehydration() {
         if (location.pathname !== target.path) {
           navigate(target.path, { replace: true, state: target.state });
         }
-      } catch {
-        // Если сессию восстановить нельзя — удаляем устаревшие локальные данные и уходим на главный экран.
+      } catch (error) {
+        // Если лобби удалено/не найдено — уводим на 404, иначе на главный экран.
         lobbySessionService.clear();
-        if (location.pathname !== '/') {
-          navigate('/', { replace: true });
+        const targetPath = isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/';
+        if (location.pathname !== targetPath) {
+          navigate(targetPath, { replace: true });
         }
       }
     };
@@ -289,7 +309,11 @@ export function SessionRehydration() {
     const socket = getLobbySocket();
     const eventName = SocketSystemEvents.STATUS_CHANGED;
 
-    const onGameStatusChanged = (payload: GameStatusChangedPayload) => {
+    const onGameStatusChanged = (payload: StatusChangedPayload) => {
+      if (!isGameStatusChangedPayload(payload)) {
+        return;
+      }
+
       const syncBySocketEvent = async () => {
         const session = lobbySessionService.get();
         if (!session) return;
@@ -438,9 +462,9 @@ export function SessionRehydration() {
     };
 
     // Подписка на глобальное событие изменения статуса и корректная отписка при unmount.
-    socket.on(eventName, onGameStatusChanged);
+    onEvent(socket, eventName, onGameStatusChanged);
     return () => {
-      socket.off(eventName, onGameStatusChanged);
+      offEvent(socket, eventName, onGameStatusChanged);
     };
   }, [location.pathname, navigate]);
 

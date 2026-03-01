@@ -1,4 +1,26 @@
-import type { LobbyPlayerPayload } from './lobby.contracts';
+import type { LobbyPlayerPayload, LobbyStatus } from './lobby.contracts';
+
+/**
+ * Допустимые стадии игры в протоколе.
+ */
+export const GameStageValues = [
+  'lobby',
+  'liar_chooses',
+  'question_to_liar',
+  'question_results',
+  'game_results',
+  'end',
+] as const;
+
+/**
+ * Стадия игры.
+ */
+export type GameStage = (typeof GameStageValues)[number];
+
+/**
+ * Ответ решалы в раунде.
+ */
+export type SolverVoteAnswer = 0 | 1;
 
 /**
  * Представление игрока в игровом контексте.
@@ -6,7 +28,7 @@ import type { LobbyPlayerPayload } from './lobby.contracts';
  */
 export type GamePlayerPayload = LobbyPlayerPayload & {
   /** Ответ решалы: `1` — верю, `0` — не верю, `null`/`undefined` — не выбрал. */
-  answer?: number | null;
+  answer?: SolverVoteAnswer | null;
   /** Количество лайков, полученных игроком в текущей игре/раунде. */
   likes?: number;
   /** Признак, что игрок зафиксировал действие на текущем этапе. */
@@ -23,7 +45,7 @@ export type GameStatePayload = {
   /** Идентификатор игры. */
   gameId: string;
   /** Текущая стадия игры (`liar_chooses`, `question_to_liar` и т.д.). */
-  stage?: string;
+  stage?: GameStage;
   /** Timestamp начала стадии (ms). */
   stageStartedAt?: number;
   /** Продолжительность текущей стадии (ms). */
@@ -73,7 +95,7 @@ export type PlayerVotedSocketPayload = {
   /** ID игрока, который голосует. */
   playerId: string;
   /** Вариант ответа: `1` — верю, `0` — не верю. */
-  answer: number;
+  answer: SolverVoteAnswer;
 };
 
 /**
@@ -110,9 +132,9 @@ export type GameStatusDiffPayload = {
   /** Активный gameId в лобби. */
   currentGameId?: string | null;
   /** Статус лобби. */
-  status?: string;
+  status?: LobbyStatus;
   /** Текущая стадия игры. */
-  stage?: string;
+  stage?: GameStage;
   /** ID активного вопроса. */
   activeQuestion?: string | null;
   /** ID победителя. */
