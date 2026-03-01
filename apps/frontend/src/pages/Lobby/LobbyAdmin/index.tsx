@@ -13,7 +13,6 @@ import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
 import { getLobbySocket, subscribeLobbyRoom } from '../../../shared/services/socket/lobby.socket';
 import {
   applyLobbyDiff,
-  getStageFromPayload,
   type ChangeGameStatusPayload,
 } from '../../../shared/services/lobby/lobby-realtime';
 
@@ -106,12 +105,6 @@ export const LobbyAdmin: FC = () => {
       if (nextAdminId && nextAdminId !== user.telegramId) {
         navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
         return;
-      }
-
-      const stage = getStageFromPayload(payload);
-
-      if (stage === 'liar_chooses') {
-        navigate(`/${PageRoutes.CHOOSING_LIAR}`);
       }
     };
 

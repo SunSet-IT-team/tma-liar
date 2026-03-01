@@ -8,6 +8,7 @@ export type LobbySession = {
   currentGameId: string | null;
   status: string;
   currentStage?: string | null;
+  currentLiarId?: string | null;
   players: LobbyStateView['players'];
   settings: LobbySettings;
 };

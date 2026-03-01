@@ -7,14 +7,12 @@ import { TextInput } from '../../../shared/ui/TextInput';
 import { Container } from '../../../shared/ui/Container';
 import { Button } from '../../../shared/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { PageRoutes } from '../../../app/routes/pages';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
 import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
 import { getLobbySocket, subscribeLobbyRoom } from '../../../shared/services/socket/lobby.socket';
 import {
   applyLobbyDiff,
   getCurrentPlayerReady,
-  getStageFromPayload,
   type ChangeGameStatusPayload,
 } from '../../../shared/services/lobby/lobby-realtime';
 
@@ -85,17 +83,6 @@ export const LobbyPlayer: FC = () => {
       const currentPlayerReady = getCurrentPlayerReady(payload, user.telegramId);
       if (currentPlayerReady !== null) {
         setReady(currentPlayerReady);
-      }
-
-      const stage = getStageFromPayload(payload);
-
-      if (stage === 'liar_chooses') {
-        navigate(`/${PageRoutes.WAITING_PLAYERS}`, {
-          state: {
-            nextRoute: `/${PageRoutes.ANSWER_SOLVED}`,
-          },
-          replace: true,
-        });
       }
     };
 

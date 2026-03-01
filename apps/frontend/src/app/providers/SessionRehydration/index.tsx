@@ -21,12 +21,18 @@ function resolveWaitingRoute(isAdmin: boolean): RouteTarget {
   };
 }
 
-function resolveGameRoute(isAdmin: boolean, stage: string | null): RouteTarget | null {
+function resolveGameRoute(params: {
+  stage: string | null;
+  isAdmin: boolean;
+  isLiar: boolean;
+}): RouteTarget | null {
+  const { stage, isAdmin, isLiar } = params;
+
   switch (stage) {
     case 'lobby':
       return resolveWaitingRoute(isAdmin);
     case 'liar_chooses':
-      if (isAdmin) {
+      if (isLiar) {
         return { path: `/${PageRoutes.CHOOSING_LIAR}` };
       }
       return {
@@ -34,7 +40,7 @@ function resolveGameRoute(isAdmin: boolean, stage: string | null): RouteTarget |
         state: { nextRoute: `/${PageRoutes.ANSWER_SOLVED}` },
       };
     case 'question_to_liar':
-      if (isAdmin) {
+      if (isLiar) {
         return { path: `/${PageRoutes.ANSWER_LIAR}` };
       }
       return { path: `/${PageRoutes.ANSWER_SOLVED}` };
@@ -101,10 +107,16 @@ export function SessionRehydration() {
         const nextSession = {
           ...baseSession,
           currentStage: gameState.stage ?? baseSession.currentStage ?? null,
+          currentLiarId: gameState.liarId ?? baseSession.currentLiarId ?? null,
         };
         lobbySessionService.set(nextSession);
 
-        const target = resolveGameRoute(isAdmin, nextSession.currentStage ?? null);
+        const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === user.telegramId);
+        const target = resolveGameRoute({
+          stage: nextSession.currentStage ?? null,
+          isAdmin,
+          isLiar,
+        });
         if (!target) return;
 
         if (location.pathname !== target.path) {
@@ -131,35 +143,47 @@ export function SessionRehydration() {
       diff?: { stage?: string };
       status?: string;
     }) => {
-      const session = lobbySessionService.get();
-      if (!session) return;
+      const syncBySocketEvent = async () => {
+        const session = lobbySessionService.get();
+        if (!session) return;
 
-      const stage = payload.stage ?? payload.diff?.stage ?? null;
-      const gameId = payload.gameId ?? session.currentGameId ?? null;
+        const user = getCurrentTmaUser();
+        const gameId = payload.gameId ?? session.currentGameId ?? null;
+        let stage = payload.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
+        let liarId = session.currentLiarId ?? null;
 
-      if (!stage && !gameId) return;
+        if (gameId) {
+          try {
+            const gameState = await subscribeGameRoom(gameId);
+            stage = gameState.stage ?? stage;
+            liarId = gameState.liarId ?? liarId;
+          } catch {
+            // ignore: keep last known state
+          }
+        }
 
-      const nextSession = {
-        ...session,
-        currentGameId: gameId,
-        currentStage: stage ?? session.currentStage ?? null,
-        status: gameId ? 'started' : session.status,
+        const nextSession = {
+          ...session,
+          currentGameId: gameId,
+          currentStage: stage ?? null,
+          currentLiarId: liarId,
+          status: gameId ? 'started' : session.status,
+        };
+        lobbySessionService.set(nextSession);
+
+        if (!stage) return;
+
+        const isAdmin = nextSession.adminId === user.telegramId;
+        const isLiar = Boolean(liarId && liarId === user.telegramId);
+        const target = resolveGameRoute({ stage, isAdmin, isLiar });
+        if (!target) return;
+
+        if (location.pathname !== target.path) {
+          navigate(target.path, { replace: true, state: target.state });
+        }
       };
-      lobbySessionService.set(nextSession);
 
-      if (gameId) {
-        void subscribeGameRoom(gameId).catch(() => undefined);
-      }
-
-      if (!stage) return;
-      const user = getCurrentTmaUser();
-      const isAdmin = nextSession.adminId === user.telegramId;
-      const target = resolveGameRoute(isAdmin, stage);
-      if (!target) return;
-
-      if (location.pathname !== target.path) {
-        navigate(target.path, { replace: true, state: target.state });
-      }
+      void syncBySocketEvent();
     };
 
     socket.on(eventName, onGameStatusChanged);
