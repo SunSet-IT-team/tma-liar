@@ -2,6 +2,7 @@ import { type FC } from 'react';
 import './style/decksStyle.scss';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
+import { Mousewheel } from 'swiper/modules';
 import deckIcon from '/icons/blackPhoto.svg';
 
 import 'swiper/css';
@@ -100,10 +101,13 @@ export const DecksBlock: FC<DecksProps> = ({ loop = true, onChangeActiveDeck }) 
   return (
     <div className="content">
       <Swiper
+        modules={[Mousewheel]}
         direction={'horizontal'}
         slidesPerView={2.1}
         centeredSlides={true}
         spaceBetween={70}
+        touchEventsTarget="container"
+        mousewheel={{ forceToAxis: true, releaseOnEdges: true }}
         className="swiper deckSwiper"
         loop={loop}
         onSlideChange={(swiper: SwiperType) => {

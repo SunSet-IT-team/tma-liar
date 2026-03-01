@@ -1,18 +1,30 @@
 .scrollerContent {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .scrollerSwiper {
   width: 100%;
-  height: 80px;
+  height: clamp(90px, 12vh, 120px);
+  overflow: hidden;
 }
 
 .scrollerContent .scrollerSwiperSlide {
   cursor: pointer;
-  text-align: center;
+  text-align: right;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-end;
+  height: clamp(90px, 12vh, 120px);
+}
+
+.scrollerValue {
+  line-height: 1;
+  white-space: nowrap;
+  width: 100%;
+  text-align: right;
 }
