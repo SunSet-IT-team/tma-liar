@@ -21,6 +21,7 @@ import {
 const PLAYER_READY_EVENT = 'lobby:player:ready';
 const CHANGE_GAME_STATUS_EVENT = 'changeGameStatus';
 const LOBBY_DELETED_EVENT = 'lobby:deleted';
+const ERROR_EVENT = 'error';
 
 /**
  * Экран ожидания игроков в лобби (игрок)
@@ -30,6 +31,7 @@ export const LobbyPlayer: FC = () => {
   const user = useMemo(() => getCurrentTmaUser(), []);
   const [session, setSession] = useState(() => lobbySessionService.get());
   const [ready, setReady] = useState<boolean>(false);
+  const [readyError, setReadyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.lobbyCode) {
@@ -42,11 +44,19 @@ export const LobbyPlayer: FC = () => {
 
     void subscribeLobbyRoom(lobbyCode)
       .then((state) => {
+        const meInLobby = state.players.some((player) => player.id === user.telegramId);
+        if (!meInLobby) {
+          lobbySessionService.clear();
+          navigate('/', { replace: true });
+          return;
+        }
+
         setSession((prev) => {
           if (!prev) return prev;
           const next = {
             ...prev,
             adminId: state.adminId,
+            currentGameId: state.currentGameId ?? prev.currentGameId,
             status: state.status,
             players: state.players,
           };
@@ -60,7 +70,7 @@ export const LobbyPlayer: FC = () => {
         }
       })
       .catch(() => {
-        navigate('/');
+        navigate('/', { replace: true });
       });
 
     const onGameStatusChanged = (payload: ChangeGameStatusPayload) => {
@@ -94,12 +104,25 @@ export const LobbyPlayer: FC = () => {
       navigate('/');
     };
 
+    const onSocketError = (error: { errorCode?: string; message?: string }) => {
+      const code = error.errorCode ?? error.message ?? '';
+      if (
+        code === 'PLAYER_READY_ERROR' ||
+        code === 'USER_NOT_FOUND_OR_LOBBY_EMPTY' ||
+        code === 'PLAYER_READY_FORBIDDEN'
+      ) {
+        setReadyError(`Не удалось изменить готовность (${code}). Обновите страницу и попробуйте снова.`);
+      }
+    };
+
     socket.on(CHANGE_GAME_STATUS_EVENT, onGameStatusChanged);
     socket.on(LOBBY_DELETED_EVENT, onLobbyDeleted);
+    socket.on(ERROR_EVENT, onSocketError);
 
     return () => {
       socket.off(CHANGE_GAME_STATUS_EVENT, onGameStatusChanged);
       socket.off(LOBBY_DELETED_EVENT, onLobbyDeleted);
+      socket.off(ERROR_EVENT, onSocketError);
     };
   }, [navigate, session?.lobbyCode, user.telegramId]);
 
@@ -108,9 +131,11 @@ export const LobbyPlayer: FC = () => {
 
     const socket = getLobbySocket();
     const me = session.players.find((player) => player.id === user.telegramId);
+    setReadyError(null);
 
     socket.emit(PLAYER_READY_EVENT, {
       lobbyCode: session.lobbyCode,
+      playerId: me?.id ?? user.telegramId,
       loserTask: me?.loserTask ?? 'task',
     });
   };
@@ -119,7 +144,7 @@ export const LobbyPlayer: FC = () => {
 
   return (
     <Container className={styles.container}>
-      <Header className={styles.header} />
+      <Header className={styles.header} inGame />
       <div className={styles.lobbyBlock}>
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
@@ -140,6 +165,7 @@ export const LobbyPlayer: FC = () => {
       <Button className={styles.readyBtn} onClick={toggleReady}>
         {ready ? 'Готов' : 'Не готов'}
       </Button>
+      {readyError ? <Typography>{readyError}</Typography> : null}
     </Container>
   );
 };

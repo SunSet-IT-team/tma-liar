@@ -12,6 +12,7 @@ type LobbyDiffPlayer = {
 type LobbyDiff = {
   lobbyCode?: string;
   adminId?: string;
+  currentGameId?: string | null;
   status?: string;
   players?: LobbyDiffPlayer[];
   stage?: string;
@@ -66,7 +67,9 @@ export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusP
     ...session,
     lobbyCode: diff.lobbyCode ?? session.lobbyCode,
     adminId: diff.adminId ?? session.adminId,
+    currentGameId: diff.currentGameId ?? session.currentGameId,
     status: diff.status ?? session.status,
+    currentStage: payload.stage ?? diff.stage ?? session.currentStage ?? null,
     players: nextPlayers,
   };
 }

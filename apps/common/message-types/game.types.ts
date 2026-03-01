@@ -2,6 +2,12 @@
  * Типы сообщения для Game
  */
 export enum GameMessageTypes { 
+    /** Подписка на комнату игры */
+    GAME_SUBSCRIBE = "game:subscribe",
+
+    /** Актуальное состояние игры для подключившегося сокета */
+    GAME_STATE = "game:state",
+
     /** Лжец сделал выбор */
     LIAR_CHOSE = "game:liar:chose",
 

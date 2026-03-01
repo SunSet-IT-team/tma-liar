@@ -18,6 +18,7 @@ import {
 } from '../../../shared/services/lobby/lobby-realtime';
 
 const GAME_STARTED_EVENT = 'game:started';
+const PLAYER_READY_EVENT = 'lobby:player:ready';
 const CHANGE_GAME_STATUS_EVENT = 'changeGameStatus';
 const LOBBY_DELETED_EVENT = 'lobby:deleted';
 const ERROR_EVENT = 'error';
@@ -32,7 +33,37 @@ export const LobbyAdmin: FC = () => {
   const [loserTask, setLoserTask] = useState('task');
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [readyError, setReadyError] = useState<string | null>(null);
+  const adminPlayer = session?.players.find((player) => player.id === user.telegramId);
+  const adminReady = Boolean(adminPlayer?.isReady);
   const allPlayersReady = session ? session.players.every((player) => player.isReady) : false;
+
+  const syncLobbyState = (state: {
+    lobbyCode: string;
+    adminId: string;
+    currentGameId?: string | null;
+    status: string;
+    players: {
+      id: string;
+      nickname: string;
+      profileImg?: string;
+      isReady?: boolean;
+      loserTask?: string | null;
+    }[];
+  }) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const next = {
+        ...prev,
+        adminId: state.adminId,
+        currentGameId: state.currentGameId ?? prev.currentGameId,
+        status: state.status,
+        players: state.players,
+      };
+      lobbySessionService.set(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!session?.lobbyCode) {
@@ -45,20 +76,21 @@ export const LobbyAdmin: FC = () => {
 
     void subscribeLobbyRoom(lobbyCode)
       .then((state) => {
-        setSession((prev) => {
-          if (!prev) return prev;
-          const next = {
-            ...prev,
-            adminId: state.adminId,
-            status: state.status,
-            players: state.players,
-          };
-          lobbySessionService.set(next);
-          return next;
-        });
+        const meInLobby = state.players.some((player) => player.id === user.telegramId);
+        if (!meInLobby) {
+          lobbySessionService.clear();
+          navigate('/', { replace: true });
+          return;
+        }
+
+        syncLobbyState(state);
+
+        if (state.adminId !== user.telegramId) {
+          navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
+        }
       })
       .catch(() => {
-        navigate('/');
+        navigate('/', { replace: true });
       });
 
     const onGameStatusChanged = (payload: ChangeGameStatusPayload) => {
@@ -69,6 +101,12 @@ export const LobbyAdmin: FC = () => {
         lobbySessionService.set(next);
         return next;
       });
+
+      const nextAdminId = payload.diff?.adminId;
+      if (nextAdminId && nextAdminId !== user.telegramId) {
+        navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
+        return;
+      }
 
       const stage = getStageFromPayload(payload);
 
@@ -82,12 +120,25 @@ export const LobbyAdmin: FC = () => {
       navigate('/');
     };
 
+    const onSocketError = (error: { errorCode?: string; message?: string }) => {
+      const code = error.errorCode ?? error.message ?? '';
+      if (
+        code === 'PLAYER_READY_ERROR' ||
+        code === 'USER_NOT_FOUND_OR_LOBBY_EMPTY' ||
+        code === 'PLAYER_READY_FORBIDDEN'
+      ) {
+        setReadyError(`Не удалось изменить готовность (${code}). Обновите страницу и попробуйте снова.`);
+      }
+    };
+
     socket.on(CHANGE_GAME_STATUS_EVENT, onGameStatusChanged);
     socket.on(LOBBY_DELETED_EVENT, onLobbyDeleted);
+    socket.on(ERROR_EVENT, onSocketError);
 
     return () => {
       socket.off(CHANGE_GAME_STATUS_EVENT, onGameStatusChanged);
       socket.off(LOBBY_DELETED_EVENT, onLobbyDeleted);
+      socket.off(ERROR_EVENT, onSocketError);
     };
   }, [navigate, session?.lobbyCode]);
 
@@ -99,10 +150,28 @@ export const LobbyAdmin: FC = () => {
 
     const socket = getLobbySocket();
     const onError = (error: { errorCode?: string; message?: string }) => {
-      if (error.errorCode !== 'GAME_START_ERROR' && error.errorCode !== 'PLAYER_IS_NOT_ADMIN') {
-        return;
+      const code = error.errorCode ?? error.message ?? 'GAME_START_ERROR';
+      if (code === 'PLAYER_IS_NOT_ADMIN') {
+        setStartError('Вы больше не админ этого лобби. Открывается экран игрока.');
+        void subscribeLobbyRoom(session.lobbyCode)
+          .then((state) => {
+            syncLobbyState(state);
+            navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
+          })
+          .catch(() => {
+            navigate('/', { replace: true });
+          });
+      } else if (code === 'NOT_ALL_PLAYERS_READY') {
+        setStartError('Не удалось начать игру: не все игроки готовы.');
+        void subscribeLobbyRoom(session.lobbyCode)
+          .then((state) => {
+            syncLobbyState(state);
+          })
+          .catch(() => undefined);
+      } else {
+        setStartError(`Не удалось начать игру (${code}).`);
       }
-      setStartError('Не удалось начать игру. Убедитесь, что все игроки готовы.');
+
       setIsStarting(false);
       socket.off(ERROR_EVENT, onError);
     };
@@ -113,14 +182,26 @@ export const LobbyAdmin: FC = () => {
     window.setTimeout(() => {
       socket.off(ERROR_EVENT, onError);
       setIsStarting(false);
-    }, 1500);
+    }, 5000);
+  };
+
+  const toggleReady = () => {
+    if (!session) return;
+
+    const socket = getLobbySocket();
+    setReadyError(null);
+    socket.emit(PLAYER_READY_EVENT, {
+      lobbyCode: session.lobbyCode,
+      playerId: adminPlayer?.id,
+      loserTask: loserTask.trim() || adminPlayer?.loserTask || 'task',
+    });
   };
 
   if (!session) return null;
 
   return (
     <Container className={styles.container}>
-      <Header className={styles.header} />
+      <Header className={styles.header} inGame />
       <div className={styles.lobbyBlock}>
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
@@ -145,6 +226,10 @@ export const LobbyAdmin: FC = () => {
         <Typography className={styles.connectedPlayers}>{session.players.length}/7</Typography>
       </div>
       {startError ? <Typography>{startError}</Typography> : null}
+      {readyError ? <Typography>{readyError}</Typography> : null}
+      <Button className={styles.readyBtn} onClick={toggleReady}>
+        {adminReady ? 'Снять готовность' : 'Я готов'}
+      </Button>
       <Button className={styles.readyBtn} onClick={startGame} disabled={isStarting || !allPlayersReady}>
         {isStarting ? 'Запуск...' : 'Начать'}
       </Button>

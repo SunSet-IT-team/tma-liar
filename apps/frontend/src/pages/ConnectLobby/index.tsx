@@ -45,7 +45,9 @@ export const ConnectLobby: FC = () => {
       lobbySessionService.set({
         lobbyCode: lobbyView.lobbyCode,
         adminId: lobbyView.adminId,
+        currentGameId: lobbyFull.currentGameId ?? null,
         status: lobbyView.status,
+        currentStage: null,
         players: lobbyView.players,
         settings: lobbyFull.settings,
       });

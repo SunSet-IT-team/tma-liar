@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 import { env } from "../config/env";
 
-async function dropLegacyLobbyIndexes() {
+async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games') {
   const db = mongoose.connection.db;
   if (!db) return;
 
-  const collection = db.collection('lobbies');
+  const collection = db.collection(collectionName);
   const indexes = await collection.indexes();
   const hasLegacyUniquePlayersTelegramIndex = indexes.some(
     (index) => index.name === 'players.telegramId_1',
@@ -26,5 +26,6 @@ export async function connectToDatabase() {
     dbName: env.DB_NAME,
   });
 
-  await dropLegacyLobbyIndexes();
+  await dropLegacyPlayersTelegramIndex('lobbies');
+  await dropLegacyPlayersTelegramIndex('games');
 }

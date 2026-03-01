@@ -13,8 +13,9 @@ export const SettingsModel = new Schema({
     required: true,
   },
 
-  questionsCount: {
+  questionCount: {
     type: Number,
+    required: true,
   },
 
   answerTime: {

@@ -14,6 +14,8 @@ import { GameService } from "../game/game.service";
 import { logger } from "../observability/logger";
 import z from 'zod';
 import { UserRepository } from '../users/user.repository';
+import { env } from '../config/env';
+import { SettingsSchema } from '../lobby/entities/settings.entity';
 
 const LobbySubscribeDtoSchema = z.object({
   lobbyCode: z.string().min(1),
@@ -39,6 +41,7 @@ const LeaveLobbySocketSchema = z.object({
 
 const ToggleReadySocketSchema = z.object({
   lobbyCode: z.string().min(1),
+  playerId: z.string().min(1).optional(),
   loserTask: z.string().nullable().optional(),
 });
 
@@ -67,13 +70,63 @@ function buildLobbyState(lobby: {
     status: lobby.status,
     players: lobby.players.map((player) =>
       PlayerInfoSchema.parse({
-        id: player.id ?? player.telegramId,
+        id: player.telegramId,
         nickname: player.nickname,
         profileImg: player.profileImg ?? '',
         isReady: player.isReady ?? false,
         loserTask: player.loserTask ?? null,
       }),
     ),
+  });
+}
+
+function buildLobbyDiffState(lobby: {
+  lobbyCode: string;
+  adminId: string;
+  currentGameId: string | null;
+  status: string;
+  players: Array<{
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    loserTask?: string | null;
+  }>;
+}) {
+  return {
+    lobbyCode: lobby.lobbyCode,
+    adminId: lobby.adminId,
+    currentGameId: lobby.currentGameId,
+    status: lobby.status,
+    players: lobby.players.map((player) => ({
+      id: player.telegramId,
+      nickname: player.nickname,
+      profileImg: player.profileImg ?? '',
+      isReady: player.isReady ?? false,
+      loserTask: player.loserTask ?? null,
+    })),
+  };
+}
+
+function normalizeLobbySettings(rawSettings: unknown) {
+  const source = (rawSettings && typeof rawSettings === 'object'
+    ? (rawSettings as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+
+  const questionCountCandidate =
+    typeof source.questionCount === 'number'
+      ? source.questionCount
+      : typeof source.questionsCount === 'number'
+        ? source.questionsCount
+        : source.deck &&
+            typeof source.deck === 'object' &&
+            typeof (source.deck as Record<string, unknown>).questionsCount === 'number'
+          ? ((source.deck as Record<string, unknown>).questionsCount as number)
+          : undefined;
+
+  return SettingsSchema.parse({
+    ...source,
+    questionCount: questionCountCandidate,
   });
 }
 
@@ -100,6 +153,8 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
 /**
  * Регистрирует обработчики lobby socket-событий.
  */
+type SocketAck = (payload: { ok: boolean; errorCode?: string; message?: string }) => void;
+
 export function registerLobbyHandler(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
@@ -176,6 +231,8 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const lobbySnap = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
       const lobby = await lobbyService.joinLobby(dto);
       const lobbyState = buildLobbyState(lobby);
+      const snapForDiff = buildLobbyDiffState(lobbySnap);
+      const nextForDiff = buildLobbyDiffState(lobby);
 
       // Подключаем сокет к комнате лобби
       socket.join(dto.lobbyCode);
@@ -187,7 +244,10 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       );
 
       socket.emit(LobbyMessageTypes.PLAYER_JOINED, lobbyState); 
-      socket.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(lobbySnap, lobby)));
+      socket.to(dto.lobbyCode).emit(
+        "changeGameStatus",
+        buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(snapForDiff, nextForDiff)),
+      );
     } catch (error) {
       logger.error({ error }, 'Error handling player join');
       emitSocketError(socket, "PLAYER_JOINED_ERROR", error);
@@ -197,7 +257,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
   /**
    * Игрок выходит из лобби
    */
-  socket.on(LobbyMessageTypes.PLAYER_LEFT, async (data: unknown) => {
+  socket.on(LobbyMessageTypes.PLAYER_LEFT, async (data: unknown, ack?: SocketAck) => {
     try {
       const result = LeaveLobbySocketSchema.safeParse(data);
       if (!result.success) {
@@ -213,6 +273,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
       const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
+      const snapForDiff = buildLobbyDiffState(lobbySnap);
 
       if (leaveResult.deleted) {
         io.to(lobbyCode).emit(LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
@@ -224,11 +285,31 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       if (leaveResult.lobby) {
-        io.to(lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(lobbySnap, leaveResult.lobby)));
+        const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
+        io.to(lobbyCode).emit(
+          "changeGameStatus",
+          buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
+        );
       }
       socket.leave(lobbyCode);
+      ack?.({ ok: true });
     } catch (error) {
       logger.error({ error, socketUserId: socket.data.userId }, 'Error handling player left');
+      emitSocketError(socket, 'PLAYER_LEFT_ERROR', error);
+
+      if (error instanceof ApiError) {
+        ack?.({
+          ok: false,
+          errorCode: error.errorCode,
+          message: error.message,
+        });
+      } else {
+        ack?.({
+          ok: false,
+          errorCode: 'PLAYER_LEFT_ERROR',
+          message: 'PLAYER_LEFT_ERROR',
+        });
+      }
     }
   });
 
@@ -249,20 +330,61 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         throw new ApiError(401, 'UNAUTHORIZED');
       }
 
+      const normalizedUserId = socketUserId.trim();
+      const lobbySnap = await lobbyService.findLobby({ lobbyCode: result.data.lobbyCode });
+      let currentPlayer = lobbySnap.players.find((player) => player.telegramId === normalizedUserId);
+
+      if (!currentPlayer && result.data.playerId) {
+        const byId = lobbySnap.players.find(
+          (player) => player.id === result.data.playerId || player.telegramId === result.data.playerId,
+        );
+        if (byId) {
+          // В production/normal auth не позволяем менять ready чужому игроку.
+          if (!env.disableAuth && byId.telegramId !== normalizedUserId) {
+            throw new ApiError(403, 'PLAYER_READY_FORBIDDEN');
+          }
+          currentPlayer = byId;
+        }
+      }
+
+      if (!currentPlayer) {
+        throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY', {
+          socketUserId: normalizedUserId,
+          lobbyCode: result.data.lobbyCode,
+          providedPlayerId: result.data.playerId ?? null,
+        });
+      }
+
       const dto: ToggleReadyDto = {
         lobbyCode: result.data.lobbyCode,
-        playerId: socketUserId.trim(),
+        // Service/repository toggle ready operates by stable telegramId key.
+        playerId: currentPlayer.telegramId,
         loserTask: result.data.loserTask ?? null,
       };
-      const lobbySnap = await lobbyService.findLobby({ lobbyCode: dto.lobbyCode });
       const lobby = await lobbyService.togglePlayerReady(dto);
+      const snapForDiff = buildLobbyDiffState(lobbySnap);
+      const nextForDiff = buildLobbyDiffState(lobby);
 
       const roomSize = io.sockets.adapter.rooms.get(dto.lobbyCode)?.size ?? 0;
       logger.info({ playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode }, 'Player ready toggled');
 
-      io.to(dto.lobbyCode).emit("changeGameStatus", buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(lobbySnap, lobby)));
+      io.to(dto.lobbyCode).emit(
+        "changeGameStatus",
+        buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(snapForDiff, nextForDiff)),
+      );
     } catch (error) {
-      logger.error({ error }, 'Error handling player ready');
+      logger.error(
+        {
+          error,
+          socketUserId: socket.data.userId,
+          payload: data,
+          details:
+            error && typeof error === 'object' && 'details' in error
+              ? (error as { details?: unknown }).details
+              : undefined,
+        },
+        'Error handling player ready',
+      );
       emitSocketError(socket, "PLAYER_READY_ERROR", error);
     }
   });
@@ -283,6 +405,8 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       const lobby = await lobbyService.findLobby({ lobbyCode: dtoResult.data.lobbyCode });
 
+      const normalizedSettings = normalizeLobbySettings(lobby.settings);
+
       const dto: GameStartDto = GameStartDtoSchema.parse({
         lobbyCode: dtoResult.data.lobbyCode,
         player: {
@@ -298,7 +422,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           likes: 0,
           isConfirmed: false,
         },
-        settings: lobby.settings,
+        settings: normalizedSettings,
       });
       const createdGame = await gameService.createGame({...dto});
       const gameId = createdGame.id;

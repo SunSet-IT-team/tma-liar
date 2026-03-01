@@ -38,4 +38,8 @@ export class GameRepository {
 
     return game.toObject();
   }
+
+  public async deleteById(gameId: string, session?: ClientSession): Promise<void> {
+    await GameModel.findByIdAndDelete(gameId, session ? { session } : undefined);
+  }
 }

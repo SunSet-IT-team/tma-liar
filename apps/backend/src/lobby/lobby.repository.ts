@@ -90,13 +90,13 @@ export class LobbyRepository {
 
   public async setPlayerReady(
     lobbyCode: string,
-    playerId: string,
+    playerTelegramId: string,
     loserTask: string | null,
   ): Promise<Lobby | null> {
     const updated = await LobbyModel.findOneAndUpdate(
       {
         lobbyCode,
-        players: { $elemMatch: { id: playerId, isReady: { $ne: true } } },
+        players: { $elemMatch: { telegramId: playerTelegramId, isReady: { $ne: true } } },
       },
       {
         $set: {
@@ -106,18 +106,18 @@ export class LobbyRepository {
       },
       {
         new: true,
-        arrayFilters: [{ 'target.id': playerId }],
+        arrayFilters: [{ 'target.telegramId': playerTelegramId }],
       }
     ).lean();
 
     return (updated as Lobby | null) ?? null;
   }
 
-  public async setPlayerNotReady(lobbyCode: string, playerId: string): Promise<Lobby | null> {
+  public async setPlayerNotReady(lobbyCode: string, playerTelegramId: string): Promise<Lobby | null> {
     const updated = await LobbyModel.findOneAndUpdate(
       {
         lobbyCode,
-        players: { $elemMatch: { id: playerId, isReady: true } },
+        players: { $elemMatch: { telegramId: playerTelegramId, isReady: true } },
       },
       {
         $set: {
@@ -127,7 +127,7 @@ export class LobbyRepository {
       },
       {
         new: true,
-        arrayFilters: [{ 'target.id': playerId }],
+        arrayFilters: [{ 'target.telegramId': playerTelegramId }],
       }
     ).lean();
 

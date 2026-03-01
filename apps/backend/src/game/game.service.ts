@@ -75,6 +75,36 @@ export class GameService implements GameMethods {
   public async createGame( dto: GameStartDto ): Promise<Game> {
     const session = await this.gameRepository.startSession();
     let createdGame: Game | null = null;
+    const runWithoutTransaction = async (): Promise<Game> => {
+      const lobby = await this.lobbyRepository.findByCode(dto.lobbyCode);
+      if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
+
+      if (dto.player.id !== lobby.adminId) throw new ApiError(403, 'PLAYER_IS_NOT_ADMIN');
+      if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
+        throw new ApiError(409, 'GAME_ALREADY_STARTED');
+      }
+      if (!lobby.players.every((player) => player.isReady === true)) {
+        throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
+      }
+
+      const game = await this.gameRepository.createForLobby(
+        dto.lobbyCode,
+        lobby.players,
+        lobby.settings,
+      );
+
+      const updatedLobby = await this.lobbyRepository.markStartedIfWaiting(
+        dto.lobbyCode,
+        game.id,
+      );
+
+      if (!updatedLobby) {
+        await this.gameRepository.deleteById(game.id);
+        throw new ApiError(409, 'LOBBY_STATE_CONFLICT');
+      }
+
+      return game;
+    };
 
     try {
       await session.withTransaction(async () => {
@@ -84,6 +114,9 @@ export class GameService implements GameMethods {
         if (dto.player.id !== lobby.adminId) throw new ApiError(403, 'PLAYER_IS_NOT_ADMIN');
         if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
           throw new ApiError(409, 'GAME_ALREADY_STARTED');
+        }
+        if (!lobby.players.every((player) => player.isReady === true)) {
+          throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
         }
 
         const game = await this.gameRepository.createForLobby(
@@ -107,6 +140,21 @@ export class GameService implements GameMethods {
 
       if (!createdGame) throw new ApiError(500, 'GAME_NOT_CREATED');
       return createdGame;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const unsupportedTransactions =
+        message.includes('Transaction numbers are only allowed on a replica set member or mongos') ||
+        message.includes('does not support retryable writes');
+
+      if (!unsupportedTransactions) {
+        throw error;
+      }
+
+      logger.warn(
+        { lobbyCode: dto.lobbyCode, reason: message },
+        'MongoDB transactions unavailable, using non-transactional game start fallback',
+      );
+      return runWithoutTransaction();
     } finally {
       await session.endSession();
     }

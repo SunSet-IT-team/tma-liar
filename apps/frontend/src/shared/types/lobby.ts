@@ -53,6 +53,7 @@ export type LobbyState = {
 export type LobbyStateView = {
   lobbyCode: string;
   adminId: string;
+  currentGameId?: string | null;
   status: string;
   players: LobbyPlayerView[];
 };

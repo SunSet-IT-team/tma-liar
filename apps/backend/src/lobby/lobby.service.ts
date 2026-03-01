@@ -119,11 +119,32 @@ export class LobbyService implements LobbyServiceMethods {
     const lobby = await this.lobbyRepository.findByCode(lobbyCode);
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    const player = lobby.players.find((p) => p.id === playerId);
-    if (!player) throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY');
+    const player = lobby.players.find((p) => {
+      const rawId =
+        p && typeof p === 'object' && '_id' in p && p._id
+          ? String((p as { _id: unknown })._id)
+          : null;
+      return p.telegramId === playerId || p.id === playerId || rawId === playerId;
+    });
+    if (!player) {
+      throw new ApiError(404, 'USER_NOT_FOUND_OR_LOBBY_EMPTY', {
+        lobbyCode,
+        playerId,
+        lobbyPlayers: lobby.players.map((p) => ({
+          telegramId: p.telegramId,
+          id: p.id ?? null,
+          _id:
+            p && typeof p === 'object' && '_id' in p && p._id
+              ? String((p as { _id: unknown })._id)
+              : null,
+        })),
+      });
+    }
+
+    const playerTelegramId = player.telegramId;
 
     if (player.isReady === true) {
-      const updatedLobby = await this.lobbyRepository.setPlayerNotReady(lobbyCode, playerId);
+      const updatedLobby = await this.lobbyRepository.setPlayerNotReady(lobbyCode, playerTelegramId);
 
       if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
       return updatedLobby;
@@ -131,7 +152,7 @@ export class LobbyService implements LobbyServiceMethods {
 
     if (!loserTask) throw new ApiError(422, 'LOSER_TASK_NOT_SET');
 
-    const updatedLobby = await this.lobbyRepository.setPlayerReady(lobbyCode, playerId, loserTask);
+    const updatedLobby = await this.lobbyRepository.setPlayerReady(lobbyCode, playerTelegramId, loserTask);
 
     if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
     return updatedLobby;
@@ -145,6 +166,58 @@ export class LobbyService implements LobbyServiceMethods {
   }> {
     const { lobbyCode, telegramId } = param;
     const session = await this.lobbyRepository.startSession();
+    const runWithoutTransaction = async () => {
+      const lobbySnap = await this.lobbyRepository.findByCode(lobbyCode);
+
+      if (!lobbySnap) {
+        throw new ApiError(404, 'LOBBY_NOT_FOUND');
+      }
+
+      const isAdmin = lobbySnap.adminId === telegramId;
+      const updatedLobby = await this.lobbyRepository.removePlayer(lobbyCode, telegramId);
+
+      if (!updatedLobby) {
+        throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
+      }
+
+      if (updatedLobby.players.length === 0) {
+        await this.lobbyRepository.deleteByCode(lobbyCode);
+        return {
+          lobby: null,
+          deleted: true,
+          newAdminId: null,
+        };
+      }
+
+      if (!isAdmin) {
+        return {
+          lobby: updatedLobby,
+          deleted: false,
+          newAdminId: null,
+        };
+      }
+
+      const firstPlayer = updatedLobby.players[0];
+      if (!firstPlayer) {
+        throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
+      }
+
+      const lobbyWithNewAdmin = await this.lobbyRepository.transferAdmin(
+        lobbyCode,
+        telegramId,
+        firstPlayer.telegramId,
+      );
+
+      if (!lobbyWithNewAdmin) {
+        throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
+      }
+
+      return {
+        lobby: lobbyWithNewAdmin,
+        deleted: false,
+        newAdminId: firstPlayer.telegramId,
+      };
+    };
 
     try {
       return await session.withTransaction(async () => {
@@ -204,6 +277,17 @@ export class LobbyService implements LobbyServiceMethods {
         deleted: boolean;
         newAdminId: string | null;
       };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const unsupportedTransactions =
+        message.includes('Transaction numbers are only allowed on a replica set member or mongos') ||
+        message.includes('does not support retryable writes');
+
+      if (!unsupportedTransactions) {
+        throw error;
+      }
+
+      return runWithoutTransaction();
     } finally {
       await session.endSession();
     }

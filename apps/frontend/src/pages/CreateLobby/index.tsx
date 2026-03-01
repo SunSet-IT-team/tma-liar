@@ -66,7 +66,9 @@ export const CreateLobby: FC = () => {
       lobbySessionService.set({
         lobbyCode: lobby.lobbyCode,
         adminId: lobby.adminId,
+        currentGameId: lobby.currentGameId ?? null,
         status: lobby.status,
+        currentStage: null,
         players: lobby.players.map((p) => ({
           id: p.id,
           nickname: p.nickname,

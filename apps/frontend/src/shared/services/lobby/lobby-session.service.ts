@@ -5,7 +5,9 @@ const LOBBY_SESSION_KEY = 'lobby_session';
 export type LobbySession = {
   lobbyCode: string;
   adminId: string;
+  currentGameId: string | null;
   status: string;
+  currentStage?: string | null;
   players: LobbyStateView['players'];
   settings: LobbySettings;
 };

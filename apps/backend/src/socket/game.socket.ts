@@ -57,6 +57,32 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
  */
 export function registerGameHandler(io: Server, socket: Socket) {
   const gameService = new GameService(io);
+
+  socket.on(GameMessageTypes.GAME_SUBSCRIBE, async (data: unknown) => {
+    try {
+      const dtoResult = GameJoinDtoSchema.safeParse(data);
+      if (!dtoResult.success) {
+        throw new ApiError(422, 'GAME_JOIN_DATA_INVALID', dtoResult.error.issues);
+      }
+
+      const { gameId } = dtoResult.data;
+      const game = await gameService.findGame(gameId);
+
+      socket.join(gameId);
+      socket.emit(GameMessageTypes.GAME_STATE, {
+        gameId: game.id,
+        stage: game.stage,
+        liarId: game.liarId,
+      });
+
+      const roomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
+      logger.info({ gameId, roomSize, socketId: socket.id }, 'Socket subscribed to game room');
+    } catch (error) {
+      logger.error({ error }, 'Error handling game subscribe');
+      emitSocketError(socket, 'GAME_SUBSCRIBE_ERROR', error);
+    }
+  });
+
   /**
    * Лжец делает выбор (будет врать или нет)
    */
