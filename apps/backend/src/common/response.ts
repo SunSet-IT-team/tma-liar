@@ -1,5 +1,5 @@
-import type { GameMessageTypes } from "../../../common/message-types/game.types";
-import type { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
+import type { GameMessageTypes } from "../../../common/message-types/enums/game.types";
+import type { LobbyMessageTypes } from "../../../common/message-types/enums/lobby.types";
 
 /**
  * Типизация ответов АПИ

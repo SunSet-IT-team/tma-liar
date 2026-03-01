@@ -14,11 +14,12 @@ const SOCKET_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function toUserSocketError(
-  error: { errorCode?: string; message?: string } | null | undefined,
+  error: SocketErrorPayload | null | undefined,
   fallback: string,
 ): string {
   const code = error?.errorCode ?? error?.message ?? '';
   if (!code) return fallback;
   return SOCKET_ERROR_MESSAGES[code] ?? `${fallback} (${code}).`;
 }
+import type { SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
 

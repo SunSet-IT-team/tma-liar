@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react';
+import { type FC } from 'react';
 import styles from './style/connectLobbyStyle.module.scss';
 import { Container } from '../../shared/ui/Container';
 import { Header } from '../../widgets/Header';
@@ -9,60 +9,14 @@ import { UserBadge } from '../../entities/user/ui/UserBadge';
 import circleIcon from '/icons/profileCircle.svg';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../app/routes/pages';
-import { getCurrentTmaUser } from '../../shared/lib/tma/user';
-import { joinLobbyBySocket } from '../../shared/services/socket/lobby.socket';
-import { findLobbyRequest } from '../../shared/services/lobby/lobby.api';
-import { lobbySessionService } from '../../shared/services/lobby/lobby-session.service';
+import { useJoinLobby } from '@features/JoinLobby';
 
 /**
  * Экран присоединения к лобби
  */
 export const ConnectLobby: FC = () => {
   const navigate = useNavigate();
-  const [lobbyCode, setLobbyCode] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorText, setErrorText] = useState<string | null>(null);
-
-  const user = getCurrentTmaUser();
-
-  const joinLobby = async () => {
-    if (!lobbyCode.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setErrorText(null);
-
-    try {
-      const normalizedCode = lobbyCode.trim().toUpperCase();
-      const lobbyView = await joinLobbyBySocket({
-        lobbyCode: normalizedCode,
-        nickname: user.nickname,
-        profileImg: user.profileImg,
-        loserTask: '',
-      });
-
-      const lobbyFull = await findLobbyRequest(normalizedCode);
-
-      lobbySessionService.set({
-        lobbyCode: lobbyView.lobbyCode,
-        adminId: lobbyView.adminId,
-        currentGameId: lobbyFull.currentGameId ?? null,
-        status: lobbyView.status,
-        currentStage: null,
-        players: lobbyView.players,
-        settings: lobbyFull.settings,
-      });
-
-      if (lobbyView.adminId === user.telegramId) {
-        navigate(`/${PageRoutes.LOBBY_ADMIN}`);
-      } else {
-        navigate(`/${PageRoutes.LOBBY_PLAYER}`);
-      }
-    } catch {
-      setErrorText('Не удалось подключиться к лобби. Проверьте код и попробуйте снова.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const { user, lobbyCode, isSubmitting, errorText, setLobbyCode, joinLobby } = useJoinLobby();
 
   return (
     <Container>

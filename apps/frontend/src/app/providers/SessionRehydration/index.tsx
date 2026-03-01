@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import type { GameStatusChangedPayload } from '@common/message-types/contracts/game.contracts';
+import { SocketSystemEvents } from '@common/message-types/events/socket.events';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../routes/pages';
 import { store } from '../../store';
@@ -15,10 +17,13 @@ import {
 import type { LobbySession } from '../../../shared/services/lobby/lobby-session.service';
 
 type RouteTarget = {
+  // Маршрут, на который нужно перевести пользователя после анализа состояния.
   path: string;
+  // Необязательное состояние роутера (например, служебные флаги/данные экрана).
   state?: unknown;
 };
 
+// Снимок одного игрока внутри игрового состояния, которое хранится в сессии лобби.
 type GamePlayerState = NonNullable<LobbySession['gamePlayers']>[number];
 
 function mergeGamePlayers(
@@ -32,16 +37,19 @@ function mergeGamePlayers(
       >
     | undefined,
 ): LobbySession['gamePlayers'] | undefined {
+  // Если дифф от сервера пустой, текущее состояние игроков оставляем как есть.
   if (!Array.isArray(incomingPlayers) || incomingPlayers.length === 0) {
     return currentPlayers;
   }
 
+  // Работаем с копией, чтобы не мутировать объект, который уже лежит в хранилище сессии.
   const base = [...(currentPlayers ?? [])];
   for (const incoming of incomingPlayers) {
     const id = incoming.id;
     if (!id) continue;
 
     const index = base.findIndex((item) => item.id === id);
+    // `_removed` приходит как удаление игрока из активного набора (выход/дисконнект и т.д.).
     if (incoming._removed) {
       if (index !== -1) {
         base.splice(index, 1);
@@ -49,6 +57,8 @@ function mergeGamePlayers(
       continue;
     }
 
+    // Собираем итоговый объект игрока с безопасными значениями по умолчанию.
+    // Это защищает UI от `undefined` и делает обновления частичными (только изменившиеся поля).
     const prev = index === -1 ? undefined : base[index];
     const next: GamePlayerState = {
       id,
@@ -74,6 +84,8 @@ function mergeGamePlayers(
 }
 
 function applyGameStateToSession(session: LobbySession, gameState: GameSocketState): LobbySession {
+  // Нормализуем входящее состояние игры и маппим его в локальную структуру сессии.
+  // Берем данные из `gameState`, а если конкретного поля нет — сохраняем текущее.
   return {
     ...session,
     currentGameId: gameState.gameId ?? session.currentGameId,
@@ -94,6 +106,8 @@ function applyGameStateToSession(session: LobbySession, gameState: GameSocketSta
 }
 
 function resolveStageDuration(stage: string | null | undefined, session: LobbySession): number | null {
+  // Фолбэк-длительность стадии (в секундах), если сервер не прислал тайминг.
+  // Важно для плавного восстановления после перезагрузки/переподключения.
   if (!stage) return null;
   if (stage === 'liar_chooses') return 10;
   if (stage === 'question_to_liar') return session.settings?.answerTime ?? 20;
@@ -108,15 +122,19 @@ function resolveRemainingSeconds(params: {
   fallbackSeconds?: number | null;
 }): number | null {
   const { stageDurationMs, stageStartedAt, fallbackSeconds } = params;
+  // При наличии серверного тайминга считаем остаток точно от серверной временной точки.
   if (typeof stageDurationMs === 'number' && typeof stageStartedAt === 'number') {
     const remainingMs = stageDurationMs - (Date.now() - stageStartedAt);
     const remainingSeconds = Math.ceil(Math.max(0, remainingMs) / 1000);
     return remainingSeconds;
   }
+  // Если серверный тайминг пока неизвестен, отдаем безопасный фолбэк.
   return fallbackSeconds ?? null;
 }
 
 function resolveWaitingRoute(isAdmin: boolean): RouteTarget {
+  // Один источник истины для "ожидающих" экранов:
+  // админ остается в админском лобби, игрок — в обычном лобби.
   return {
     path: `/${isAdmin ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER}`,
   };
@@ -130,10 +148,13 @@ function resolveGameRoute(params: {
 }): RouteTarget | null {
   const { stage, isAdmin, isLiar, isParticipant } = params;
 
+  // Наблюдатели/новые пользователи, которые не входят в текущий состав игры,
+  // всегда остаются на экране лобби и ждут завершения партии.
   if (!isParticipant) {
     return resolveWaitingRoute(isAdmin);
   }
 
+  // Явная матрица "стадия -> экран" для детерминированной навигации.
   switch (stage) {
     case 'lobby':
       return resolveWaitingRoute(isAdmin);
@@ -164,18 +185,27 @@ function resolveGameRoute(params: {
 export function SessionRehydration() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Защита: восстанавливаем сессию только один раз при старте приложения.
   const hydratedRef = useRef(false);
+  // Не даем повторно перезапускать таймер для одного и того же снимка стадии.
   const stageTimerRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Гарантируем одноразовое восстановление при старте приложения.
+    // Повторный вызов привел бы к лишним сетевым запросам и гонкам навигации.
     if (hydratedRef.current) return;
     hydratedRef.current = true;
 
     const session = lobbySessionService.get();
+    // Если локально нет сессии или кода лобби — восстанавливать нечего.
     if (!session?.lobbyCode) return;
 
     const run = async () => {
       try {
+        // Rehydration: восстанавливаем состояние приложения из сохраненной локальной сессии
+        // и актуального состояния на бэкенде.
+        // "Hydration" обычно про SSR -> привязку клиентского React к готовой разметке.
+        // Здесь "Rehydration": восстановление ранее сохраненного состояния рантайма/сессии.
         const user = getCurrentTmaUser();
         const lobbyState = await subscribeLobbyRoom(session.lobbyCode);
         const lobbyFull = await findLobbyRequest(session.lobbyCode);
@@ -191,6 +221,8 @@ export function SessionRehydration() {
           currentStage: session.currentStage ?? null,
         };
 
+        // Если пользователь больше не числится в лобби (например, его удалили),
+        // локальную сессию считаем невалидной.
         const meInLobby = baseSession.players.some((player) => player.id === user.telegramId);
         if (!meInLobby) {
           throw new Error('USER_NOT_IN_LOBBY');
@@ -198,6 +230,7 @@ export function SessionRehydration() {
 
         const isAdmin = baseSession.adminId === user.telegramId;
 
+        // Нет активной игры: оставляем пользователя на экране лобби и очищаем игровой таймер/состояние.
         if (baseSession.status !== 'started' || !baseSession.currentGameId) {
           stageTimerRef.current = null;
           store.dispatch(resetTimer());
@@ -209,6 +242,7 @@ export function SessionRehydration() {
           return;
         }
 
+        // Игра активна: восстанавливаем поля текущей стадии и переводим на нужный экран.
         const gameState = await subscribeGameRoom(baseSession.currentGameId);
         const nextSession = applyGameStateToSession(baseSession, gameState);
         lobbySessionService.set(nextSession);
@@ -220,6 +254,8 @@ export function SessionRehydration() {
           fallbackSeconds: initialDurationFallback,
         });
         const initialStageKey = `${initialStage ?? 'none'}:${nextSession.currentStageStartedAt ?? 'none'}`;
+        // Таймер перезапускаем только при смене "снимка" стадии,
+        // чтобы исключить дрожание UI от дублей событий.
         if (initialRemainingSeconds !== null && stageTimerRef.current !== initialStageKey) {
           store.dispatch(startTimer(initialRemainingSeconds));
           stageTimerRef.current = initialStageKey;
@@ -238,6 +274,7 @@ export function SessionRehydration() {
           navigate(target.path, { replace: true, state: target.state });
         }
       } catch {
+        // Если сессию восстановить нельзя — удаляем устаревшие локальные данные и уходим на главный экран.
         lobbySessionService.clear();
         if (location.pathname !== '/') {
           navigate('/', { replace: true });
@@ -250,39 +287,16 @@ export function SessionRehydration() {
 
   useEffect(() => {
     const socket = getLobbySocket();
-    const eventName = 'changeGameStatus';
+    const eventName = SocketSystemEvents.STATUS_CHANGED;
 
-    const onGameStatusChanged = (payload: {
-      gameId?: string;
-      stage?: string;
-      stageStartedAt?: number;
-      stageDurationMs?: number | null;
-      liarId?: string | null;
-      diff?: {
-        stage?: string;
-        status?: string;
-        currentGameId?: string | null;
-        adminId?: string;
-        activeQuestion?: string | null;
-        winnerId?: string | null;
-        loserId?: string | null;
-        loserTask?: string | null;
-        players?: Array<Partial<GamePlayerState> & { id?: string; _removed?: boolean }>;
-      };
-      status?: string;
-      activeQuestion?: string | null;
-      activeQuestionText?: string | null;
-      winnerId?: string | null;
-      loserId?: string | null;
-      loserTask?: string | null;
-      players?: Array<GamePlayerState>;
-    }) => {
+    const onGameStatusChanged = (payload: GameStatusChangedPayload) => {
       const syncBySocketEvent = async () => {
         const session = lobbySessionService.get();
         if (!session) return;
 
         const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
         const incomingGameId = payload.gameId ?? null;
+        // Игнорируем запоздалые события от уже завершенной/удаленной игры.
         const isLateResultFromPreviousGame =
           session.status === 'waiting' &&
           !session.currentGameId &&
@@ -292,6 +306,7 @@ export function SessionRehydration() {
           return;
         }
 
+        // Если прилетело событие от другой игры (другой gameId), игнорируем его как устаревшее.
         if (incomingGameId && session.currentGameId && incomingGameId !== session.currentGameId) {
           return;
         }
@@ -305,10 +320,10 @@ export function SessionRehydration() {
         const lobbyStatusFromPayload =
           rawStatus === 'waiting' || rawStatus === 'started' || rawStatus === 'finished' ? rawStatus : null;
 
-        // When game event arrives before lobby diff (common at game start),
-        // verify it against the current lobby state. This prevents stale
-        // game events from resurrecting an old session while still allowing
-        // players to enter a freshly started game.
+        // Частый кейс: игровое событие приходит раньше обновления лобби (особенно на старте).
+        // В этом случае дополнительно сверяемся с актуальным снимком лобби:
+        // только если `currentGameId` совпадает и статус действительно `started`,
+        // разрешаем обработку события. Это не дает "воскресить" старую игру.
         if (payload.gameId && !session.currentGameId && !hasDiffCurrentGameId) {
           const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
           if (incomingStage === 'game_results' || incomingStage === 'end') {
@@ -323,7 +338,8 @@ export function SessionRehydration() {
               return;
             }
           } catch {
-            // On transient fetch errors don't block event processing.
+            // Временная ошибка запроса не должна ломать синхронизацию:
+            // в таком случае продолжаем по данным события.
           }
         }
 
@@ -343,6 +359,7 @@ export function SessionRehydration() {
           session.gamePlayers;
 
         if (!stage && gameId) {
+          // Если стадия в событии не пришла, дотягиваем полное состояние по gameId.
           try {
             const gameState = await subscribeGameRoom(gameId);
             stage = gameState.stage ?? stage;
@@ -356,10 +373,11 @@ export function SessionRehydration() {
             loserTask = gameState.loserTask ?? loserTask;
             gamePlayers = mergeGamePlayers(gamePlayers, gameState.players) ?? gamePlayers;
           } catch {
-            // ignore: keep last known state
+            // Если догрузить state не удалось, оставляем последнее известное состояние.
           }
         }
 
+        // Статус лобби waiting означает, что клиент должен сбросить все игровое состояние.
         const shouldResetGameState = nextStatus !== 'started' || !gameId;
 
         const nextSession = {
@@ -386,11 +404,14 @@ export function SessionRehydration() {
           fallbackSeconds: stageDurationFallback,
         });
         const stageKey = `${nextSession.currentStage ?? 'none'}:${nextSession.currentStageStartedAt ?? 'none'}`;
+        // Аналогично первому восстановлению: избегаем лишних перезапусков таймера
+        // на одинаковых событиях одной и той же стадии.
         if (remainingSeconds !== null && stageTimerRef.current !== stageKey) {
           store.dispatch(startTimer(remainingSeconds));
           stageTimerRef.current = stageKey;
         }
         if (remainingSeconds === null) {
+          // Для стадий без таймера гарантированно гасим таймер в сторе.
           stageTimerRef.current = null;
           store.dispatch(resetTimer());
         }
@@ -416,6 +437,7 @@ export function SessionRehydration() {
       void syncBySocketEvent();
     };
 
+    // Подписка на глобальное событие изменения статуса и корректная отписка при unmount.
     socket.on(eventName, onGameStatusChanged);
     return () => {
       socket.off(eventName, onGameStatusChanged);

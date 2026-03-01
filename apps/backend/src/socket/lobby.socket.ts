@@ -1,4 +1,6 @@
-import { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
+import { LobbyMessageTypes } from "../../../common/message-types/enums/lobby.types";
+import { SocketSystemEvents } from "../../../common/message-types/events/socket.events";
+import type { SocketAck, SocketErrorPayload } from "../../../common/message-types/contracts/socket.contracts";
 import { LobbyService } from "../lobby/lobby.service";
 import type { Server, Socket } from "socket.io";
 import type { JoinLobbyDto } from "../lobby/dtos/lobby-join.dto";
@@ -7,7 +9,7 @@ import { LobbyStateDtoSchema } from "../lobby/dtos/lobby-state.dto";
 import { PlayerInfoSchema } from "../game/dtos/game-init.dto";
 import { findDiff } from "../common/diff";
 import { ApiError, buildStatePayload } from "../common/response";
-import { GameMessageTypes } from "../../../common/message-types/game.types";
+import { GameMessageTypes } from "../../../common/message-types/enums/game.types";
 import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
 import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
@@ -140,26 +142,26 @@ function normalizeLobbySettings(rawSettings: unknown) {
  */
 function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unknown) {
   if (error instanceof ApiError) {
-    socket.emit("error", {
+    const payload: SocketErrorPayload = {
       errorCode: error.errorCode,
       message: error.message,
       details: error.details,
-    });
+    };
+    socket.emit(SocketSystemEvents.ERROR, payload);
     return;
   }
 
-  socket.emit("error", {
+  const payload: SocketErrorPayload = {
     errorCode: fallbackErrorCode,
     message: fallbackErrorCode,
     details: error instanceof Error ? error.message : undefined,
-  });
+  };
+  socket.emit(SocketSystemEvents.ERROR, payload);
 }
 
 /**
  * Регистрирует обработчики lobby socket-событий.
  */
-type SocketAck = (payload: { ok: boolean; errorCode?: string; message?: string }) => void;
-
 export function registerLobbyHandler(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
@@ -251,7 +253,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       socket.emit(LobbyMessageTypes.PLAYER_JOINED, lobbyState); 
       socket.to(dto.lobbyCode).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_JOINED, findDiff(snapForDiff, nextForDiff)),
       );
     } catch (error) {
@@ -338,13 +340,13 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         });
         const nextForDiff = buildLobbyDiffState(resetLobby);
         io.to(lobbyCode).emit(
-          "changeGameStatus",
+          SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
       } else if (leaveResult.lobby) {
         const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
         io.to(lobbyCode).emit(
-          "changeGameStatus",
+          SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
       }
@@ -411,7 +413,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       const nextForDiff = buildLobbyDiffState(resetLobby);
       io.to(lobbyCode).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_EXIT_GAME, findDiff(snapForDiff, nextForDiff)),
       );
 
@@ -496,7 +498,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       logger.info({ playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode }, 'Player ready toggled');
 
       io.to(dto.lobbyCode).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_READY, findDiff(snapForDiff, nextForDiff)),
       );
     } catch (error) {

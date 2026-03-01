@@ -12,7 +12,8 @@ import type { GamePlayerSecuredDto } from './dtos/game-player-secured.dto';
 import type { GameLiarChoosesDto } from './dtos/game-liar-chooses.dto';
 import type { Server } from 'socket.io';
 import { findDiff } from '../common/diff';
-import { GameMessageTypes } from '../../../common/message-types/game.types';
+import { GameMessageTypes } from '../../../common/message-types/enums/game.types';
+import { SocketSystemEvents } from '../../../common/message-types/events/socket.events';
 import { env } from '../config/env';
 import { GameRepository } from './game.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
@@ -326,7 +327,7 @@ export class GameService implements GameMethods {
         'Game stage changed',
       );
       
-      this.io.to(gameId).emit("changeGameStatus", {
+      this.io.to(gameId).emit(SocketSystemEvents.STATUS_CHANGED, {
         ...buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff),
         gameId,
         stage: nextStage,
@@ -395,7 +396,7 @@ export class GameService implements GameMethods {
       const updatedGameobj = updatedGame.toObject();
 
       const diff = findDiff(gameSnapobj, updatedGameobj, GameStages.GAME_RESULTS);
-      this.io.to(gameId).emit("changeGameStatus", {
+      this.io.to(gameId).emit(SocketSystemEvents.STATUS_CHANGED, {
         ...buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff),
         gameId,
         stage: GameStages.GAME_RESULTS,

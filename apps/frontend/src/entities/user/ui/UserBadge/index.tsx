@@ -1,9 +1,10 @@
 import { type FC } from 'react';
 import styles from '../../style/userStyle.module.scss';
 import noPhoto from '/icons/blackPhoto.svg';
-import { Typography } from '../../../../shared/ui/Typography';
+import { Typography } from '@shared/ui/Typography';
 import clsx from 'clsx';
 import hornsIcon from '/icons/hornsIcon.svg';
+
 import type { Player } from '../../model/types';
 
 type UserBadgeProps = Player & {
@@ -18,9 +19,9 @@ export const UserBadge: FC<UserBadgeProps> = ({
   photo,
   name,
   variant = 'default',
-  isLiar,
   currentPlayer,
   className,
+  isAdmin = true,
 }) => {
   return (
     <div className={clsx(styles.content, styles[variant], className)}>
@@ -30,7 +31,7 @@ export const UserBadge: FC<UserBadgeProps> = ({
           alt=""
           className={clsx(styles.userPhoto, currentPlayer && styles.userPhotoOutline)}
         />
-        {isLiar && <img src={hornsIcon} alt="" className={styles.hornsImg} />}
+        {isAdmin && <img src={hornsIcon} alt="" className={styles.hornsImg} />}
       </div>
       <Typography
         variant="caption"

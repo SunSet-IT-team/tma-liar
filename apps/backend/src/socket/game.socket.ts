@@ -1,4 +1,7 @@
-import { GameMessageTypes } from "../../../common/message-types/game.types";
+import { GameMessageTypes } from "../../../common/message-types/enums/game.types";
+import { SocketSystemEvents } from "../../../common/message-types/events/socket.events";
+import type { GameStatePayload, GameStatusChangedPayload } from "../../../common/message-types/contracts/game.contracts";
+import type { SocketErrorPayload } from "../../../common/message-types/contracts/socket.contracts";
 import { GameService } from "../game/game.service";
 import type { Server, Socket } from "socket.io";
 import { findDiff } from "../common/diff";
@@ -32,19 +35,21 @@ import { GameStages } from "../lobby/entities/lobby.entity";
  */
 function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unknown) {
   if (error instanceof ApiError) {
-    socket.emit("error", {
+    const payload: SocketErrorPayload = {
       errorCode: error.errorCode,
       message: error.message,
       details: error.details,
-    });
+    };
+    socket.emit(SocketSystemEvents.ERROR, payload);
     return;
   }
 
-  socket.emit("error", {
+  const payload: SocketErrorPayload = {
     errorCode: fallbackErrorCode,
     message: fallbackErrorCode,
     details: error instanceof Error ? error.message : undefined,
-  });
+  };
+  socket.emit(SocketSystemEvents.ERROR, payload);
 }
 
 /**
@@ -132,7 +137,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
         score?: number;
       }>;
     },
-  ) => ({
+  ): GameStatusChangedPayload => ({
     ...buildStatePayload(status, diff),
     gameId: game.id,
     stage: game.stage,
@@ -158,7 +163,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       const game = await gameService.findGame(gameId);
 
       socket.join(gameId);
-      socket.emit(GameMessageTypes.GAME_STATE, {
+      const statePayload: GameStatePayload = {
         gameId: game.id,
         stage: game.stage,
         stageStartedAt: game.stageStartedAt ?? Date.now(),
@@ -181,7 +186,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
         winnerId: game.winnerId ?? null,
         loserId: game.loserId ?? null,
         loserTask: game.loserTask ?? null,
-      });
+      };
+      socket.emit(GameMessageTypes.GAME_STATE, statePayload);
 
       const roomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
       logger.info({ gameId, roomSize, socketId: socket.id }, 'Socket subscribed to game room');
@@ -213,7 +219,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       socket.join(dto.gameId);
       io.to(dto.gameId).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.LIAR_CHOSE,
           findDiff(gameSnap, game, game.stage),
@@ -250,7 +256,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       socket.join(dto.gameId);
       io.to(dto.gameId).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_VOTED,
           findDiff(gameSnap, game, game.stage),
@@ -287,7 +293,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       socket.join(dto.gameId);
       io.to(dto.gameId).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_SECURED,
           findDiff(gameSnap, game, game.stage),
@@ -322,7 +328,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
 
       socket.join(dto.gameId);
       io.to(dto.gameId).emit(
-        "changeGameStatus",
+        SocketSystemEvents.STATUS_CHANGED,
         buildGameStatusPayload(
           GameMessageTypes.PLAYER_LIKED,
           findDiff(gameSnap, game, game.stage),

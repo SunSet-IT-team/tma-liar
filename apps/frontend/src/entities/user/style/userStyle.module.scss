@@ -1,56 +1,57 @@
 .content {
-    display: flex;
-    align-items: center;
-    gap: 2vh;
+  display: flex;
+  align-items: center;
+  gap: 2vh;
 }
 
 .userPhotoBlock {
-    position: relative;
+  position: relative;
 }
 
-.userPhoto, .default .userPhoto {
-    width: 7vh;
-    height: 7vh;
-    border-radius: 1.3vh;
+.userPhoto,
+.default .userPhoto {
+  width: 7vh;
+  height: 7vh;
+  border-radius: 1.3vh;
 }
 
 .large .userPhoto {
-    width: 83px;
-    height: 83px;
+  width: 83px;
+  height: 83px;
 }
 
 .medium .userPhoto {
-    width: 70px;
-    height: 70px;
+  width: 70px;
+  height: 70px;
 }
 
 .userPhotoOutline {
-    outline: 0.4vh solid var(--red-color);
+  outline: 0.4vh solid var(--red-color);
 }
 
 .content .currentUser {
-    color: var(--red-color);
+  color: var(--red-color);
 }
 
 .hornsImg {
-    position: absolute;
-    width: 100%;
-    height: 22px;
-    top: -22px;
-    left: 0;
-    z-index: -1;
+  position: absolute;
+  width: 100%;
+  height: 22px;
+  top: -20px;
+  left: 0;
+  z-index: -1;
 }
 
 .large .username {
-    font-size: 4vh;
+  font-size: 4vh;
 }
 
 @media (min-height: 700px) {
-    .large .username {
-        font-size: 3vh;
-    }
+  .large .username {
+    font-size: 3vh;
+  }
 }
 
 .medium .username {
-    font-size: 20px;
+  font-size: 20px;
 }

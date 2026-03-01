@@ -1,16 +1,16 @@
 import { io, type Socket } from 'socket.io-client';
+import type { GameStatePayload } from '@common/message-types/contracts/game.contracts';
+import type {
+  JoinLobbySocketPayload,
+  LobbyCodePayload,
+} from '@common/message-types/contracts/lobby.contracts';
+import { GameSocketEvents } from '@common/message-types/events/game.events';
+import { LobbySocketEvents } from '@common/message-types/events/lobby.events';
+import { SocketSystemEvents } from '@common/message-types/events/socket.events';
+import type { SocketAckPayload, SocketErrorPayload } from '@common/message-types/contracts/socket.contracts';
 import { authService } from '../auth.service';
 import type { LobbyStateView } from '../../types/lobby';
 import { getCurrentTmaUser } from '../../lib/tma/user';
-
-const LOBBY_PLAYER_JOINED_EVENT = 'lobby:player:joined';
-const LOBBY_PLAYER_LEFT_EVENT = 'lobby:player:left';
-const LOBBY_PLAYER_EXIT_GAME_EVENT = 'lobby:player:exit-game';
-const LOBBY_SUBSCRIBE_EVENT = 'lobby:subscribe';
-const LOBBY_STATE_EVENT = 'lobby:state';
-const GAME_SUBSCRIBE_EVENT = 'game:subscribe';
-const GAME_STATE_EVENT = 'game:state';
-const ERROR_EVENT = 'error';
 
 let socket: Socket | null = null;
 let debugBound = false;
@@ -19,13 +19,16 @@ let lobbySubscribeInFlight: Promise<LobbyStateView> | null = null;
 let lobbySubscribeCodeInFlight: string | null = null;
 let gameSubscribeInFlight: Promise<GameSocketState> | null = null;
 let gameSubscribeIdInFlight: string | null = null;
+let tokenWarningShown = false;
 
 function getSocketUrl() {
   return import.meta.env.VITE_WS_URL ?? window.location.origin;
 }
 
 function bindSocketDebug(s: Socket) {
-  if (!import.meta.env.DEV || debugBound) return;
+  const socketDebugEnabled = import.meta.env.DEV && import.meta.env.VITE_SOCKET_DEBUG === 'true';
+
+  if (!socketDebugEnabled || debugBound) return;
   debugBound = true;
 
   const originalEmit = s.emit.bind(s);
@@ -78,7 +81,10 @@ export function getLobbySocket(): Socket {
     authPayload.token = token;
   } else {
     // Не роняем UI: в dev режиме backend может быть запущен с DISABLE_AUTH=true.
-    console.warn('SOCKET_TOKEN_NOT_FOUND: connecting in guest mode');
+    if (!tokenWarningShown) {
+      console.warn('SOCKET_TOKEN_NOT_FOUND: connecting in guest mode');
+      tokenWarningShown = true;
+    }
   }
 
   socket = io(getSocketUrl(), {
@@ -104,36 +110,31 @@ export function disconnectLobbySocket() {
   gameSubscribeIdInFlight = null;
 }
 
-export function joinLobbyBySocket(payload: {
-  lobbyCode: string;
-  nickname?: string;
-  profileImg?: string;
-  loserTask?: string;
-}) {
+export function joinLobbyBySocket(payload: JoinLobbySocketPayload) {
   return new Promise<LobbyStateView>((resolve, reject) => {
     const s = getLobbySocket();
 
     const timeout = window.setTimeout(() => {
-      s.off(LOBBY_PLAYER_JOINED_EVENT, onJoined);
-      s.off(ERROR_EVENT, onError);
+      s.off(LobbySocketEvents.PLAYER_JOINED, onJoined);
+      s.off(SocketSystemEvents.ERROR, onError);
       reject(new Error('JOIN_LOBBY_TIMEOUT'));
     }, 7000);
 
     const onJoined = (data: LobbyStateView) => {
       clearTimeout(timeout);
-      s.off(ERROR_EVENT, onError);
+      s.off(SocketSystemEvents.ERROR, onError);
       resolve(data);
     };
 
-    const onError = (error: { errorCode?: string; message?: string }) => {
+    const onError = (error: SocketErrorPayload) => {
       clearTimeout(timeout);
-      s.off(LOBBY_PLAYER_JOINED_EVENT, onJoined);
+      s.off(LobbySocketEvents.PLAYER_JOINED, onJoined);
       reject(new Error(error.errorCode ?? error.message ?? 'JOIN_LOBBY_SOCKET_ERROR'));
     };
 
-    s.once(LOBBY_PLAYER_JOINED_EVENT, onJoined);
-    s.once(ERROR_EVENT, onError);
-    s.emit(LOBBY_PLAYER_JOINED_EVENT, payload);
+    s.once(LobbySocketEvents.PLAYER_JOINED, onJoined);
+    s.once(SocketSystemEvents.ERROR, onError);
+    s.emit(LobbySocketEvents.PLAYER_JOINED, payload);
   });
 }
 
@@ -147,8 +148,8 @@ export function subscribeLobbyRoom(lobbyCode: string) {
     const s = getLobbySocket();
 
     const timeout = window.setTimeout(() => {
-      s.off(LOBBY_STATE_EVENT, onState);
-      s.off(ERROR_EVENT, onError);
+      s.off(LobbySocketEvents.LOBBY_STATE, onState);
+      s.off(SocketSystemEvents.ERROR, onError);
       lobbySubscribeInFlight = null;
       lobbySubscribeCodeInFlight = null;
       reject(new Error('LOBBY_SUBSCRIBE_TIMEOUT'));
@@ -156,52 +157,29 @@ export function subscribeLobbyRoom(lobbyCode: string) {
 
     const onState = (data: LobbyStateView) => {
       clearTimeout(timeout);
-      s.off(ERROR_EVENT, onError);
+      s.off(SocketSystemEvents.ERROR, onError);
       lobbySubscribeInFlight = null;
       lobbySubscribeCodeInFlight = null;
       resolve(data);
     };
 
-    const onError = (error: { errorCode?: string; message?: string }) => {
+    const onError = (error: SocketErrorPayload) => {
       clearTimeout(timeout);
-      s.off(LOBBY_STATE_EVENT, onState);
+      s.off(LobbySocketEvents.LOBBY_STATE, onState);
       lobbySubscribeInFlight = null;
       lobbySubscribeCodeInFlight = null;
       reject(new Error(error.errorCode ?? error.message ?? 'LOBBY_SUBSCRIBE_ERROR'));
     };
 
-    s.once(LOBBY_STATE_EVENT, onState);
-    s.once(ERROR_EVENT, onError);
-    s.emit(LOBBY_SUBSCRIBE_EVENT, { lobbyCode });
+    s.once(LobbySocketEvents.LOBBY_STATE, onState);
+    s.once(SocketSystemEvents.ERROR, onError);
+    s.emit(LobbySocketEvents.LOBBY_SUBSCRIBE, { lobbyCode });
   });
 
   return lobbySubscribeInFlight;
 }
 
-export type GameSocketState = {
-  gameId: string;
-  stage?: string;
-  stageStartedAt?: number;
-  stageDurationMs?: number | null;
-  liarId?: string | null;
-  activeQuestion?: string | null;
-  activeQuestionText?: string | null;
-  winnerId?: string | null;
-  loserId?: string | null;
-  loserTask?: string | null;
-  players?: Array<{
-    id: string;
-    nickname: string;
-    profileImg?: string;
-    isReady?: boolean;
-    inGame?: boolean;
-    loserTask?: string | null;
-    answer?: number | null;
-    likes?: number;
-    isConfirmed?: boolean | null;
-    score?: number;
-  }>;
-};
+export type GameSocketState = GameStatePayload;
 
 export function subscribeGameRoom(gameId: string) {
   if (gameSubscribeInFlight && gameSubscribeIdInFlight === gameId) {
@@ -213,8 +191,8 @@ export function subscribeGameRoom(gameId: string) {
     const s = getLobbySocket();
 
     const timeout = window.setTimeout(() => {
-      s.off(GAME_STATE_EVENT, onState);
-      s.off(ERROR_EVENT, onError);
+      s.off(GameSocketEvents.GAME_STATE, onState);
+      s.off(SocketSystemEvents.ERROR, onError);
       gameSubscribeInFlight = null;
       gameSubscribeIdInFlight = null;
       reject(new Error('GAME_SUBSCRIBE_TIMEOUT'));
@@ -222,29 +200,29 @@ export function subscribeGameRoom(gameId: string) {
 
     const onState = (data: GameSocketState) => {
       clearTimeout(timeout);
-      s.off(ERROR_EVENT, onError);
+      s.off(SocketSystemEvents.ERROR, onError);
       gameSubscribeInFlight = null;
       gameSubscribeIdInFlight = null;
       resolve(data);
     };
 
-    const onError = (error: { errorCode?: string; message?: string }) => {
+    const onError = (error: SocketErrorPayload) => {
       clearTimeout(timeout);
-      s.off(GAME_STATE_EVENT, onState);
+      s.off(GameSocketEvents.GAME_STATE, onState);
       gameSubscribeInFlight = null;
       gameSubscribeIdInFlight = null;
       reject(new Error(error.errorCode ?? error.message ?? 'GAME_SUBSCRIBE_ERROR'));
     };
 
-    s.once(GAME_STATE_EVENT, onState);
-    s.once(ERROR_EVENT, onError);
-    s.emit(GAME_SUBSCRIBE_EVENT, { gameId });
+    s.once(GameSocketEvents.GAME_STATE, onState);
+    s.once(SocketSystemEvents.ERROR, onError);
+    s.emit(GameSocketEvents.GAME_SUBSCRIBE, { gameId });
   });
 
   return gameSubscribeInFlight;
 }
 
-export function leaveLobbyBySocket(payload: { lobbyCode: string }) {
+export function leaveLobbyBySocket(payload: LobbyCodePayload) {
   return new Promise<void>((resolve, reject) => {
     const s = getLobbySocket();
 
@@ -254,9 +232,9 @@ export function leaveLobbyBySocket(payload: { lobbyCode: string }) {
     }, 5000);
 
     s.emit(
-      LOBBY_PLAYER_LEFT_EVENT,
+      LobbySocketEvents.PLAYER_LEFT,
       payload,
-      (ack?: { ok?: boolean; errorCode?: string; message?: string }) => {
+      (ack?: Partial<SocketAckPayload>) => {
         clearTimeout(timeout);
         disconnectLobbySocket();
 
@@ -271,7 +249,7 @@ export function leaveLobbyBySocket(payload: { lobbyCode: string }) {
   });
 }
 
-export function exitGameBySocket(payload: { lobbyCode: string }) {
+export function exitGameBySocket(payload: LobbyCodePayload) {
   return new Promise<void>((resolve, reject) => {
     const s = getLobbySocket();
 
@@ -280,9 +258,9 @@ export function exitGameBySocket(payload: { lobbyCode: string }) {
     }, 5000);
 
     s.emit(
-      LOBBY_PLAYER_EXIT_GAME_EVENT,
+      LobbySocketEvents.PLAYER_EXIT_GAME,
       payload,
-      (ack?: { ok?: boolean; errorCode?: string; message?: string }) => {
+      (ack?: Partial<SocketAckPayload>) => {
         clearTimeout(timeout);
 
         if (ack?.ok) {

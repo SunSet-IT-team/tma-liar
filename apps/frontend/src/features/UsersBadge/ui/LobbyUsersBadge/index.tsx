@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import { type FC } from 'react';
-import { UserBadge } from '../../../../entities/user/ui/UserBadge';
-import { Typography } from '../../../../shared/ui/Typography';
-import styles from '../../style/usersBadgeStyle.module.scss';
+import { UserBadge } from '@entities/user';
+import { Typography } from '@shared/ui/Typography';
+import styles from '@features/UsersBadge/style/usersBadgeStyle.module.scss';
 
 type UsersProps = {
   className?: string;

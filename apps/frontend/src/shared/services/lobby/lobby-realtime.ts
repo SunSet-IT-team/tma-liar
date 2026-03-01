@@ -1,29 +1,9 @@
+import type {
+  LobbyDiffPlayerPayload,
+  LobbyStatusChangedPayload,
+} from '@common/message-types/contracts/lobby.contracts';
 import type { LobbySession } from './lobby-session.service';
-
-type LobbyDiffPlayer = {
-  id?: string;
-  nickname?: string;
-  profileImg?: string;
-  _removed?: boolean;
-  isReady?: boolean;
-  inGame?: boolean;
-  loserTask?: string | null;
-};
-
-type LobbyDiff = {
-  lobbyCode?: string;
-  adminId?: string;
-  currentGameId?: string | null;
-  status?: string;
-  players?: LobbyDiffPlayer[];
-  stage?: string;
-};
-
-export type ChangeGameStatusPayload = {
-  status?: string;
-  diff?: LobbyDiff;
-  stage?: string;
-};
+export type ChangeGameStatusPayload = LobbyStatusChangedPayload;
 
 export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusPayload): LobbySession {
   if (typeof payload.status === 'string' && !payload.status.startsWith('lobby:')) {
@@ -89,7 +69,7 @@ export function getStageFromPayload(payload: ChangeGameStatusPayload): string | 
 }
 
 export function getCurrentPlayerReady(payload: ChangeGameStatusPayload, userId: string): boolean | null {
-  const players = payload.diff?.players;
+  const players = payload.diff?.players as LobbyDiffPlayerPayload[] | undefined;
   if (!players) return null;
 
   const current = players.find((player) => player.id === userId);
