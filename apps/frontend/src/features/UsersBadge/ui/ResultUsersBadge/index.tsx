@@ -8,73 +8,8 @@ import type { TypographyVariant } from '../../../../shared/ui/Typography';
 import { RESULT_ANIMATION_CONFIG } from '../../config/resultAnimationConfig';
 import drumSound from '../../../../shared/assets/sounds/drumroll.mp3';
 import { Button } from '../../../../shared/ui/Button';
-
-const testUsers = [
-  {
-    id: 1,
-    photo: '',
-    name: 'Бешеный Татар',
-    points: 300,
-    currentPlayer: false,
-    task: 'Вылизываем кота',
-  },
-  {
-    id: 2,
-    photo: '',
-    name: 'Лысый Татар',
-    points: 150,
-    currentPlayer: false,
-    task: 'Пустить бутерброд по кругу',
-  },
-  {
-    id: 3,
-    photo: '',
-    name: 'Крутой Татар',
-    points: 270,
-    currentPlayer: false,
-    task: 'Съесть носок друга',
-  },
-  {
-    id: 4,
-    photo: '',
-    name: 'Бешеный Татар',
-    points: 130,
-    currentPlayer: false,
-    task: 'Пустить бутерброд по кругу',
-  },
-  {
-    id: 5,
-    photo: '',
-    name: 'Бешеный Татар',
-    points: 450,
-    currentPlayer: false,
-    task: 'Вылизываем кота',
-  },
-  {
-    id: 6,
-    photo: '',
-    name: 'Лысый Татар',
-    points: 90,
-    currentPlayer: true,
-    task: 'Съесть носок друга',
-  },
-  {
-    id: 7,
-    photo: '',
-    name: 'Бешеный Татар',
-    points: 140,
-    currentPlayer: false,
-    task: 'Вылизываем кота',
-  },
-  {
-    id: 8,
-    photo: '',
-    name: 'Лысый Татар',
-    points: 420,
-    currentPlayer: false,
-    task: 'Пустить бутерброд по кругу',
-  },
-];
+import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
+import { getCurrentTmaUser } from '../../../../shared/lib/tma/user';
 
 /**
  * Отображение мест игроков с анимацией
@@ -83,8 +18,23 @@ export const ResultUsersBadge: FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [task, setTask] = useState<string>('Здесь будет задание...');
+  const session = lobbySessionService.get();
+  const me = getCurrentTmaUser();
 
-  const sortedUsers = [...testUsers].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+  const sortedUsers =
+    session?.gamePlayers && session.gamePlayers.length > 0
+      ? [...session.gamePlayers]
+          .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+          .map((player, index) => ({
+            id: Number.isFinite(Number(player.id)) && Number(player.id) > 0 ? Number(player.id) : index + 1,
+            keyId: player.id,
+            photo: player.profileImg ?? '',
+            name: player.nickname,
+            points: player.score ?? 0,
+            currentPlayer: player.id === me.telegramId,
+            task: player.loserTask ?? '',
+          }))
+      : [];
 
   const getSizeByPlace = (index: number): PlayerSize => {
     if (index === 0) return 'large';
@@ -105,9 +55,9 @@ export const ResultUsersBadge: FC = () => {
     const audio = new Audio(drumSound);
 
     const showNext = (index: number) => {
-      if (index >= sortedUsers.length) {
+      if (index >= sortedUsers.length || sortedUsers.length === 0) {
         // все места показаны → отдаем задание 1-го места
-        setTask(sortedUsers[0].task);
+        setTask(session?.currentLoserTask ?? sortedUsers[0]?.task ?? 'Задание не задано');
         setFinished(true);
         return;
       }
@@ -140,14 +90,14 @@ export const ResultUsersBadge: FC = () => {
   return (
     <div className={clsx(styles.content, styles.answersContent, styles.resultsContent)}>
       <div className={clsx(styles.resultPlayers, styles.limitedBlock)}>
-        {sortedUsers.map((user: Player, index) => (
+        {sortedUsers.map((user: Player & { keyId?: string }, index) => (
           <div
             className={clsx(
               styles.playerBlock,
               styles.resultsBlock,
               index < visibleCount && styles.show, // класс для анимации
             )}
-            key={user.id}
+            key={user.keyId ?? String(user.id)}
           >
             <Typography className={styles.resultPlace} variant={getTypographyVariant(index)}>
               {index + 1}

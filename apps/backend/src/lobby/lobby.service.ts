@@ -39,6 +39,14 @@ const nanoid6 = customAlphabet(LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH);
 export class LobbyService implements LobbyServiceMethods {
   constructor(private readonly lobbyRepository: LobbyRepository = new LobbyRepository()) {}
 
+  private isValidLoserTask(task: string | null | undefined): boolean {
+    if (typeof task !== 'string') return false;
+    const normalized = task.trim();
+    if (!normalized) return false;
+    if (normalized.toLowerCase() === 'task') return false;
+    return true;
+  }
+
   /** Найти одно лобби */
     public async findLobby(param: FindLobbyDto): Promise<Lobby> {
       const lobby = await this.lobbyRepository.findByCodeDocument(param.lobbyCode);
@@ -150,9 +158,14 @@ export class LobbyService implements LobbyServiceMethods {
       return updatedLobby;
     }
 
-    if (!loserTask) throw new ApiError(422, 'LOSER_TASK_NOT_SET');
+    if (!this.isValidLoserTask(loserTask)) throw new ApiError(422, 'LOSER_TASK_NOT_SET');
+    const normalizedLoserTask = (loserTask as string).trim();
 
-    const updatedLobby = await this.lobbyRepository.setPlayerReady(lobbyCode, playerTelegramId, loserTask);
+    const updatedLobby = await this.lobbyRepository.setPlayerReady(
+      lobbyCode,
+      playerTelegramId,
+      normalizedLoserTask,
+    );
 
     if (!updatedLobby) throw new ApiError(409, 'READY_STATE_CONFLICT');
     return updatedLobby;
@@ -197,25 +210,11 @@ export class LobbyService implements LobbyServiceMethods {
         };
       }
 
-      const firstPlayer = updatedLobby.players[0];
-      if (!firstPlayer) {
-        throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
-      }
-
-      const lobbyWithNewAdmin = await this.lobbyRepository.transferAdmin(
-        lobbyCode,
-        telegramId,
-        firstPlayer.telegramId,
-      );
-
-      if (!lobbyWithNewAdmin) {
-        throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
-      }
-
+      await this.lobbyRepository.deleteByCode(lobbyCode);
       return {
-        lobby: lobbyWithNewAdmin,
-        deleted: false,
-        newAdminId: firstPlayer.telegramId,
+        lobby: null,
+        deleted: true,
+        newAdminId: null,
       };
     };
 
@@ -251,26 +250,11 @@ export class LobbyService implements LobbyServiceMethods {
           };
         }
 
-        const firstPlayer = updatedLobby.players[0];
-        if (!firstPlayer) {
-          throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
-        }
-
-        const lobbyWithNewAdmin = await this.lobbyRepository.transferAdmin(
-          lobbyCode,
-          telegramId,
-          firstPlayer.telegramId,
-          session,
-        );
-
-        if (!lobbyWithNewAdmin) {
-          throw new ApiError(409, 'LOBBY_ADMIN_TRANSFER_CONFLICT');
-        }
-
+        await this.lobbyRepository.deleteByCode(lobbyCode, session);
         return {
-          lobby: lobbyWithNewAdmin,
-          deleted: false,
-          newAdminId: firstPlayer.telegramId,
+          lobby: null,
+          deleted: true,
+          newAdminId: null,
         };
       }) as {
         lobby: LobbyEntity | null;

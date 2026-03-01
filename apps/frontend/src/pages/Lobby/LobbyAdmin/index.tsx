@@ -22,6 +22,15 @@ const PLAYER_READY_EVENT = 'lobby:player:ready';
 const CHANGE_GAME_STATUS_EVENT = 'changeGameStatus';
 const LOBBY_DELETED_EVENT = 'lobby:deleted';
 const ERROR_EVENT = 'error';
+const MIN_PLAYERS_TO_START = 3;
+
+function isValidLoserTask(task: string | null | undefined): boolean {
+  if (typeof task !== 'string') return false;
+  const normalized = task.trim();
+  if (!normalized) return false;
+  if (normalized.toLowerCase() === 'task') return false;
+  return true;
+}
 
 /**
  * Экран ожидания игроков в лобби (админ)
@@ -37,6 +46,8 @@ export const LobbyAdmin: FC = () => {
   const adminPlayer = session?.players.find((player) => player.id === user.telegramId);
   const adminReady = Boolean(adminPlayer?.isReady);
   const allPlayersReady = session ? session.players.every((player) => player.isReady) : false;
+  const enoughPlayers = session ? session.players.length >= MIN_PLAYERS_TO_START : false;
+  const allPlayersHaveTask = session ? session.players.every((player) => isValidLoserTask(player.loserTask)) : false;
 
   const syncLobbyState = (state: {
     lobbyCode: string;
@@ -110,8 +121,20 @@ export const LobbyAdmin: FC = () => {
     };
 
     const onLobbyDeleted = () => {
-      lobbySessionService.clear();
-      navigate('/');
+      void subscribeLobbyRoom(lobbyCode)
+        .then((state) => {
+          const meInLobby = state.players.some((player) => player.id === user.telegramId);
+          if (!meInLobby) {
+            lobbySessionService.clear();
+            navigate('/', { replace: true });
+            return;
+          }
+          syncLobbyState(state);
+        })
+        .catch(() => {
+          lobbySessionService.clear();
+          navigate('/', { replace: true });
+        });
     };
 
     const onSocketError = (error: { errorCode?: string; message?: string }) => {
@@ -181,15 +204,28 @@ export const LobbyAdmin: FC = () => {
 
   const toggleReady = () => {
     if (!session) return;
+    const normalizedTask = loserTask.trim();
+    if (!adminReady && !isValidLoserTask(normalizedTask)) {
+      setReadyError('Сначала придумайте задание проигравшему.');
+      return;
+    }
 
     const socket = getLobbySocket();
     setReadyError(null);
     socket.emit(PLAYER_READY_EVENT, {
       lobbyCode: session.lobbyCode,
       playerId: adminPlayer?.id,
-      loserTask: loserTask.trim() || adminPlayer?.loserTask || 'task',
+      loserTask: normalizedTask || adminPlayer?.loserTask || null,
     });
   };
+
+  const startBlockReason = !enoughPlayers
+    ? 'Недостаточно игроков'
+    : !allPlayersReady
+      ? 'Не все игроки готовы'
+      : !allPlayersHaveTask
+        ? 'Нужно задание проигравшему'
+        : null;
 
   if (!session) return null;
 
@@ -225,13 +261,13 @@ export const LobbyAdmin: FC = () => {
       {readyError ? <Typography className={styles.errorText}>{readyError}</Typography> : null}
       <div className={styles.actions}>
         <ReadyToggle className={styles.readyBtn} ready={adminReady} onToggle={toggleReady} />
-        <Button
-          className={`${styles.readyBtn} ${styles.secondaryAction}`}
-          onClick={startGame}
-          disabled={isStarting || !allPlayersReady}
-        >
-          {isStarting ? 'Запуск...' : 'Начать'}
-        </Button>
+        {startBlockReason ? (
+          <Typography className={styles.statusHint}>{startBlockReason}</Typography>
+        ) : (
+          <Button className={`${styles.readyBtn} ${styles.secondaryAction}`} onClick={startGame} disabled={isStarting}>
+            {isStarting ? 'Запуск...' : 'Начать'}
+          </Button>
+        )}
       </div>
     </Container>
   );

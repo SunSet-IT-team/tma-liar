@@ -21,6 +21,14 @@ const CHANGE_GAME_STATUS_EVENT = 'changeGameStatus';
 const LOBBY_DELETED_EVENT = 'lobby:deleted';
 const ERROR_EVENT = 'error';
 
+function isValidLoserTask(task: string | null | undefined): boolean {
+  if (typeof task !== 'string') return false;
+  const normalized = task.trim();
+  if (!normalized) return false;
+  if (normalized.toLowerCase() === 'task') return false;
+  return true;
+}
+
 /**
  * Экран ожидания игроков в лобби (игрок)
  */
@@ -29,6 +37,7 @@ export const LobbyPlayer: FC = () => {
   const user = useMemo(() => getCurrentTmaUser(), []);
   const [session, setSession] = useState(() => lobbySessionService.get());
   const [ready, setReady] = useState<boolean>(false);
+  const [loserTask, setLoserTask] = useState<string>('task');
   const [readyError, setReadyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +75,9 @@ export const LobbyPlayer: FC = () => {
         if (typeof me?.isReady === 'boolean') {
           setReady(me.isReady);
         }
+        if (typeof me?.loserTask === 'string') {
+          setLoserTask(me.loserTask);
+        }
       })
       .catch(() => {
         navigate('/', { replace: true });
@@ -84,11 +96,40 @@ export const LobbyPlayer: FC = () => {
       if (currentPlayerReady !== null) {
         setReady(currentPlayerReady);
       }
+
+      const currentPlayer = payload.diff?.players?.find((player) => player.id === user.telegramId);
+      if (typeof currentPlayer?.loserTask === 'string') {
+        setLoserTask(currentPlayer.loserTask);
+      }
     };
 
     const onLobbyDeleted = () => {
-      lobbySessionService.clear();
-      navigate('/');
+      void subscribeLobbyRoom(lobbyCode)
+        .then((state) => {
+          const meInLobby = state.players.some((player) => player.id === user.telegramId);
+          if (!meInLobby) {
+            lobbySessionService.clear();
+            navigate('/', { replace: true });
+            return;
+          }
+
+          setSession((prev) => {
+            if (!prev) return prev;
+            const next = {
+              ...prev,
+              adminId: state.adminId,
+              currentGameId: state.currentGameId ?? prev.currentGameId,
+              status: state.status,
+              players: state.players,
+            };
+            lobbySessionService.set(next);
+            return next;
+          });
+        })
+        .catch(() => {
+          lobbySessionService.clear();
+          navigate('/', { replace: true });
+        });
     };
 
     const onSocketError = (error: { errorCode?: string; message?: string }) => {
@@ -116,6 +157,12 @@ export const LobbyPlayer: FC = () => {
   const toggleReady = () => {
     if (!session) return;
 
+    const normalizedTask = loserTask.trim();
+    if (!ready && !isValidLoserTask(normalizedTask)) {
+      setReadyError('Сначала придумайте задание проигравшему.');
+      return;
+    }
+
     const socket = getLobbySocket();
     const me = session.players.find((player) => player.id === user.telegramId);
     setReadyError(null);
@@ -123,7 +170,7 @@ export const LobbyPlayer: FC = () => {
     socket.emit(PLAYER_READY_EVENT, {
       lobbyCode: session.lobbyCode,
       playerId: me?.id ?? user.telegramId,
-      loserTask: me?.loserTask ?? 'task',
+      loserTask: normalizedTask || me?.loserTask || null,
     });
   };
 
@@ -147,10 +194,10 @@ export const LobbyPlayer: FC = () => {
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput
           placeholder="Task"
-          value={session.players.find((player) => player.id === user.telegramId)?.loserTask ?? 'task'}
+          value={loserTask}
+          onChange={(event) => setLoserTask(event.target.value)}
           className={styles.taskLoserWrapper}
           inputClassName={styles.taskLoserInput}
-          readOnly
         />
       </div>
       <Typography className={styles.statusHint}>

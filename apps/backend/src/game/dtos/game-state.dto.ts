@@ -14,7 +14,13 @@ export const GameStateDtoSchema = z.object({
         message: "INVALID_GAME_ID"
     }),
     stage: z.enum(GameStages).optional(),
-    players: PlayerInfoSchema.partial().optional(),
+    liarId: z.string().nullable().optional(),
+    activeQuestion: z.string().nullable().optional(),
+    activeQuestionText: z.string().nullable().optional(),
+    winnerId: z.string().nullable().optional(),
+    loserId: z.string().nullable().optional(),
+    loserTask: z.string().nullable().optional(),
+    players: z.array(PlayerInfoSchema.partial()).optional(),
 });
 
 export type GameStateDto = z.infer<typeof GameStateDtoSchema>;

@@ -37,6 +37,14 @@ export class GameService implements GameMethods {
     private readonly lobbyRepository: LobbyRepository = new LobbyRepository(),
   ) {}
 
+  private isValidLoserTask(task: string | null | undefined): boolean {
+    if (typeof task !== 'string') return false;
+    const normalized = task.trim();
+    if (!normalized) return false;
+    if (normalized.toLowerCase() === 'task') return false;
+    return true;
+  }
+
   private async withStageTransitionLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
     const previous = stageTransitionLocks.get(gameId) ?? Promise.resolve();
     let release!: () => void;
@@ -55,6 +63,12 @@ export class GameService implements GameMethods {
         stageTransitionLocks.delete(gameId);
       }
     }
+  }
+
+  private getActiveQuestionText(game: Pick<Game, 'activeQuestion' | 'settings'>): string | null {
+    if (!game.activeQuestion) return null;
+    const question = game.settings.deck.questions.find((item) => item.id === game.activeQuestion);
+    return question?.content ?? null;
   }
   /**
    * Функция поиска игры
@@ -83,8 +97,14 @@ export class GameService implements GameMethods {
       if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
         throw new ApiError(409, 'GAME_ALREADY_STARTED');
       }
+      if (lobby.players.length < 3) {
+        throw new ApiError(400, 'NOT_ENOUGH_PLAYERS');
+      }
       if (!lobby.players.every((player) => player.isReady === true)) {
         throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
+      }
+      if (!lobby.players.every((player) => this.isValidLoserTask(player.loserTask))) {
+        throw new ApiError(400, 'LOSER_TASK_REQUIRED');
       }
 
       const game = await this.gameRepository.createForLobby(
@@ -115,8 +135,14 @@ export class GameService implements GameMethods {
         if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
           throw new ApiError(409, 'GAME_ALREADY_STARTED');
         }
+        if (lobby.players.length < 3) {
+          throw new ApiError(400, 'NOT_ENOUGH_PLAYERS');
+        }
         if (!lobby.players.every((player) => player.isReady === true)) {
           throw new ApiError(400, 'NOT_ALL_PLAYERS_READY');
+        }
+        if (!lobby.players.every((player) => this.isValidLoserTask(player.loserTask))) {
+          throw new ApiError(400, 'LOSER_TASK_REQUIRED');
         }
 
         const game = await this.gameRepository.createForLobby(
@@ -225,7 +251,17 @@ export class GameService implements GameMethods {
         'Game stage changed',
       );
       
-      this.io.to(gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff));
+      this.io.to(gameId).emit("changeGameStatus", {
+        ...buildStatePayload(GameMessageTypes.STAGE_CHANGED, diff),
+        gameId,
+        stage: nextStage,
+        liarId: updatedGameobj.liarId ?? null,
+        activeQuestion: updatedGameobj.activeQuestion ?? null,
+        activeQuestionText: this.getActiveQuestionText(updatedGameobj),
+        winnerId: updatedGameobj.winnerId ?? null,
+        loserId: updatedGameobj.loserId ?? null,
+        loserTask: updatedGameobj.loserTask ?? null,
+      });
 
       return nextStage;
     });
@@ -395,10 +431,11 @@ export class GameService implements GameMethods {
     const game = await this.gameRepository.findByIdDocument(gameId);
     if (!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
+    if (game.stage !== GameStages.LIAR_CHOOSES) throw new ApiError(403, 'WRONG_STAGE');
 
     game.doLie = answer;
     game.markModified('doLie');
+    await game.save();
 
     await this.nextStage({ gameId });
 
@@ -525,7 +562,13 @@ export class GameService implements GameMethods {
     const game = await this.gameRepository.findByIdDocument(gameId); 
     if(!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
-    if(game.stage != GameStages.QUESTION_RESULTS && game.stage != GameStages.GAME_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
+    if (
+      game.stage != GameStages.QUESTION_TO_LIAR &&
+      game.stage != GameStages.QUESTION_RESULTS &&
+      game.stage != GameStages.GAME_RESULTS
+    ) {
+      throw new ApiError(403, 'WRONG_STAGE');
+    }
 
     const player = game.players.find(p => p.id == playerId);
     if(!player) throw new ApiError(404, 'PLAYER_NOT_FOUND');
@@ -537,6 +580,19 @@ export class GameService implements GameMethods {
 
     game.markModified('players');
     await game.save();
+
+    // Если решалы зафиксировали ответы до конца таймера на стадии вопроса,
+    // завершаем стадию досрочно.
+    if (game.stage === GameStages.QUESTION_TO_LIAR) {
+      const liarId = game.liarId;
+      const allResolversConfirmed = game.players
+        .filter((p) => p.id !== liarId)
+        .every((p) => p.answer !== null && p.isConfirmed === true);
+
+      if (allResolversConfirmed) {
+        await this.nextStage({ gameId });
+      }
+    }
 
     return player;
   }

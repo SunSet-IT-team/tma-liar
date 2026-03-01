@@ -5,15 +5,88 @@ import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
 import { findLobbyRequest } from '../../../shared/services/lobby/lobby.api';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
 import {
+  type GameSocketState,
   getLobbySocket,
   subscribeGameRoom,
   subscribeLobbyRoom,
 } from '../../../shared/services/socket/lobby.socket';
+import type { LobbySession } from '../../../shared/services/lobby/lobby-session.service';
 
 type RouteTarget = {
   path: string;
   state?: unknown;
 };
+
+type GamePlayerState = NonNullable<LobbySession['gamePlayers']>[number];
+
+function mergeGamePlayers(
+  currentPlayers: LobbySession['gamePlayers'] | undefined,
+  incomingPlayers:
+    | Array<
+        Partial<GamePlayerState> & {
+          id?: string;
+          _removed?: boolean;
+        }
+      >
+    | undefined,
+): LobbySession['gamePlayers'] | undefined {
+  if (!Array.isArray(incomingPlayers) || incomingPlayers.length === 0) {
+    return currentPlayers;
+  }
+
+  const base = [...(currentPlayers ?? [])];
+  for (const incoming of incomingPlayers) {
+    const id = incoming.id;
+    if (!id) continue;
+
+    const index = base.findIndex((item) => item.id === id);
+    if (incoming._removed) {
+      if (index !== -1) {
+        base.splice(index, 1);
+      }
+      continue;
+    }
+
+    const prev = index === -1 ? undefined : base[index];
+    const next: GamePlayerState = {
+      id,
+      nickname: incoming.nickname ?? prev?.nickname ?? `Игрок ${id.slice(-4)}`,
+      profileImg: incoming.profileImg ?? prev?.profileImg ?? '',
+      isReady: incoming.isReady ?? prev?.isReady ?? false,
+      loserTask: incoming.loserTask ?? prev?.loserTask ?? null,
+      answer: incoming.answer ?? prev?.answer ?? null,
+      likes: incoming.likes ?? prev?.likes ?? 0,
+      isConfirmed: incoming.isConfirmed ?? prev?.isConfirmed ?? false,
+      score: incoming.score ?? prev?.score ?? 0,
+    };
+
+    if (index === -1) {
+      base.push(next);
+    } else {
+      base[index] = next;
+    }
+  }
+
+  return base;
+}
+
+function applyGameStateToSession(session: LobbySession, gameState: GameSocketState): LobbySession {
+  return {
+    ...session,
+    currentGameId: gameState.gameId ?? session.currentGameId,
+    currentStage: gameState.stage ?? session.currentStage ?? null,
+    currentLiarId: gameState.liarId ?? session.currentLiarId ?? null,
+    currentQuestionId: gameState.activeQuestion ?? session.currentQuestionId ?? null,
+    currentQuestionText: gameState.activeQuestionText ?? session.currentQuestionText ?? null,
+    currentWinnerId: gameState.winnerId ?? session.currentWinnerId ?? null,
+    currentLoserId: gameState.loserId ?? session.currentLoserId ?? null,
+    currentLoserTask: gameState.loserTask ?? session.currentLoserTask ?? null,
+    gamePlayers:
+      gameState.players && gameState.players.length > 0
+        ? mergeGamePlayers(session.gamePlayers, gameState.players)
+        : session.gamePlayers,
+  };
+}
 
 function resolveWaitingRoute(isAdmin: boolean): RouteTarget {
   return {
@@ -35,17 +108,14 @@ function resolveGameRoute(params: {
       if (isLiar) {
         return { path: `/${PageRoutes.CHOOSING_LIAR}` };
       }
-      return {
-        path: `/${PageRoutes.WAITING_PLAYERS}`,
-        state: { nextRoute: `/${PageRoutes.ANSWER_SOLVED}` },
-      };
+      return { path: `/${PageRoutes.WAITING_PLAYERS}` };
     case 'question_to_liar':
       if (isLiar) {
         return { path: `/${PageRoutes.ANSWER_LIAR}` };
       }
       return { path: `/${PageRoutes.ANSWER_SOLVED}` };
     case 'question_results':
-      if (isAdmin) {
+      if (isLiar) {
         return { path: `/${PageRoutes.ANSWERS_PLAYERS}` };
       }
       return { path: `/${PageRoutes.RATE_PLAYERS}` };
@@ -104,11 +174,7 @@ export function SessionRehydration() {
         }
 
         const gameState = await subscribeGameRoom(baseSession.currentGameId);
-        const nextSession = {
-          ...baseSession,
-          currentStage: gameState.stage ?? baseSession.currentStage ?? null,
-          currentLiarId: gameState.liarId ?? baseSession.currentLiarId ?? null,
-        };
+        const nextSession = applyGameStateToSession(baseSession, gameState);
         lobbySessionService.set(nextSession);
 
         const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === user.telegramId);
@@ -140,8 +206,22 @@ export function SessionRehydration() {
     const onGameStatusChanged = (payload: {
       gameId?: string;
       stage?: string;
-      diff?: { stage?: string };
+      liarId?: string | null;
+      diff?: {
+        stage?: string;
+        activeQuestion?: string | null;
+        winnerId?: string | null;
+        loserId?: string | null;
+        loserTask?: string | null;
+        players?: Array<Partial<GamePlayerState> & { id?: string; _removed?: boolean }>;
+      };
       status?: string;
+      activeQuestion?: string | null;
+      activeQuestionText?: string | null;
+      winnerId?: string | null;
+      loserId?: string | null;
+      loserTask?: string | null;
+      players?: Array<GamePlayerState>;
     }) => {
       const syncBySocketEvent = async () => {
         const session = lobbySessionService.get();
@@ -150,13 +230,28 @@ export function SessionRehydration() {
         const user = getCurrentTmaUser();
         const gameId = payload.gameId ?? session.currentGameId ?? null;
         let stage = payload.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
-        let liarId = session.currentLiarId ?? null;
+        let liarId = payload.liarId ?? session.currentLiarId ?? null;
+        let activeQuestion = payload.activeQuestion ?? payload.diff?.activeQuestion ?? session.currentQuestionId ?? null;
+        let activeQuestionText = payload.activeQuestionText ?? session.currentQuestionText ?? null;
+        let winnerId = payload.winnerId ?? payload.diff?.winnerId ?? session.currentWinnerId ?? null;
+        let loserId = payload.loserId ?? payload.diff?.loserId ?? session.currentLoserId ?? null;
+        let loserTask = payload.loserTask ?? payload.diff?.loserTask ?? session.currentLoserTask ?? null;
+        let gamePlayers =
+          mergeGamePlayers(session.gamePlayers, payload.players) ??
+          mergeGamePlayers(session.gamePlayers, payload.diff?.players) ??
+          session.gamePlayers;
 
         if (gameId) {
           try {
             const gameState = await subscribeGameRoom(gameId);
             stage = gameState.stage ?? stage;
             liarId = gameState.liarId ?? liarId;
+            activeQuestion = gameState.activeQuestion ?? activeQuestion;
+            activeQuestionText = gameState.activeQuestionText ?? activeQuestionText;
+            winnerId = gameState.winnerId ?? winnerId;
+            loserId = gameState.loserId ?? loserId;
+            loserTask = gameState.loserTask ?? loserTask;
+            gamePlayers = mergeGamePlayers(gamePlayers, gameState.players) ?? gamePlayers;
           } catch {
             // ignore: keep last known state
           }
@@ -167,6 +262,12 @@ export function SessionRehydration() {
           currentGameId: gameId,
           currentStage: stage ?? null,
           currentLiarId: liarId,
+          currentQuestionId: activeQuestion ?? null,
+          currentQuestionText: activeQuestionText ?? null,
+          currentWinnerId: winnerId ?? null,
+          currentLoserId: loserId ?? null,
+          currentLoserTask: loserTask ?? null,
+          gamePlayers,
           status: gameId ? 'started' : session.status,
         };
         lobbySessionService.set(nextSession);

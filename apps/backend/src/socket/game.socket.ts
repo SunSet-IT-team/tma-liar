@@ -57,6 +57,40 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
  */
 export function registerGameHandler(io: Server, socket: Socket) {
   const gameService = new GameService(io);
+  const getActiveQuestionText = (game: {
+    activeQuestion?: string | null;
+    settings?: { deck?: { questions?: Array<{ id: string; content: string }> } };
+  }) => {
+    const activeQuestionId = game.activeQuestion ?? null;
+    if (!activeQuestionId) return null;
+    const question = game.settings?.deck?.questions?.find((item) => item.id === activeQuestionId);
+    return question?.content ?? null;
+  };
+
+  const buildGameStatusPayload = (
+    status: GameMessageTypes,
+    diff: Record<string, unknown>,
+    game: {
+      id: string;
+      stage?: string;
+      liarId?: string | null;
+      activeQuestion?: string | null;
+      winnerId?: string | null;
+      loserId?: string | null;
+      loserTask?: string | null;
+      settings?: { deck?: { questions?: Array<{ id: string; content: string }> } };
+    },
+  ) => ({
+    ...buildStatePayload(status, diff),
+    gameId: game.id,
+    stage: game.stage,
+    liarId: game.liarId ?? null,
+    activeQuestion: game.activeQuestion ?? null,
+    activeQuestionText: getActiveQuestionText(game),
+    winnerId: game.winnerId ?? null,
+    loserId: game.loserId ?? null,
+    loserTask: game.loserTask ?? null,
+  });
 
   socket.on(GameMessageTypes.GAME_SUBSCRIBE, async (data: unknown) => {
     try {
@@ -73,6 +107,12 @@ export function registerGameHandler(io: Server, socket: Socket) {
         gameId: game.id,
         stage: game.stage,
         liarId: game.liarId,
+        players: game.players,
+        activeQuestion: game.activeQuestion,
+        activeQuestionText: getActiveQuestionText(game),
+        winnerId: game.winnerId ?? null,
+        loserId: game.loserId ?? null,
+        loserTask: game.loserTask ?? null,
       });
 
       const roomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
@@ -101,10 +141,15 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       const game = await gameService.findGame(dto.gameId);
       
-      // Оповещаем всех игроков в комнате игры
-      io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.LIAR_CHOSE, findDiff(gameSnap, game, game.stage)));
-
-      socket.emit("changeGameStatus", buildStatePayload(GameMessageTypes.LIAR_CHOSE, findDiff(gameSnap, game, game.stage)));
+      socket.join(dto.gameId);
+      io.to(dto.gameId).emit(
+        "changeGameStatus",
+        buildGameStatusPayload(
+          GameMessageTypes.LIAR_CHOSE,
+          findDiff(gameSnap, game, game.stage),
+          game,
+        ),
+      );
       
       logger.info({ gameId: dto.gameId, answer: dto.answer }, 'Liar chose');
     } catch (error) {
@@ -131,12 +176,15 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       const game = await gameService.findGame(dto.gameId);
       
-      // Присоединяемся к комнате игры, если еще не присоединены      
-      // Оповещаем игрока об успешном голосовании
-      socket.emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_VOTED, findDiff(gameSnap, game, game.stage))); 
-      
-      // Оповещаем всех игроков в комнате игры об изменении
-      io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_VOTED, findDiff(gameSnap, game, game.stage)));
+      socket.join(dto.gameId);
+      io.to(dto.gameId).emit(
+        "changeGameStatus",
+        buildGameStatusPayload(
+          GameMessageTypes.PLAYER_VOTED,
+          findDiff(gameSnap, game, game.stage),
+          game,
+        ),
+      );
       
       logger.info({ playerId: dto.playerId, gameId: dto.gameId, answer: dto.answer }, 'Player voted');
     } catch (error) {
@@ -163,11 +211,15 @@ export function registerGameHandler(io: Server, socket: Socket) {
       
       const game = await gameService.findGame(dto.gameId);
       
-      // Оповещаем игрока об успешном подтверждении
-      socket.emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_SECURED, findDiff(gameSnap, game, game.stage)));
-      
-      // Оповещаем всех игроков в комнате игры об изменении
-      io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_SECURED, findDiff(gameSnap, game, game.stage)));
+      socket.join(dto.gameId);
+      io.to(dto.gameId).emit(
+        "changeGameStatus",
+        buildGameStatusPayload(
+          GameMessageTypes.PLAYER_SECURED,
+          findDiff(gameSnap, game, game.stage),
+          game,
+        ),
+      );
       
       logger.info({ playerId: dto.playerId, gameId: dto.gameId }, 'Player secured answer');
     } catch (error) {
@@ -192,11 +244,15 @@ export function registerGameHandler(io: Server, socket: Socket) {
       await gameService.likeAnswer(dto);
       const game = await gameService.findGame(dto.gameId);
 
-      // Оповещаем игрока об успешном лайке
-      socket.emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_LIKED, findDiff(gameSnap, game, game.stage)));
-      
-      // Оповещаем всех игроков в комнате игры об изменении
-      io.to(dto.gameId).emit("changeGameStatus", buildStatePayload(GameMessageTypes.PLAYER_LIKED, findDiff(gameSnap, game, game.stage)));
+      socket.join(dto.gameId);
+      io.to(dto.gameId).emit(
+        "changeGameStatus",
+        buildGameStatusPayload(
+          GameMessageTypes.PLAYER_LIKED,
+          findDiff(gameSnap, game, game.stage),
+          game,
+        ),
+      );
       
       logger.info(
         { senderId: dto.senderId, receiverId: dto.receiverId, gameId: dto.gameId },

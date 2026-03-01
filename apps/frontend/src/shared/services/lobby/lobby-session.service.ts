@@ -9,6 +9,22 @@ export type LobbySession = {
   status: string;
   currentStage?: string | null;
   currentLiarId?: string | null;
+  currentQuestionId?: string | null;
+  currentQuestionText?: string | null;
+  currentWinnerId?: string | null;
+  currentLoserId?: string | null;
+  currentLoserTask?: string | null;
+  gamePlayers?: Array<{
+    id: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    loserTask?: string | null;
+    answer?: number | null;
+    likes?: number;
+    isConfirmed?: boolean | null;
+    score?: number;
+  }>;
   players: LobbyStateView['players'];
   settings: LobbySettings;
 };

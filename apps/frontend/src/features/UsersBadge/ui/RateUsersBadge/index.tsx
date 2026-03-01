@@ -47,10 +47,30 @@ const testUsers = [
 /**
  * Получаем оценки игроков
  */
-export const RateUsersBadge: FC = () => {
+export const RateUsersBadge: FC<{
+  players?: Array<{
+    id: string;
+    nickname: string;
+    profileImg?: string;
+    isRated?: boolean;
+  }>;
+  selectedIds?: string[];
+  onToggle?: (playerId: string) => void;
+}> = ({ players, selectedIds = [], onToggle }) => {
+  const source =
+    players && players.length > 0
+      ? players.map((player) => ({
+          id: Number(player.id) || 0,
+          rawId: player.id,
+          photo: player.profileImg ?? '',
+          name: player.nickname,
+          isRated: selectedIds.includes(player.id),
+        }))
+      : testUsers.map((player) => ({ ...player, rawId: String(player.id) }));
+
   return (
     <div className={clsx(styles.content, styles.answersContent, styles.limitedBlock, styles.ratePlayers)}>
-      {testUsers.map((user: Player) => (
+      {source.map((user: Player & { rawId: string }) => (
         <div className={styles.playerBlock} key={user.id}>
           <UserBadge
             id={user.id}
@@ -59,7 +79,12 @@ export const RateUsersBadge: FC = () => {
             className={styles.userContent}
             isRated={user.isRated}
           />
-          <Checkbox onChange={() => {}} />
+          <Checkbox
+            checked={Boolean(user.isRated)}
+            onChange={() => {
+              onToggle?.(user.rawId);
+            }}
+          />
         </div>
       ))}
     </div>

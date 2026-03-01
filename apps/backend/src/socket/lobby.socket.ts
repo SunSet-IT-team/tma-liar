@@ -448,7 +448,13 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const gameStateDto = {
         gameId: createdGame.id,
         stage: createdGame.stage,
+        liarId: createdGame.liarId ?? null,
         players: createdGame.players,
+        activeQuestion: createdGame.activeQuestion ?? null,
+        activeQuestionText: null,
+        winnerId: createdGame.winnerId ?? null,
+        loserId: createdGame.loserId ?? null,
+        loserTask: createdGame.loserTask ?? null,
       };
 
       io.to(gameId).emit("changeGameStatus", gameStateDto);

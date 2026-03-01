@@ -181,6 +181,22 @@ export type GameSocketState = {
   gameId: string;
   stage?: string;
   liarId?: string | null;
+  activeQuestion?: string | null;
+  activeQuestionText?: string | null;
+  winnerId?: string | null;
+  loserId?: string | null;
+  loserTask?: string | null;
+  players?: Array<{
+    id: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    loserTask?: string | null;
+    answer?: number | null;
+    likes?: number;
+    isConfirmed?: boolean | null;
+    score?: number;
+  }>;
 };
 
 export function subscribeGameRoom(gameId: string) {
