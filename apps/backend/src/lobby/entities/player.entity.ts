@@ -8,6 +8,7 @@ import z from 'zod';
 export interface Player extends User {
   score: number;
   isReady: boolean;
+  inGame?: boolean;
   loserTask: string | null; 
   wasLiar: number;
   answer: number | null;
@@ -19,7 +20,8 @@ export interface Player extends User {
 export const PlayerSchema = UserSchema.extend({
   score: z.number().min(0).optional().default(0),
   isReady: z.boolean(),
-  loserTask: z.string(),
+  inGame: z.boolean().optional(),
+  loserTask: z.string().nullable().optional(),
   wasLiar: z.number().min(0).optional().default(0),
   answer: z.number().nullable().optional().default(null),
   likes: z.number().min(0).optional().default(0),

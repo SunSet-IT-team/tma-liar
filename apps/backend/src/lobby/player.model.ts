@@ -19,6 +19,11 @@ export const PlayerModel = new Schema<Player>(
       default: null 
     },
 
+    inGame: {
+      type: Boolean,
+      default: false,
+    },
+
     loserTask: { 
       type: String, 
       default: null 

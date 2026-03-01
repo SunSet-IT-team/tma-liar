@@ -6,6 +6,7 @@ type LobbyDiffPlayer = {
   profileImg?: string;
   _removed?: boolean;
   isReady?: boolean;
+  inGame?: boolean;
   loserTask?: string | null;
 };
 
@@ -52,6 +53,7 @@ export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusP
           `Игрок ${playerId.slice(-4)}`,
         profileImg: player.profileImg ?? (index !== -1 ? nextPlayers[index]?.profileImg : undefined),
         isReady: player.isReady ?? (index !== -1 ? nextPlayers[index]?.isReady : false),
+        inGame: player.inGame ?? (index !== -1 ? nextPlayers[index]?.inGame : false),
         loserTask: player.loserTask ?? (index !== -1 ? nextPlayers[index]?.loserTask : null),
       };
 

@@ -13,6 +13,7 @@ export const PlayerInfoSchema = z.object({
     nickname: z.string().min(1),
     profileImg: z.string().optional().default(''),
     isReady: z.boolean().optional().default(false),
+    inGame: z.boolean().optional(),
     loserTask: z.string().nullable().optional().default(null),
 })
 

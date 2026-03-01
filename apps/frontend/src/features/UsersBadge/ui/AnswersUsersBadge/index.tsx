@@ -18,60 +18,15 @@ type Props = {
 /**
  * Получаем ответы игроков
  */
-
-const testUsers = [
-  {
-    id: 1,
-    photo: '',
-    name: 'Бешеный Татар',
-    isBelieve: true,
-  },
-  {
-    id: 2,
-    photo: '',
-    name: 'Лысый Татар',
-    isBelieve: false,
-  },
-  {
-    id: 3,
-    photo: '',
-    name: 'Крутой Татар',
-    isBelieve: false,
-  },
-  {
-    id: 4,
-    photo: '',
-    name: 'Бешеный Татар',
-    isBelieve: true,
-  },
-  {
-    id: 5,
-    photo: '',
-    name: 'Бешеный Татар',
-    isBelieve: false,
-  },
-  {
-    id: 6,
-    photo: '',
-    name: 'Лысый Татар',
-    isBelieve: true,
-  },
-];
-
-/**
- * Получаем ответы игроков
- */
 export const AnswersUserBadge: FC<Props> = ({ className, players }) => {
-  const source =
-    players && players.length > 0
-      ? players.map((player) => ({
-          id: Number(player.id) || 0,
-          photo: player.profileImg ?? '',
-          name: player.nickname,
-          isBelieve: player.answer === 1,
-          answer: player.answer,
-        }))
-      : testUsers;
+  const source = (players ?? []).map((player, index) => ({
+    id: Number.isFinite(Number(player.id)) && Number(player.id) > 0 ? Number(player.id) : index + 1,
+    keyId: player.id,
+    photo: player.profileImg ?? '',
+    name: player.nickname,
+    isBelieve: player.answer === 1,
+    answer: player.answer,
+  }));
 
   const resolveAnswerText = (answer?: number | null, isBelieve?: boolean) => {
     if (answer === 1) return 'Верит';
@@ -82,14 +37,15 @@ export const AnswersUserBadge: FC<Props> = ({ className, players }) => {
 
   return (
     <div className={clsx(styles.content, styles.answersContent, className)}>
-      {source.map((user: Player & { answer?: number | null }) => (
-        <div key={user.id} className={styles.playerBlock}>
+      {source.map((user: Player & { answer?: number | null; keyId?: string }) => (
+        <div key={user.keyId ?? String(user.id)} className={styles.playerBlock}>
           <UserBadge id={user.id} photo={user.photo} name={user.name} isBelieve={user.isBelieve} />
           <Typography className={user.answer === 1 ? styles.believeText : ''}>
             {resolveAnswerText(user.answer, user.isBelieve)}
           </Typography>
         </div>
       ))}
+      {source.length === 0 ? <Typography>Ожидаем ответы игроков...</Typography> : null}
     </div>
   );
 };

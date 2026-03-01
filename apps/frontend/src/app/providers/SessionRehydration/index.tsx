@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../routes/pages';
+import { store } from '../../store';
+import { resetTimer, startTimer } from '../../../entities/game/model/timerSlice';
 import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
 import { findLobbyRequest } from '../../../shared/services/lobby/lobby.api';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
@@ -53,6 +55,7 @@ function mergeGamePlayers(
       nickname: incoming.nickname ?? prev?.nickname ?? `Игрок ${id.slice(-4)}`,
       profileImg: incoming.profileImg ?? prev?.profileImg ?? '',
       isReady: incoming.isReady ?? prev?.isReady ?? false,
+      inGame: incoming.inGame ?? prev?.inGame ?? false,
       loserTask: incoming.loserTask ?? prev?.loserTask ?? null,
       answer: incoming.answer ?? prev?.answer ?? null,
       likes: incoming.likes ?? prev?.likes ?? 0,
@@ -75,6 +78,8 @@ function applyGameStateToSession(session: LobbySession, gameState: GameSocketSta
     ...session,
     currentGameId: gameState.gameId ?? session.currentGameId,
     currentStage: gameState.stage ?? session.currentStage ?? null,
+    currentStageStartedAt: gameState.stageStartedAt ?? session.currentStageStartedAt ?? null,
+    currentStageDurationMs: gameState.stageDurationMs ?? session.currentStageDurationMs ?? null,
     currentLiarId: gameState.liarId ?? session.currentLiarId ?? null,
     currentQuestionId: gameState.activeQuestion ?? session.currentQuestionId ?? null,
     currentQuestionText: gameState.activeQuestionText ?? session.currentQuestionText ?? null,
@@ -88,6 +93,29 @@ function applyGameStateToSession(session: LobbySession, gameState: GameSocketSta
   };
 }
 
+function resolveStageDuration(stage: string | null | undefined, session: LobbySession): number | null {
+  if (!stage) return null;
+  if (stage === 'liar_chooses') return 10;
+  if (stage === 'question_to_liar') return session.settings?.answerTime ?? 20;
+  if (stage === 'question_results') return 10;
+  if (stage === 'game_results') return 10;
+  return null;
+}
+
+function resolveRemainingSeconds(params: {
+  stageDurationMs?: number | null;
+  stageStartedAt?: number | null;
+  fallbackSeconds?: number | null;
+}): number | null {
+  const { stageDurationMs, stageStartedAt, fallbackSeconds } = params;
+  if (typeof stageDurationMs === 'number' && typeof stageStartedAt === 'number') {
+    const remainingMs = stageDurationMs - (Date.now() - stageStartedAt);
+    const remainingSeconds = Math.ceil(Math.max(0, remainingMs) / 1000);
+    return remainingSeconds;
+  }
+  return fallbackSeconds ?? null;
+}
+
 function resolveWaitingRoute(isAdmin: boolean): RouteTarget {
   return {
     path: `/${isAdmin ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER}`,
@@ -98,8 +126,13 @@ function resolveGameRoute(params: {
   stage: string | null;
   isAdmin: boolean;
   isLiar: boolean;
+  isParticipant: boolean;
 }): RouteTarget | null {
-  const { stage, isAdmin, isLiar } = params;
+  const { stage, isAdmin, isLiar, isParticipant } = params;
+
+  if (!isParticipant) {
+    return resolveWaitingRoute(isAdmin);
+  }
 
   switch (stage) {
     case 'lobby':
@@ -132,6 +165,7 @@ export function SessionRehydration() {
   const navigate = useNavigate();
   const location = useLocation();
   const hydratedRef = useRef(false);
+  const stageTimerRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -165,6 +199,8 @@ export function SessionRehydration() {
         const isAdmin = baseSession.adminId === user.telegramId;
 
         if (baseSession.status !== 'started' || !baseSession.currentGameId) {
+          stageTimerRef.current = null;
+          store.dispatch(resetTimer());
           lobbySessionService.set(baseSession);
           const target = resolveWaitingRoute(isAdmin);
           if (location.pathname !== target.path) {
@@ -176,12 +212,25 @@ export function SessionRehydration() {
         const gameState = await subscribeGameRoom(baseSession.currentGameId);
         const nextSession = applyGameStateToSession(baseSession, gameState);
         lobbySessionService.set(nextSession);
+        const initialStage = nextSession.currentStage ?? null;
+        const initialDurationFallback = resolveStageDuration(initialStage, nextSession);
+        const initialRemainingSeconds = resolveRemainingSeconds({
+          stageDurationMs: nextSession.currentStageDurationMs,
+          stageStartedAt: nextSession.currentStageStartedAt,
+          fallbackSeconds: initialDurationFallback,
+        });
+        const initialStageKey = `${initialStage ?? 'none'}:${nextSession.currentStageStartedAt ?? 'none'}`;
+        if (initialRemainingSeconds !== null && stageTimerRef.current !== initialStageKey) {
+          store.dispatch(startTimer(initialRemainingSeconds));
+          stageTimerRef.current = initialStageKey;
+        }
 
         const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === user.telegramId);
         const target = resolveGameRoute({
           stage: nextSession.currentStage ?? null,
           isAdmin,
           isLiar,
+          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === user.telegramId)),
         });
         if (!target) return;
 
@@ -206,6 +255,8 @@ export function SessionRehydration() {
     const onGameStatusChanged = (payload: {
       gameId?: string;
       stage?: string;
+      stageStartedAt?: number;
+      stageDurationMs?: number | null;
       liarId?: string | null;
       diff?: {
         stage?: string;
@@ -227,9 +278,26 @@ export function SessionRehydration() {
         const session = lobbySessionService.get();
         if (!session) return;
 
+        const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
+        const incomingGameId = payload.gameId ?? null;
+        const isLateResultFromPreviousGame =
+          session.status === 'waiting' &&
+          !session.currentGameId &&
+          (incomingStage === 'game_results' || incomingStage === 'end');
+
+        if (isLateResultFromPreviousGame) {
+          return;
+        }
+
+        if (incomingGameId && session.currentGameId && incomingGameId !== session.currentGameId) {
+          return;
+        }
+
         const user = getCurrentTmaUser();
         const gameId = payload.gameId ?? session.currentGameId ?? null;
         let stage = payload.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
+        let stageStartedAt = payload.stageStartedAt ?? session.currentStageStartedAt ?? null;
+        let stageDurationMs = payload.stageDurationMs ?? session.currentStageDurationMs ?? null;
         let liarId = payload.liarId ?? session.currentLiarId ?? null;
         let activeQuestion = payload.activeQuestion ?? payload.diff?.activeQuestion ?? session.currentQuestionId ?? null;
         let activeQuestionText = payload.activeQuestionText ?? session.currentQuestionText ?? null;
@@ -241,10 +309,12 @@ export function SessionRehydration() {
           mergeGamePlayers(session.gamePlayers, payload.diff?.players) ??
           session.gamePlayers;
 
-        if (gameId) {
+        if (!stage && gameId) {
           try {
             const gameState = await subscribeGameRoom(gameId);
             stage = gameState.stage ?? stage;
+            stageStartedAt = gameState.stageStartedAt ?? stageStartedAt;
+            stageDurationMs = gameState.stageDurationMs ?? stageDurationMs;
             liarId = gameState.liarId ?? liarId;
             activeQuestion = gameState.activeQuestion ?? activeQuestion;
             activeQuestionText = gameState.activeQuestionText ?? activeQuestionText;
@@ -261,6 +331,8 @@ export function SessionRehydration() {
           ...session,
           currentGameId: gameId,
           currentStage: stage ?? null,
+          currentStageStartedAt: stageStartedAt ?? null,
+          currentStageDurationMs: stageDurationMs ?? null,
           currentLiarId: liarId,
           currentQuestionId: activeQuestion ?? null,
           currentQuestionText: activeQuestionText ?? null,
@@ -271,16 +343,36 @@ export function SessionRehydration() {
           status: gameId ? 'started' : session.status,
         };
         lobbySessionService.set(nextSession);
+        const stageDurationFallback = resolveStageDuration(nextSession.currentStage, nextSession);
+        const remainingSeconds = resolveRemainingSeconds({
+          stageDurationMs: nextSession.currentStageDurationMs,
+          stageStartedAt: nextSession.currentStageStartedAt,
+          fallbackSeconds: stageDurationFallback,
+        });
+        const stageKey = `${nextSession.currentStage ?? 'none'}:${nextSession.currentStageStartedAt ?? 'none'}`;
+        if (remainingSeconds !== null && stageTimerRef.current !== stageKey) {
+          store.dispatch(startTimer(remainingSeconds));
+          stageTimerRef.current = stageKey;
+        }
+        if (remainingSeconds === null) {
+          stageTimerRef.current = null;
+          store.dispatch(resetTimer());
+        }
 
         if (!stage) return;
 
         const isAdmin = nextSession.adminId === user.telegramId;
         const isLiar = Boolean(liarId && liarId === user.telegramId);
-        const target = resolveGameRoute({ stage, isAdmin, isLiar });
-        if (!target) return;
+        const resolvedTarget = resolveGameRoute({
+          stage,
+          isAdmin,
+          isLiar,
+          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === user.telegramId)),
+        });
+        if (!resolvedTarget) return;
 
-        if (location.pathname !== target.path) {
-          navigate(target.path, { replace: true, state: target.state });
+        if (location.pathname !== resolvedTarget.path) {
+          navigate(resolvedTarget.path, { replace: true, state: resolvedTarget.state });
         }
       };
 

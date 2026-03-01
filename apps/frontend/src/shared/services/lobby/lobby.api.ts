@@ -20,3 +20,12 @@ export async function findLobbyViewRequest(lobbyCode: string) {
   const response = await apiClient.get<ApiEnvelope<LobbyStateView>>(`/api/lobbies/${lobbyCode}`);
   return response.data.payload;
 }
+
+export async function updateLobbyRequest(payload: {
+  lobbyCode: string;
+  currentGameId?: string | null;
+  status?: 'waiting' | 'started' | 'finished';
+}) {
+  const response = await apiClient.put<ApiEnvelope<LobbyState>>('/api/lobbies', payload);
+  return response.data.payload;
+}

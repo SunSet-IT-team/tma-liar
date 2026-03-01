@@ -5,6 +5,7 @@ export type LobbyPlayerPayload = {
   profileImg?: string;
   score: number;
   isReady: boolean;
+  inGame?: boolean;
   loserTask: string;
   wasLiar: number;
   answer: number | null;
@@ -17,6 +18,7 @@ export type LobbyPlayerView = {
   nickname: string;
   profileImg?: string;
   isReady?: boolean;
+  inGame?: boolean;
   loserTask?: string | null;
 };
 

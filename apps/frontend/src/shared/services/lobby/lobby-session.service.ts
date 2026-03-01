@@ -8,6 +8,8 @@ export type LobbySession = {
   currentGameId: string | null;
   status: string;
   currentStage?: string | null;
+  currentStageStartedAt?: number | null;
+  currentStageDurationMs?: number | null;
   currentLiarId?: string | null;
   currentQuestionId?: string | null;
   currentQuestionText?: string | null;
@@ -19,6 +21,7 @@ export type LobbySession = {
     nickname: string;
     profileImg?: string;
     isReady?: boolean;
+    inGame?: boolean;
     loserTask?: string | null;
     answer?: number | null;
     likes?: number;

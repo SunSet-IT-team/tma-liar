@@ -40,6 +40,7 @@ const envSchema = z.object({
   SCORE_NOT_STATED: z.coerce.number().int().nonnegative().default(50),
   SCORE_TRICKED: z.coerce.number().int().nonnegative().default(100),
   GAME_STAGE_TIMER_MS: z.coerce.number().int().positive().default(1000),
+  LIAR_CHOOSES_TIMER_MS: z.coerce.number().int().positive().default(10000),
   HIDDEN_DURING_GAME_FIELDS: z.string().default('doLie,questionHistory,liarId,timerId'),
   GAME_RESULTS_FIELDS: z.string().default('doLie,loserTask,winnerId,loserId'),
   LOBBY_CODE_ALPHABET: z.string().min(1).default('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'),

@@ -65,6 +65,7 @@ export function toLobbyPlayerPayload(user: CurrentTmaUser, loserTask = 'task'): 
     profileImg: user.profileImg,
     score: 0,
     isReady: false,
+    inGame: false,
     loserTask,
     wasLiar: 0,
     answer: null,

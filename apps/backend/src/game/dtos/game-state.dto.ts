@@ -14,6 +14,8 @@ export const GameStateDtoSchema = z.object({
         message: "INVALID_GAME_ID"
     }),
     stage: z.enum(GameStages).optional(),
+    stageStartedAt: z.number().int().nonnegative().optional(),
+    stageDurationMs: z.number().int().nonnegative().nullable().optional(),
     liarId: z.string().nullable().optional(),
     activeQuestion: z.string().nullable().optional(),
     activeQuestionText: z.string().nullable().optional(),

@@ -77,8 +77,7 @@ export class LobbyRepository {
     const updated = await LobbyModel.findOneAndUpdate(
       {
         lobbyCode: dto.lobbyCode,
-        status: LobbyStatus.WAITING,
-        currentGameId: null,
+        status: { $in: [LobbyStatus.WAITING, LobbyStatus.STARTED] },
         'players.telegramId': { $ne: dto.player.telegramId },
       },
       { $push: { players: dto.player } },

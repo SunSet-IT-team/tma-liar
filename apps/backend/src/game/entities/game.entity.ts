@@ -12,10 +12,12 @@ export interface Game {
     players: Player[] | [];
     settings: Settings;
     liarId: string | null;
+    stageStartedAt: number;
     questionHistory: string[];
     activeQuestion: string | null;
     timerId: NodeJS.Timeout | null;
     doLie: boolean | null;
+    roundLikePairs: string[];
     loserTask: string | null;
     winnerId: string | null;
     loserId: string | null;

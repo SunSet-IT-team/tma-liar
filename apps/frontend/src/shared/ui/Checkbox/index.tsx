@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useId } from 'react';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
 import styles from './style/checkboxStyle.module.scss';
 
@@ -12,24 +12,23 @@ type CheckboxProps = {
  * Будет использоваться в оценке других игроков
  */
 export const Checkbox: FC<CheckboxProps> = ({ onChange, checked }) => {
-  const [localChecked, setLocalChecked] = useState<boolean>(checked ?? false);
+  const inputId = useId();
   const playSound = usePlaySound();
 
-  useEffect(() => {
-    if (typeof checked === 'boolean') {
-      setLocalChecked(checked);
-    }
-  }, [checked]);
-
-  const onCheckbox = () => {
-    const next = !localChecked;
-    setLocalChecked(next);
+  const onCheckboxChange = (value: boolean) => {
     playSound();
-    onChange(next);
+    onChange(value);
   };
+
   return (
-    <label className={styles.content} onClick={onCheckbox}>
-      <input type="checkbox" className={styles.check} checked={localChecked} readOnly />
+    <label className={styles.content} htmlFor={inputId}>
+      <input
+        id={inputId}
+        type="checkbox"
+        className={styles.check}
+        checked={Boolean(checked)}
+        onChange={(event) => onCheckboxChange(event.target.checked)}
+      />
       <span className={styles.checkmark}></span>
     </label>
   );

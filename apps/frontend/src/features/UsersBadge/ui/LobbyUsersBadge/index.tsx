@@ -12,6 +12,7 @@ type UsersProps = {
     nickname: string;
     profileImg?: string;
     isReady?: boolean;
+    inGame?: boolean;
     loserTask?: string | null;
   }>;
   currentUserId?: string;
@@ -23,6 +24,7 @@ const fallbackUsers = [
     profileImg: '',
     nickname: 'Игрок 1',
     isReady: false,
+    inGame: false,
     loserTask: null,
   },
   {
@@ -30,6 +32,7 @@ const fallbackUsers = [
     profileImg: '',
     nickname: 'Игрок 2',
     isReady: false,
+    inGame: false,
     loserTask: null,
   },
 ];
@@ -58,8 +61,8 @@ export const LobbyUsersBadge: FC<UsersProps> = ({
               name={user.nickname}
               currentPlayer={currentUserId === user.id}
             />
-            <Typography className={clsx(styles.statusText, user.isReady && styles.readyText)}>
-              {user.isReady ? 'Готов' : 'Не готов'}
+            <Typography className={clsx(styles.statusText, (user.isReady || user.inGame) && styles.readyText)}>
+              {user.inGame ? 'В игре' : user.isReady ? 'Готов' : 'Не готов'}
             </Typography>
           </div>
         );

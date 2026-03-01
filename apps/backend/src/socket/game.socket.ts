@@ -22,15 +22,10 @@ import {
   GameJoinDtoSchema,
   type GameJoinDto,
 } from "../game/dtos/game-join.dto";
-import {
-  GameStageChangedDtoSchema,
-  type GameStageChangedDto,
-} from "../game/dtos/game-stage-changed.dto";
-import { GameInitDtoSchema, type GameInitDto, PlayerInfoSchema } from "../game/dtos/game-init.dto";
-import { GameStateDtoSchema, type GameStateDto } from "../game/dtos/game-state.dto";
 import { ApiError, buildStatePayload } from "../common/response";
-import { GameStartDtoSchema, type GameStartDto } from "../game/dtos/game-start.dto";
 import { logger } from "../observability/logger";
+import { env } from "../config/env";
+import { GameStages } from "../lobby/entities/lobby.entity";
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -57,6 +52,50 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
  */
 export function registerGameHandler(io: Server, socket: Socket) {
   const gameService = new GameService(io);
+  const getStageDurationMs = (stage?: string): number | null => {
+    if (!stage) return null;
+    if (stage === GameStages.LIAR_CHOOSES) return env.LIAR_CHOOSES_TIMER_MS;
+    if (
+      stage === GameStages.QUESTION_TO_LIAR ||
+      stage === GameStages.QUESTION_RESULTS ||
+      stage === GameStages.GAME_RESULTS
+    ) {
+      return env.GAME_STAGE_TIMER_MS;
+    }
+    return null;
+  };
+  const serializePlayersForClient = (players: Array<{
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    inGame?: boolean;
+    loserTask?: string | null;
+    answer?: number | null;
+    likes?: number;
+    isConfirmed?: boolean | null;
+    score?: number;
+  }>) =>
+    players.map((player) => ({
+      id: player.telegramId,
+      nickname: player.nickname,
+      profileImg: player.profileImg ?? '',
+      isReady: player.isReady,
+      inGame: player.inGame ?? true,
+      loserTask: player.loserTask ?? null,
+      answer: player.answer ?? null,
+      likes: player.likes ?? 0,
+      isConfirmed: player.isConfirmed ?? false,
+      score: player.score ?? 0,
+    }));
+
+  const getAuthorizedUserId = () => {
+    const socketUserId = socket.data.userId;
+    if (typeof socketUserId !== "string" || socketUserId.trim().length === 0) {
+      throw new ApiError(401, "UNAUTHORIZED");
+    }
+    return socketUserId.trim();
+  };
   const getActiveQuestionText = (game: {
     activeQuestion?: string | null;
     settings?: { deck?: { questions?: Array<{ id: string; content: string }> } };
@@ -75,21 +114,37 @@ export function registerGameHandler(io: Server, socket: Socket) {
       stage?: string;
       liarId?: string | null;
       activeQuestion?: string | null;
+      stageStartedAt?: number;
       winnerId?: string | null;
       loserId?: string | null;
       loserTask?: string | null;
       settings?: { deck?: { questions?: Array<{ id: string; content: string }> } };
+      players?: Array<{
+        telegramId: string;
+        nickname: string;
+        profileImg?: string;
+        isReady?: boolean;
+        inGame?: boolean;
+        loserTask?: string | null;
+        answer?: number | null;
+        likes?: number;
+        isConfirmed?: boolean | null;
+        score?: number;
+      }>;
     },
   ) => ({
     ...buildStatePayload(status, diff),
     gameId: game.id,
     stage: game.stage,
+    stageStartedAt: game.stageStartedAt ?? Date.now(),
+    stageDurationMs: getStageDurationMs(game.stage),
     liarId: game.liarId ?? null,
     activeQuestion: game.activeQuestion ?? null,
     activeQuestionText: getActiveQuestionText(game),
     winnerId: game.winnerId ?? null,
     loserId: game.loserId ?? null,
     loserTask: game.loserTask ?? null,
+    players: game.players ? serializePlayersForClient(game.players) : undefined,
   });
 
   socket.on(GameMessageTypes.GAME_SUBSCRIBE, async (data: unknown) => {
@@ -106,8 +161,21 @@ export function registerGameHandler(io: Server, socket: Socket) {
       socket.emit(GameMessageTypes.GAME_STATE, {
         gameId: game.id,
         stage: game.stage,
+        stageStartedAt: game.stageStartedAt ?? Date.now(),
+        stageDurationMs: getStageDurationMs(game.stage),
         liarId: game.liarId,
-        players: game.players,
+        players: game.players.map((player) => ({
+          id: player.telegramId,
+          nickname: player.nickname,
+          profileImg: player.profileImg ?? '',
+          isReady: player.isReady,
+          inGame: player.inGame ?? true,
+          loserTask: player.loserTask ?? null,
+          answer: player.answer ?? null,
+          likes: player.likes ?? 0,
+          isConfirmed: player.isConfirmed ?? false,
+          score: player.score ?? 0,
+        })),
         activeQuestion: game.activeQuestion,
         activeQuestionText: getActiveQuestionText(game),
         winnerId: game.winnerId ?? null,
@@ -134,6 +202,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
         throw new ApiError(422, "LIAR_CHOOSES_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GameLiarChoosesDto = dtoResult.data;
+      const userId = getAuthorizedUserId();
+      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
       
       const gameSnap = await gameService.findGame(dto.gameId);
       
@@ -169,6 +239,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
         throw new ApiError(422, "PLAYER_VOTED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerVotedDto = dtoResult.data;
+      const userId = getAuthorizedUserId();
+      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
       
       const gameSnap = await gameService.findGame(dto.gameId);
       
@@ -204,6 +276,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
         throw new ApiError(422, "PLAYER_SECURED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerSecuredDto = dtoResult.data;
+      const userId = getAuthorizedUserId();
+      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
       
       const gameSnap = await gameService.findGame(dto.gameId);
       
@@ -239,6 +313,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
         throw new ApiError(422, "PLAYER_LIKED_DATA_INVALID", dtoResult.error.issues);
       }
       const dto: GamePlayerLikedDto = dtoResult.data;
+      const userId = getAuthorizedUserId();
+      if (dto.senderId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
       
       const gameSnap = await gameService.findGame(dto.gameId);
       await gameService.likeAnswer(dto);

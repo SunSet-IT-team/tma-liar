@@ -16,6 +16,7 @@ import z from 'zod';
 import { UserRepository } from '../users/user.repository';
 import { env } from '../config/env';
 import { SettingsSchema } from '../lobby/entities/settings.entity';
+import { LobbyStatus } from '../lobby/entities/lobby.entity';
 
 const LobbySubscribeDtoSchema = z.object({
   lobbyCode: z.string().min(1),
@@ -54,14 +55,15 @@ function buildLobbyState(lobby: {
   adminId: string;
   currentGameId: string | null;
   status: string;
-  players: Array<{
-    id?: string;
-    telegramId: string;
-    nickname: string;
-    profileImg?: string;
-    isReady?: boolean;
-    loserTask?: string | null;
-  }>;
+    players: Array<{
+      id?: string;
+      telegramId: string;
+      nickname: string;
+      profileImg?: string;
+      isReady?: boolean;
+      inGame?: boolean;
+      loserTask?: string | null;
+    }>;
 }) {
   return LobbyStateDtoSchema.parse({
     lobbyCode: lobby.lobbyCode,
@@ -74,6 +76,7 @@ function buildLobbyState(lobby: {
         nickname: player.nickname,
         profileImg: player.profileImg ?? '',
         isReady: player.isReady ?? false,
+        inGame: player.inGame ?? false,
         loserTask: player.loserTask ?? null,
       }),
     ),
@@ -85,13 +88,14 @@ function buildLobbyDiffState(lobby: {
   adminId: string;
   currentGameId: string | null;
   status: string;
-  players: Array<{
-    telegramId: string;
-    nickname: string;
-    profileImg?: string;
-    isReady?: boolean;
-    loserTask?: string | null;
-  }>;
+    players: Array<{
+      telegramId: string;
+      nickname: string;
+      profileImg?: string;
+      isReady?: boolean;
+      inGame?: boolean;
+      loserTask?: string | null;
+    }>;
 }) {
   return {
     lobbyCode: lobby.lobbyCode,
@@ -103,6 +107,7 @@ function buildLobbyDiffState(lobby: {
       nickname: player.nickname,
       profileImg: player.profileImg ?? '',
       isReady: player.isReady ?? false,
+      inGame: player.inGame ?? false,
       loserTask: player.loserTask ?? null,
     })),
   };
@@ -220,6 +225,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           profileImg: user?.profileImg ?? requestedProfileImg ?? '',
           score: 0,
           isReady: false,
+          inGame: false,
           loserTask: requestedLoserTask ?? 'task',
           wasLiar: 0,
           answer: null,
@@ -272,6 +278,25 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const telegramId = socketUserId.trim();
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
+
+      if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
+        try {
+          await gameService.finishGameBecausePlayerLeft({
+            gameId: lobbySnap.currentGameId,
+            loserId: telegramId,
+          });
+          logger.info(
+            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
+            'Game finished because player left during active match',
+          );
+        } catch (finishError) {
+          logger.warn(
+            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId, error: finishError },
+            'Failed to finish game on player leave, continuing leave flow',
+          );
+        }
+      }
+
       const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
       const snapForDiff = buildLobbyDiffState(lobbySnap);
 
@@ -416,6 +441,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           profileImg: '',
           score: 0,
           isReady: false,
+          inGame: false,
           loserTask: 'task',
           wasLiar: 0,
           answer: null,
@@ -445,25 +471,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         'Game room initialized',
       );
 
-      const gameStateDto = {
-        gameId: createdGame.id,
-        stage: createdGame.stage,
-        liarId: createdGame.liarId ?? null,
-        players: createdGame.players,
-        activeQuestion: createdGame.activeQuestion ?? null,
-        activeQuestionText: null,
-        winnerId: createdGame.winnerId ?? null,
-        loserId: createdGame.loserId ?? null,
-        loserTask: createdGame.loserTask ?? null,
-      };
-
-      io.to(gameId).emit("changeGameStatus", gameStateDto);
-      logger.info({ gameId, gameRoomSize }, 'Game start status emitted');
-
-      // Запускаем игру — переходим на следующую стадию (LOBBY → LIAR_CHOOSES)
-      // Это вызовет автоматическую смену стадий через таймеры
+      // Сразу переводим игру в LIAR_CHOOSES.
+      // Эмит stage-change выполнит сам GameService.nextStage, поэтому
+      // не отправляем промежуточный статус с LOBBY.
       await gameService.nextStage({ gameId });
-      logger.info({ gameId }, 'Game stage transition initiated');
+      logger.info({ gameId, gameRoomSize }, 'Game started in LIAR_CHOOSES stage');
     } catch (error) {
       logger.error({ error }, 'Error handling game started');
       emitSocketError(socket, "GAME_START_ERROR", error);

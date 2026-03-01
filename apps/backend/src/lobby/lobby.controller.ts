@@ -90,6 +90,7 @@ export class LobbyController {
           profileImg: profileImgFromPayload ?? '',
           score: 0,
           isReady: false,
+          inGame: false,
           loserTask: loserTaskFromPayload ?? 'task',
           wasLiar: 0,
           answer: null,

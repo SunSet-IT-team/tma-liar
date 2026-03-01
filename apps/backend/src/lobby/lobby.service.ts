@@ -79,7 +79,25 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Обновить лобби */
   public async updateLobby(param: UpdateLobbyDto): Promise<Lobby> {
-    const updatedLobby = await this.lobbyRepository.updateByCode(param);
+    let dtoToSave: UpdateLobbyDto = { ...param };
+
+    if (param.status === LobbyStatus.WAITING && param.currentGameId === null && !param.players) {
+      const currentLobby = await this.lobbyRepository.findByCode(param.lobbyCode);
+      if (!currentLobby) {
+        throw new ApiError(404, 'LOBBY_NOT_EXIST');
+      }
+
+      dtoToSave = {
+        ...dtoToSave,
+        players: currentLobby.players.map((player) => ({
+          ...player,
+          inGame: false,
+          isReady: false,
+        })),
+      };
+    }
+
+    const updatedLobby = await this.lobbyRepository.updateByCode(dtoToSave);
 
     if (!updatedLobby) {
       throw new ApiError(404, 'LOBBY_NOT_EXIST');
@@ -110,7 +128,7 @@ export class LobbyService implements LobbyServiceMethods {
     const lobby = await this.lobbyRepository.findByCode(param.lobbyCode);
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
-    if (lobby.status !== LobbyStatus.WAITING || lobby.currentGameId !== null) {
+    if (lobby.status !== LobbyStatus.WAITING && lobby.status !== LobbyStatus.STARTED) {
       throw new ApiError(409, 'LOBBY_ALREADY_STARTED');
     }
 
@@ -210,6 +228,26 @@ export class LobbyService implements LobbyServiceMethods {
         };
       }
 
+      if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
+        const nextAdmin = updatedLobby.players[0];
+        if (!nextAdmin) {
+          throw new ApiError(500, 'NEXT_ADMIN_NOT_FOUND');
+        }
+
+        const transferredLobby = await this.lobbyRepository.transferAdmin(
+          lobbyCode,
+          telegramId,
+          nextAdmin.telegramId,
+        );
+        if (!transferredLobby) throw new ApiError(409, 'ADMIN_TRANSFER_CONFLICT');
+
+        return {
+          lobby: transferredLobby,
+          deleted: false,
+          newAdminId: nextAdmin.telegramId,
+        };
+      }
+
       await this.lobbyRepository.deleteByCode(lobbyCode);
       return {
         lobby: null,
@@ -247,6 +285,27 @@ export class LobbyService implements LobbyServiceMethods {
             lobby: updatedLobby,
             deleted: false,
             newAdminId: null,
+          };
+        }
+
+        if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
+          const nextAdmin = updatedLobby.players[0];
+          if (!nextAdmin) {
+            throw new ApiError(500, 'NEXT_ADMIN_NOT_FOUND');
+          }
+
+          const transferredLobby = await this.lobbyRepository.transferAdmin(
+            lobbyCode,
+            telegramId,
+            nextAdmin.telegramId,
+            session,
+          );
+          if (!transferredLobby) throw new ApiError(409, 'ADMIN_TRANSFER_CONFLICT');
+
+          return {
+            lobby: transferredLobby,
+            deleted: false,
+            newAdminId: nextAdmin.telegramId,
           };
         }
 

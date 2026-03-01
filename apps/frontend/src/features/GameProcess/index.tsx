@@ -54,6 +54,13 @@ export const GameProcess: FC<GameProcessProps> = ({ isFixed }) => {
       return;
     }
 
+    const isResultsRoute =
+      location.pathname === `/${PageRoutes.RESULT_GAME}` || location.pathname === `/${PageRoutes.END_GAME}`;
+    if (isResultsRoute) {
+      stopSound();
+      return;
+    }
+
     const isChoosingLiar = location.pathname === `/${PageRoutes.CHOOSING_LIAR}`;
 
     // ChoosingLiar — только последние 5 сек

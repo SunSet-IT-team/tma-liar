@@ -42,4 +42,8 @@ export class GameRepository {
   public async deleteById(gameId: string, session?: ClientSession): Promise<void> {
     await GameModel.findByIdAndDelete(gameId, session ? { session } : undefined);
   }
+
+  public async deleteByLobbyCode(lobbyCode: string, session?: ClientSession): Promise<void> {
+    await GameModel.findOneAndDelete({ lobbyCode }, session ? { session } : undefined);
+  }
 }

@@ -25,9 +25,9 @@ function createGameDoc(overrides: Record<string, unknown> = {}) {
       },
     },
     players: [
-      { id: 'liar', score: 0, answer: null, likes: 0, isConfirmed: false, wasLiar: 0 },
-      { id: 'p1', score: 0, answer: 1, likes: 0, isConfirmed: false, wasLiar: 0 },
-      { id: 'p2', score: 0, answer: 2, likes: 1, isConfirmed: false, wasLiar: 0 },
+      { id: 'liar', telegramId: 'liar', score: 0, answer: null, likes: 0, isConfirmed: false, wasLiar: 0 },
+      { id: 'p1', telegramId: 'p1', score: 0, answer: 1, likes: 0, isConfirmed: false, wasLiar: 0 },
+      { id: 'p2', telegramId: 'p2', score: 0, answer: 2, likes: 1, isConfirmed: false, wasLiar: 0 },
     ],
     markModified: () => undefined,
     save: async () => undefined,
@@ -69,8 +69,8 @@ describe('GameService', () => {
     const { service } = createService(createGameDoc());
     const game = createGameDoc({
       players: [
-        { id: 'p1', wasLiar: 0, score: 0, answer: null, likes: 0, isConfirmed: false },
-        { id: 'p2', wasLiar: 0, score: 0, answer: null, likes: 0, isConfirmed: false },
+        { id: 'p1', telegramId: 'p1', wasLiar: 0, score: 0, answer: null, likes: 0, isConfirmed: false },
+        { id: 'p2', telegramId: 'p2', wasLiar: 0, score: 0, answer: null, likes: 0, isConfirmed: false },
       ],
     });
 
@@ -107,7 +107,7 @@ describe('GameService', () => {
     const noPlayer = createService(createGameDoc());
     await expect(noPlayer.service.setAnswer({ gameId: 'g', playerId: 'unknown', answer: 1 })).rejects.toBeInstanceOf(ApiError);
 
-    const confirmedGame = createGameDoc({ players: [{ id: 'p1', isConfirmed: true, answer: 1, score: 0, likes: 0 }] });
+    const confirmedGame = createGameDoc({ players: [{ id: 'p1', telegramId: 'p1', isConfirmed: true, answer: 1, score: 0, likes: 0 }] });
     const confirmed = createService(confirmedGame);
     await expect(confirmed.service.setAnswer({ gameId: 'g', playerId: 'p1', answer: 1 })).rejects.toBeInstanceOf(ApiError);
 
@@ -127,13 +127,13 @@ describe('GameService', () => {
     const noPlayer = createService(createGameDoc());
     await expect(noPlayer.service.confirmAnswer({ gameId: 'g', playerId: 'unknown' })).rejects.toBeInstanceOf(ApiError);
 
-    const didntAnswer = createService(createGameDoc({ players: [{ id: 'p1', answer: 2, isConfirmed: false, score: 0, likes: 0 }] }));
+    const didntAnswer = createService(createGameDoc({ players: [{ id: 'p1', telegramId: 'p1', answer: 2, isConfirmed: false, score: 0, likes: 0 }] }));
     await expect(didntAnswer.service.confirmAnswer({ gameId: 'g', playerId: 'p1' })).rejects.toBeInstanceOf(ApiError);
 
-    const already = createService(createGameDoc({ players: [{ id: 'p1', answer: 1, isConfirmed: true, score: 0, likes: 0 }] }));
+    const already = createService(createGameDoc({ players: [{ id: 'p1', telegramId: 'p1', answer: 1, isConfirmed: true, score: 0, likes: 0 }] }));
     await expect(already.service.confirmAnswer({ gameId: 'g', playerId: 'p1' })).rejects.toBeInstanceOf(ApiError);
 
-    const ok = createService(createGameDoc({ stage: GameStages.QUESTION_RESULTS }));
+    const ok = createService(createGameDoc({ stage: GameStages.QUESTION_TO_LIAR }));
     const player = await ok.service.confirmAnswer({ gameId: 'g', playerId: 'p1' });
     expect(player.isConfirmed).toBeTrue();
   });
@@ -159,9 +159,9 @@ describe('GameService', () => {
     const senderDidntAnswer = createService(createGameDoc({
       stage: GameStages.QUESTION_RESULTS,
       players: [
-        { id: 'liar', score: 0, answer: null, likes: 0, isConfirmed: false, wasLiar: 0 },
-        { id: 'p1', score: 0, answer: 2, likes: 0, isConfirmed: false, wasLiar: 0 },
-        { id: 'p2', score: 0, answer: 1, likes: 0, isConfirmed: false, wasLiar: 0 },
+        { id: 'liar', telegramId: 'liar', score: 0, answer: null, likes: 0, isConfirmed: false, wasLiar: 0 },
+        { id: 'p1', telegramId: 'p1', score: 0, answer: 2, likes: 0, isConfirmed: false, wasLiar: 0 },
+        { id: 'p2', telegramId: 'p2', score: 0, answer: 1, likes: 0, isConfirmed: false, wasLiar: 0 },
       ],
     }));
     await expect(senderDidntAnswer.service.likeAnswer({ gameId: 'g', senderId: 'p1', receiverId: 'p2' })).rejects.toBeInstanceOf(ApiError);
@@ -172,17 +172,21 @@ describe('GameService', () => {
     const ok = createService(base);
     const receiver = await ok.service.likeAnswer({ gameId: 'g', senderId: 'p1', receiverId: 'p2' });
     expect(receiver.likes).toBeGreaterThanOrEqual(1);
+
+    await expect(ok.service.likeAnswer({ gameId: 'g', senderId: 'p1', receiverId: 'p2' })).rejects.toBeInstanceOf(ApiError);
   });
 
   it('liarChooses validates stage and triggers next stage', async () => {
     const wrong = createService(createGameDoc({ stage: GameStages.LOBBY }));
-    await expect(wrong.service.liarChooses({ gameId: 'g', answer: true })).rejects.toBeInstanceOf(ApiError);
+    await expect(
+      wrong.service.liarChooses({ gameId: 'g', playerId: 'liar', answer: true }),
+    ).rejects.toBeInstanceOf(ApiError);
 
-    const okGame = createGameDoc({ stage: GameStages.QUESTION_TO_LIAR, doLie: null });
+    const okGame = createGameDoc({ stage: GameStages.LIAR_CHOOSES, doLie: null, liarId: 'liar' });
     const ok = createService(okGame);
     (ok.service as any).nextStage = mock(async () => GameStages.QUESTION_RESULTS);
 
-    const result = await ok.service.liarChooses({ gameId: 'g', answer: false });
+    const result = await ok.service.liarChooses({ gameId: 'g', playerId: 'liar', answer: false });
     expect(result).toBeFalse();
     expect((ok.service as any).nextStage).toHaveBeenCalled();
   });

@@ -180,6 +180,8 @@ export function subscribeLobbyRoom(lobbyCode: string) {
 export type GameSocketState = {
   gameId: string;
   stage?: string;
+  stageStartedAt?: number;
+  stageDurationMs?: number | null;
   liarId?: string | null;
   activeQuestion?: string | null;
   activeQuestionText?: string | null;
@@ -191,6 +193,7 @@ export type GameSocketState = {
     nickname: string;
     profileImg?: string;
     isReady?: boolean;
+    inGame?: boolean;
     loserTask?: string | null;
     answer?: number | null;
     likes?: number;
