@@ -1,9 +1,11 @@
 import clsx from 'clsx';
 import { type FC, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../../app/store/hook';
+import { PageRoutes } from '../../../../app/routes/pages';
 import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
-import { leaveLobbyBySocket } from '../../../../shared/services/socket/lobby.socket';
+import { getCurrentTmaUser } from '../../../../shared/lib/tma/user';
+import { exitGameBySocket, leaveLobbyBySocket } from '../../../../shared/services/socket/lobby.socket';
 import { Button } from '../../../../shared/ui/Button';
 import { Popup } from '../../../../shared/ui/Popup';
 import { Typography } from '../../../../shared/ui/Typography';
@@ -28,6 +30,7 @@ type LeavePopupProps = {
  */
 export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
@@ -40,9 +43,38 @@ export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow
 
     try {
       if (session) {
-        await leaveLobbyBySocket({
-          lobbyCode: session.lobbyCode,
-        });
+        const onLobbyScreen =
+          location.pathname === `/${PageRoutes.LOBBY_ADMIN}` ||
+          location.pathname === `/${PageRoutes.LOBBY_PLAYER}`;
+        const isActiveGame = session.status === 'started' && Boolean(session.currentGameId);
+
+        if (isActiveGame && !onLobbyScreen) {
+          await exitGameBySocket({ lobbyCode: session.lobbyCode });
+
+          lobbySessionService.patch({
+            currentGameId: null,
+            status: 'waiting',
+            currentStage: null,
+            currentStageStartedAt: null,
+            currentStageDurationMs: null,
+            currentLiarId: null,
+            currentQuestionId: null,
+            currentQuestionText: null,
+            currentWinnerId: null,
+            currentLoserId: null,
+            currentLoserTask: null,
+            gamePlayers: undefined,
+          });
+          dispatch(resetTimer());
+
+          const user = getCurrentTmaUser();
+          const targetRoute =
+            session.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+          navigate(`/${targetRoute}`, { replace: true });
+          return;
+        }
+
+        await leaveLobbyBySocket({ lobbyCode: session.lobbyCode });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'LEAVE_LOBBY_ERROR';
@@ -52,9 +84,7 @@ export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow
     }
 
     lobbySessionService.clear();
-    setTimeout(() => {
-      dispatch(resetTimer());
-    }, 0);
+    dispatch(resetTimer());
 
     navigate('/', { replace: true });
   };

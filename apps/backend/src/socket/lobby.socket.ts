@@ -16,7 +16,7 @@ import z from 'zod';
 import { UserRepository } from '../users/user.repository';
 import { env } from '../config/env';
 import { SettingsSchema } from '../lobby/entities/settings.entity';
-import { LobbyStatus } from '../lobby/entities/lobby.entity';
+import { GameStages, LobbyStatus } from '../lobby/entities/lobby.entity';
 
 const LobbySubscribeDtoSchema = z.object({
   lobbyCode: z.string().min(1),
@@ -226,7 +226,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           score: 0,
           isReady: false,
           inGame: false,
-          loserTask: requestedLoserTask ?? 'task',
+          loserTask: requestedLoserTask ?? '',
           wasLiar: 0,
           answer: null,
           likes: 0,
@@ -278,17 +278,34 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const telegramId = socketUserId.trim();
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
+      const snapForDiff = buildLobbyDiffState(lobbySnap);
+      let resetToWaitingAfterLeave = false;
 
       if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
         try {
-          await gameService.finishGameBecausePlayerLeft({
-            gameId: lobbySnap.currentGameId,
-            loserId: telegramId,
-          });
-          logger.info(
-            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
-            'Game finished because player left during active match',
-          );
+          const game = await gameService.findGame(lobbySnap.currentGameId);
+          const firstRoundNotFinished =
+            game.questionHistory.length <= 1 &&
+            (game.stage === GameStages.LIAR_CHOOSES ||
+              game.stage === GameStages.QUESTION_TO_LIAR ||
+              game.stage === GameStages.QUESTION_RESULTS);
+
+          if (firstRoundNotFinished) {
+            resetToWaitingAfterLeave = true;
+            logger.info(
+              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
+              'Player left before first round end, lobby will be reset to waiting',
+            );
+          } else {
+            await gameService.finishGameBecausePlayerLeft({
+              gameId: lobbySnap.currentGameId,
+              loserId: telegramId,
+            });
+            logger.info(
+              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
+              'Game finished because player left during active match',
+            );
+          }
         } catch (finishError) {
           logger.warn(
             { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId, error: finishError },
@@ -298,7 +315,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
-      const snapForDiff = buildLobbyDiffState(lobbySnap);
+      const gameIdToDiscard = lobbySnap.currentGameId;
+
+      if (resetToWaitingAfterLeave && gameIdToDiscard) {
+        await gameService.discardGame({ gameId: gameIdToDiscard });
+      }
 
       if (leaveResult.deleted) {
         io.to(lobbyCode).emit(LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
@@ -309,7 +330,18 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         logger.info({ lobbyCode, telegramId }, 'Player left lobby');
       }
 
-      if (leaveResult.lobby) {
+      if (leaveResult.lobby && resetToWaitingAfterLeave) {
+        const resetLobby = await lobbyService.updateLobby({
+          lobbyCode,
+          status: LobbyStatus.WAITING,
+          currentGameId: null,
+        });
+        const nextForDiff = buildLobbyDiffState(resetLobby);
+        io.to(lobbyCode).emit(
+          "changeGameStatus",
+          buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
+        );
+      } else if (leaveResult.lobby) {
         const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
         io.to(lobbyCode).emit(
           "changeGameStatus",
@@ -333,6 +365,76 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           ok: false,
           errorCode: 'PLAYER_LEFT_ERROR',
           message: 'PLAYER_LEFT_ERROR',
+        });
+      }
+    }
+  });
+
+  /**
+   * Игрок выходит только из активной игры, но остается в лобби.
+   * Все участники возвращаются в статус ожидания.
+   */
+  socket.on(LobbyMessageTypes.PLAYER_EXIT_GAME, async (data: unknown, ack?: SocketAck) => {
+    try {
+      const result = LeaveLobbySocketSchema.safeParse(data);
+      if (!result.success) {
+        throw new ApiError(422, 'EXIT_GAME_DATA_INVALID', result.error.issues);
+      }
+
+      const socketUserId = socket.data.userId;
+      if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const { lobbyCode } = result.data;
+      const lobbySnap = await lobbyService.findLobby({ lobbyCode });
+      const userId = socketUserId.trim();
+      const playerExists = lobbySnap.players.some((player) => player.telegramId === userId);
+
+      if (!playerExists) {
+        throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
+      }
+
+      if (lobbySnap.status !== LobbyStatus.STARTED || !lobbySnap.currentGameId) {
+        ack?.({ ok: true });
+        return;
+      }
+
+      const snapForDiff = buildLobbyDiffState(lobbySnap);
+      await gameService.discardGame({ gameId: lobbySnap.currentGameId });
+
+      const resetLobby = await lobbyService.updateLobby({
+        lobbyCode,
+        status: LobbyStatus.WAITING,
+        currentGameId: null,
+      });
+
+      const nextForDiff = buildLobbyDiffState(resetLobby);
+      io.to(lobbyCode).emit(
+        "changeGameStatus",
+        buildStatePayload(LobbyMessageTypes.PLAYER_EXIT_GAME, findDiff(snapForDiff, nextForDiff)),
+      );
+
+      logger.info(
+        { lobbyCode, gameId: lobbySnap.currentGameId, requestedBy: userId },
+        'Active game was exited to lobby',
+      );
+      ack?.({ ok: true });
+    } catch (error) {
+      logger.error({ error, socketUserId: socket.data.userId }, 'Error handling player exit game');
+      emitSocketError(socket, 'EXIT_GAME_ERROR', error);
+
+      if (error instanceof ApiError) {
+        ack?.({
+          ok: false,
+          errorCode: error.errorCode,
+          message: error.message,
+        });
+      } else {
+        ack?.({
+          ok: false,
+          errorCode: 'EXIT_GAME_ERROR',
+          message: 'EXIT_GAME_ERROR',
         });
       }
     }

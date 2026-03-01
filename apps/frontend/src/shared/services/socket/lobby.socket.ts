@@ -5,6 +5,7 @@ import { getCurrentTmaUser } from '../../lib/tma/user';
 
 const LOBBY_PLAYER_JOINED_EVENT = 'lobby:player:joined';
 const LOBBY_PLAYER_LEFT_EVENT = 'lobby:player:left';
+const LOBBY_PLAYER_EXIT_GAME_EVENT = 'lobby:player:exit-game';
 const LOBBY_SUBSCRIBE_EVENT = 'lobby:subscribe';
 const LOBBY_STATE_EVENT = 'lobby:state';
 const GAME_SUBSCRIBE_EVENT = 'game:subscribe';
@@ -265,6 +266,31 @@ export function leaveLobbyBySocket(payload: { lobbyCode: string }) {
         }
 
         reject(new Error(ack?.errorCode ?? ack?.message ?? 'LEAVE_LOBBY_ERROR'));
+      },
+    );
+  });
+}
+
+export function exitGameBySocket(payload: { lobbyCode: string }) {
+  return new Promise<void>((resolve, reject) => {
+    const s = getLobbySocket();
+
+    const timeout = window.setTimeout(() => {
+      reject(new Error('EXIT_GAME_TIMEOUT'));
+    }, 5000);
+
+    s.emit(
+      LOBBY_PLAYER_EXIT_GAME_EVENT,
+      payload,
+      (ack?: { ok?: boolean; errorCode?: string; message?: string }) => {
+        clearTimeout(timeout);
+
+        if (ack?.ok) {
+          resolve();
+          return;
+        }
+
+        reject(new Error(ack?.errorCode ?? ack?.message ?? 'EXIT_GAME_ERROR'));
       },
     );
   });

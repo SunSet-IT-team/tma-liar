@@ -1,4 +1,5 @@
 import { type FC, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../shared/ui/Button';
 import { Timer } from '../../shared/ui/Timer';
 import styles from './style/choosingLiarStyle.module.scss';
@@ -12,12 +13,14 @@ import { getLobbySocket, subscribeGameRoom } from '../../shared/services/socket/
 import { getCurrentTmaUser } from '../../shared/lib/tma/user';
 import { toUserSocketError } from '../../shared/services/socket/socket-error';
 import { findLobbyRequest } from '../../shared/services/lobby/lobby.api';
+import { PageRoutes } from '../../app/routes/pages';
 
 /**
  * Страница с выбором вранья лжеца
  */
 export const ChoosingLiar: FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const user = useMemo(() => getCurrentTmaUser(), []);
@@ -41,7 +44,9 @@ export const ChoosingLiar: FC = () => {
     }
 
     if (!freshSession?.currentGameId) {
-      setErrorText('Игра запускается, попробуйте ещё раз через секунду.');
+      const targetRoute =
+        freshSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+      navigate(`/${targetRoute}`, { replace: true });
       return;
     }
 
@@ -65,7 +70,10 @@ export const ChoosingLiar: FC = () => {
         return;
       }
     } catch {
-      setErrorText('Не удалось получить актуальное состояние игры. Обновите страницу.');
+      const fallbackSession = lobbySessionService.get();
+      const targetRoute =
+        fallbackSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+      navigate(`/${targetRoute}`, { replace: true });
       setIsSubmitting(false);
       return;
     }
@@ -81,6 +89,15 @@ export const ChoosingLiar: FC = () => {
         code === 'LIAR_CHOOSE_FORBIDDEN' ||
         code === 'PLAYER_ACTION_FORBIDDEN'
       ) {
+        if (code === 'GAME_NOT_FOUND') {
+          const fallbackSession = lobbySessionService.get();
+          const targetRoute =
+            fallbackSession?.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+          navigate(`/${targetRoute}`, { replace: true });
+          setIsSubmitting(false);
+          socket.off('error', onError);
+          return;
+        }
         setErrorText(toUserSocketError(error, 'Не удалось отправить выбор'));
         setIsSubmitting(false);
       }

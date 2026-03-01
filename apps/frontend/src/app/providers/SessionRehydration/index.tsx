@@ -260,6 +260,9 @@ export function SessionRehydration() {
       liarId?: string | null;
       diff?: {
         stage?: string;
+        status?: string;
+        currentGameId?: string | null;
+        adminId?: string;
         activeQuestion?: string | null;
         winnerId?: string | null;
         loserId?: string | null;
@@ -294,7 +297,37 @@ export function SessionRehydration() {
         }
 
         const user = getCurrentTmaUser();
-        const gameId = payload.gameId ?? session.currentGameId ?? null;
+        const hasDiffCurrentGameId = Boolean(
+          payload.diff && Object.prototype.hasOwnProperty.call(payload.diff, 'currentGameId'),
+        );
+        const gameId = payload.gameId ?? (hasDiffCurrentGameId ? payload.diff?.currentGameId ?? null : session.currentGameId ?? null);
+        const rawStatus = payload.diff?.status ?? payload.status ?? null;
+        const lobbyStatusFromPayload =
+          rawStatus === 'waiting' || rawStatus === 'started' || rawStatus === 'finished' ? rawStatus : null;
+
+        // When game event arrives before lobby diff (common at game start),
+        // verify it against the current lobby state. This prevents stale
+        // game events from resurrecting an old session while still allowing
+        // players to enter a freshly started game.
+        if (payload.gameId && !session.currentGameId && !hasDiffCurrentGameId) {
+          const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
+          if (incomingStage === 'game_results' || incomingStage === 'end') {
+            return;
+          }
+
+          try {
+            const lobbySnapshot = await findLobbyRequest(session.lobbyCode);
+            const isSameGame = lobbySnapshot.currentGameId === payload.gameId;
+            const isStarted = lobbySnapshot.status === 'started';
+            if (!isSameGame || !isStarted) {
+              return;
+            }
+          } catch {
+            // On transient fetch errors don't block event processing.
+          }
+        }
+
+        const nextStatus = lobbyStatusFromPayload ?? (gameId ? 'started' : session.status);
         let stage = payload.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
         let stageStartedAt = payload.stageStartedAt ?? session.currentStageStartedAt ?? null;
         let stageDurationMs = payload.stageDurationMs ?? session.currentStageDurationMs ?? null;
@@ -327,20 +360,23 @@ export function SessionRehydration() {
           }
         }
 
+        const shouldResetGameState = nextStatus !== 'started' || !gameId;
+
         const nextSession = {
           ...session,
+          adminId: payload.diff?.adminId ?? session.adminId,
           currentGameId: gameId,
-          currentStage: stage ?? null,
-          currentStageStartedAt: stageStartedAt ?? null,
-          currentStageDurationMs: stageDurationMs ?? null,
-          currentLiarId: liarId,
-          currentQuestionId: activeQuestion ?? null,
-          currentQuestionText: activeQuestionText ?? null,
-          currentWinnerId: winnerId ?? null,
-          currentLoserId: loserId ?? null,
-          currentLoserTask: loserTask ?? null,
-          gamePlayers,
-          status: gameId ? 'started' : session.status,
+          currentStage: shouldResetGameState ? 'lobby' : stage ?? null,
+          currentStageStartedAt: shouldResetGameState ? null : stageStartedAt ?? null,
+          currentStageDurationMs: shouldResetGameState ? null : stageDurationMs ?? null,
+          currentLiarId: shouldResetGameState ? null : liarId,
+          currentQuestionId: shouldResetGameState ? null : activeQuestion ?? null,
+          currentQuestionText: shouldResetGameState ? null : activeQuestionText ?? null,
+          currentWinnerId: shouldResetGameState ? null : winnerId ?? null,
+          currentLoserId: shouldResetGameState ? null : loserId ?? null,
+          currentLoserTask: shouldResetGameState ? null : loserTask ?? null,
+          gamePlayers: shouldResetGameState ? undefined : gamePlayers,
+          status: nextStatus,
         };
         lobbySessionService.set(nextSession);
         const stageDurationFallback = resolveStageDuration(nextSession.currentStage, nextSession);
@@ -359,12 +395,13 @@ export function SessionRehydration() {
           store.dispatch(resetTimer());
         }
 
-        if (!stage) return;
+        const routeStage = shouldResetGameState ? 'lobby' : stage;
+        if (!routeStage) return;
 
         const isAdmin = nextSession.adminId === user.telegramId;
         const isLiar = Boolean(liarId && liarId === user.telegramId);
         const resolvedTarget = resolveGameRoute({
-          stage,
+          stage: routeStage,
           isAdmin,
           isLiar,
           isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === user.telegramId)),

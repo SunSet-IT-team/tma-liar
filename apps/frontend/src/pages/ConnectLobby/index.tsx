@@ -37,7 +37,7 @@ export const ConnectLobby: FC = () => {
         lobbyCode: normalizedCode,
         nickname: user.nickname,
         profileImg: user.profileImg,
-        loserTask: 'task',
+        loserTask: '',
       });
 
       const lobbyFull = await findLobbyRequest(normalizedCode);

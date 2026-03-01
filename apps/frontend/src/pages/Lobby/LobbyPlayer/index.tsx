@@ -37,7 +37,7 @@ export const LobbyPlayer: FC = () => {
   const user = useMemo(() => getCurrentTmaUser(), []);
   const [session, setSession] = useState(() => lobbySessionService.get());
   const [ready, setReady] = useState<boolean>(false);
-  const [loserTask, setLoserTask] = useState<string>('task');
+  const [loserTask, setLoserTask] = useState<string>('');
   const [readyError, setReadyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,9 +75,7 @@ export const LobbyPlayer: FC = () => {
         if (typeof me?.isReady === 'boolean') {
           setReady(me.isReady);
         }
-        if (typeof me?.loserTask === 'string') {
-          setLoserTask(me.loserTask);
-        }
+        setLoserTask(typeof me?.loserTask === 'string' ? me.loserTask : '');
       })
       .catch(() => {
         navigate('/', { replace: true });

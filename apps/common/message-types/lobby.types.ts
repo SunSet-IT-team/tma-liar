@@ -21,6 +21,9 @@ export enum LobbyMessageTypes {
     /** Вышел игрок */
     PLAYER_LEFT = "lobby:player:left", 
 
+    /** Вышел из текущей игры (остался в лобби) */
+    PLAYER_EXIT_GAME = "lobby:player:exit-game",
+
     /** Лобби было удалено */
     LOBBY_DELETED = "lobby:deleted",
 }

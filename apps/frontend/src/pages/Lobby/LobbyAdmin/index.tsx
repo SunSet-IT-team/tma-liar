@@ -39,7 +39,7 @@ export const LobbyAdmin: FC = () => {
   const navigate = useNavigate();
   const user = useMemo(() => getCurrentTmaUser(), []);
   const [session, setSession] = useState(() => lobbySessionService.get());
-  const [loserTask, setLoserTask] = useState('task');
+  const [loserTask, setLoserTask] = useState('');
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [readyError, setReadyError] = useState<string | null>(null);
@@ -74,6 +74,9 @@ export const LobbyAdmin: FC = () => {
       lobbySessionService.set(next);
       return next;
     });
+
+    const me = state.players.find((player) => player.id === user.telegramId);
+    setLoserTask(typeof me?.loserTask === 'string' ? me.loserTask : '');
   };
 
   useEffect(() => {
@@ -112,6 +115,11 @@ export const LobbyAdmin: FC = () => {
         lobbySessionService.set(next);
         return next;
       });
+
+      const currentPlayer = payload.diff?.players?.find((player) => player.id === user.telegramId);
+      if (typeof currentPlayer?.loserTask === 'string') {
+        setLoserTask(currentPlayer.loserTask);
+      }
 
       const nextAdminId = payload.diff?.adminId;
       if (nextAdminId && nextAdminId !== user.telegramId) {
@@ -157,7 +165,7 @@ export const LobbyAdmin: FC = () => {
       socket.off(LOBBY_DELETED_EVENT, onLobbyDeleted);
       socket.off(ERROR_EVENT, onSocketError);
     };
-  }, [navigate, session?.lobbyCode]);
+  }, [navigate, session?.lobbyCode, user.telegramId]);
 
   const startGame = () => {
     if (!session || isStarting) return;

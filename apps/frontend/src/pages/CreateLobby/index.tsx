@@ -67,7 +67,7 @@ export const CreateLobby: FC = () => {
         },
         nickname: user.nickname,
         profileImg: user.profileImg,
-        loserTask: 'task',
+        loserTask: '',
       });
 
       lobbySessionService.set({

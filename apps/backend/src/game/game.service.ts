@@ -31,6 +31,7 @@ export interface GameMethods {
   likeAnswer: (dto: GamePlayerLikedDto) => Promise<Player>, 
   setAnswer: (dto: GamePlayerVotedDto) => Promise<Player>, 
   finishGameBecausePlayerLeft: (dto: { gameId: string; loserId: string }) => Promise<void>,
+  discardGame: (dto: { gameId: string }) => Promise<void>,
 }
 
 export class GameService implements GameMethods { 
@@ -413,6 +414,15 @@ export class GameService implements GameMethods {
         await this.nextStage({ gameId });
       });
     });
+  }
+
+  /**
+   * Удаляет игру и очищает stage-таймер.
+   */
+  public async discardGame(dto: { gameId: string }): Promise<void> {
+    const { gameId } = dto;
+    this.clearStageTimer(gameId);
+    await this.gameRepository.deleteById(gameId);
   }
 
   public async handleLobbyStage(game: HydratedDocument<Game>, gameId: string): Promise<GameStages> {

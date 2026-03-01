@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import styles from '../../style/usersBadgeStyle.module.scss';
 import type { Player, PlayerSize } from '../../../../entities/user/model/types';
 import { UserBadge } from '../../../../entities/user/ui/UserBadge';
@@ -18,6 +18,7 @@ export const ResultUsersBadge: FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [task, setTask] = useState<string>('Здесь будет задание...');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const session = lobbySessionService.get();
   const me = getCurrentTmaUser();
 
@@ -51,8 +52,9 @@ export const ResultUsersBadge: FC = () => {
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-
-    const audio = new Audio(drumSound);
+    audioRef.current = new Audio(drumSound);
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => undefined);
 
     const showNext = (index: number) => {
       if (index >= sortedUsers.length || sortedUsers.length === 0) {
@@ -61,10 +63,6 @@ export const ResultUsersBadge: FC = () => {
         setFinished(true);
         return;
       }
-
-      // запуск барабанной дроби
-      audio.currentTime = 0;
-      audio.play();
 
       // показываем текущий элемент
       setVisibleCount(index + 1);
@@ -84,7 +82,14 @@ export const ResultUsersBadge: FC = () => {
     // стартуем цепочку
     showNext(0);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   return (

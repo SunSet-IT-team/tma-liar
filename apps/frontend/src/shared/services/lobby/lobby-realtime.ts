@@ -26,8 +26,16 @@ export type ChangeGameStatusPayload = {
 };
 
 export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusPayload): LobbySession {
+  if (typeof payload.status === 'string' && !payload.status.startsWith('lobby:')) {
+    return session;
+  }
+
   const diff = payload.diff;
   if (!diff) return session;
+  const hasCurrentGameId = Object.prototype.hasOwnProperty.call(diff, 'currentGameId');
+  const hasStatus = Object.prototype.hasOwnProperty.call(diff, 'status');
+  const hasLobbyCode = Object.prototype.hasOwnProperty.call(diff, 'lobbyCode');
+  const hasAdminId = Object.prototype.hasOwnProperty.call(diff, 'adminId');
 
   const nextPlayers = [...session.players];
 
@@ -67,10 +75,10 @@ export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusP
 
   return {
     ...session,
-    lobbyCode: diff.lobbyCode ?? session.lobbyCode,
-    adminId: diff.adminId ?? session.adminId,
-    currentGameId: diff.currentGameId ?? session.currentGameId,
-    status: diff.status ?? session.status,
+    lobbyCode: hasLobbyCode ? (diff.lobbyCode ?? session.lobbyCode) : session.lobbyCode,
+    adminId: hasAdminId ? (diff.adminId ?? session.adminId) : session.adminId,
+    currentGameId: hasCurrentGameId ? (diff.currentGameId ?? null) : session.currentGameId,
+    status: hasStatus ? (diff.status ?? session.status) : session.status,
     currentStage: payload.stage ?? diff.stage ?? session.currentStage ?? null,
     players: nextPlayers,
   };

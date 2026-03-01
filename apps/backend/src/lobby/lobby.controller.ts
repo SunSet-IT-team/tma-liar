@@ -91,7 +91,7 @@ export class LobbyController {
           score: 0,
           isReady: false,
           inGame: false,
-          loserTask: loserTaskFromPayload ?? 'task',
+          loserTask: loserTaskFromPayload ?? '',
           wasLiar: 0,
           answer: null,
           likes: 0,
