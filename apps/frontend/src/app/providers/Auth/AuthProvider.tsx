@@ -48,15 +48,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAuth(false);
         setMode('guest');
         setRequiresTmaLogin(true);
-
-        const continueAsGuest = window.confirm(
-          'Не удалось авторизоваться через Telegram Mini App. Нажмите OK, чтобы продолжить в ограниченном режиме. Нажмите Отмена, чтобы войти через Telegram.',
-        );
-
-        if (!continueAsGuest) {
-          // Подсказка пользователю: открыть мини-апп из Telegram-клиента.
-          window.alert('Откройте приложение внутри Telegram, чтобы войти с полным доступом.');
-        }
       } finally {
         setIsLoading(false);
       }

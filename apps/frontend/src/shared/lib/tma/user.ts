@@ -10,6 +10,10 @@ export type CurrentTmaUser = {
   profileImg?: string;
 };
 
+export function isGuestUser(user: Pick<CurrentTmaUser, 'telegramId'>): boolean {
+  return user.telegramId.startsWith('guest_');
+}
+
 function getOrCreateGuestUser(): CurrentTmaUser {
   const raw = localStorage.getItem(GUEST_USER_STORAGE_KEY);
 

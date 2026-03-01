@@ -11,7 +11,7 @@ import { PageRoutes } from '../../app/routes/pages';
 import { LobbyDeck } from '../../widgets/LobbyDeck';
 import { testDecks } from '../../features/DecksBlock';
 import { createLobbyRequest } from '../../shared/services/lobby/lobby.api';
-import { getCurrentTmaUser } from '../../shared/lib/tma/user';
+import { getCurrentTmaUser, isGuestUser } from '../../shared/lib/tma/user';
 import { lobbySessionService } from '../../shared/services/lobby/lobby-session.service';
 import type { LobbyDeck as BackendLobbyDeck } from '../../shared/types/lobby';
 
@@ -39,15 +39,22 @@ export const CreateLobby: FC = () => {
   const [activeDeckIndex, setActiveDeckIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const user = getCurrentTmaUser();
+  const isGuest = isGuestUser(user);
+  const telegramBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL ?? 'https://t.me/';
 
   const createLobby = async () => {
     if (isSubmitting) return;
+
+    if (isGuest) {
+      setErrorText('Создание лобби доступно только при входе через Telegram.');
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorText(null);
 
     try {
-      const user = getCurrentTmaUser();
       const selectedDeck = mapDeckToBackendDeck(testDecks[activeDeckIndex], activeDeckIndex);
       const normalizedQuestionCount = Math.min(questionCount, selectedDeck.questions.length);
 
@@ -106,9 +113,23 @@ export const CreateLobby: FC = () => {
         onChangeValue={(value: number) => setAnswerTime(value)}
       />
       <LobbyDeck onChangeActiveDeck={setActiveDeckIndex} />
-      <Button variant="buttonUnderline" onClick={createLobby} disabled={isSubmitting}>
-        {isSubmitting ? 'Создаю...' : 'Создать'}
-      </Button>
+      {isGuest ? (
+        <div className={styles.guestAuthBlock}>
+          <Typography className={styles.guestAuthText}>
+            Чтобы создавать лобби, нужно войти через Telegram
+          </Typography>
+          <Button
+            variant="buttonUnderline"
+            onClick={() => window.open(telegramBotUrl, '_blank', 'noopener,noreferrer')}
+          >
+            Войти
+          </Button>
+        </div>
+      ) : (
+        <Button variant="buttonUnderline" onClick={createLobby} disabled={isSubmitting}>
+          {isSubmitting ? 'Создаю...' : 'Создать'}
+        </Button>
+      )}
       {errorText && <Typography>{errorText}</Typography>}
       <img src={lobbyCircle} alt="" className={styles.lobbyCircle} />
     </Container>
