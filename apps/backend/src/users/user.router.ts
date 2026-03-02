@@ -3,9 +3,16 @@ import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { asyncHandler } from "../middlewares/asyncHandler.middleware";
 import type { Request, Response } from "express";
+import multer from 'multer';
 
 export const userRouter = Router();
 const userController = new UserController(new UserService());
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 2 * 1024 * 1024,
+  },
+});
 
 /** Маршруты для работы с пользователями */
 
@@ -25,7 +32,7 @@ userRouter.post('/', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 /** Маршрут для обновления пользователя */
-userRouter.put('/:telegramId', asyncHandler(async (req: Request, res: Response) => {
+userRouter.put('/:telegramId', upload.single('profileImgFile'), asyncHandler(async (req: Request, res: Response) => {
   await userController.updateUser(req, res);
 }));
 

@@ -1,43 +1,49 @@
 import clsx from 'clsx';
-import { type FC, useState } from 'react';
+import { type FC } from 'react';
 import { Button } from '../../shared/ui/Button';
 import styles from './style/answerSolvedBlockStyle.module.scss';
 
 type SolvedBlockProps = {
-  changeFix: (value: boolean) => void;
+  believe: boolean | null;
+  fixed: boolean;
+  onSelectBelieve: (value: boolean) => void;
+  onFix: () => void;
+  disabled?: boolean;
 };
 
 /**
  * Блок выбора ответа решало
  */
-export const AnswerSolvedBlock: FC<SolvedBlockProps> = ({ changeFix }) => {
-  const [believe, setBelieve] = useState<boolean | null>(null);
-  const [fixed, setFixed] = useState<boolean>(false);
-
-  const solvedFix = () => {
-    if (believe === null) return;
-    setFixed(true);
-    changeFix(true);
-  };
+export const AnswerSolvedBlock: FC<SolvedBlockProps> = ({
+  believe,
+  fixed,
+  onSelectBelieve,
+  onFix,
+  disabled = false,
+}) => {
   return (
     <>
       <div className={styles.answersBtns}>
         <Button
-          className={clsx(styles.answersBtn, !believe && styles.answersBtnActive)}
-          onClick={() => !fixed && setBelieve(false)}
+          className={clsx(styles.answersBtn, believe === false && styles.answersBtnActive)}
+          onClick={() => !fixed && !disabled && onSelectBelieve(false)}
+          disabled={disabled}
         >
           Не верю
         </Button>
         <Button
-          className={clsx(styles.answersBtn, believe && styles.answersBtnActive)}
-          onClick={() => !fixed && setBelieve(true)}
+          className={clsx(styles.answersBtn, believe === true && styles.answersBtnActive)}
+          onClick={() => !fixed && !disabled && onSelectBelieve(true)}
+          disabled={disabled}
         >
           Верю
         </Button>
       </div>
-      <Button className={styles.fixAnswerBtn} onClick={solvedFix}>
-        Зафиксировать
-      </Button>
+      {believe !== null ? (
+        <Button className={styles.fixAnswerBtn} onClick={onFix} disabled={fixed || disabled}>
+          {fixed ? 'Ответ зафиксирован' : 'Зафиксировать'}
+        </Button>
+      ) : null}
     </>
   );
 };

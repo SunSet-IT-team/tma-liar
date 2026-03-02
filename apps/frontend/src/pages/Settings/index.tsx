@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { BackArrow } from '../../shared/ui/BackArrow';
 import { Button } from '../../shared/ui/Button';
 import { Range } from '../../shared/ui/Range';
-import settingsBg from '../../../public/icons/settings-bgIcon.svg';
+import settingsBg from '/icons/settings-bgIcon.svg';
 import { SettingsTouches } from '../../features/SettingsSounds/ui/SettingsTouches';
 import { SettingsMusic } from '../../features/SettingsSounds/ui/SettingsMusic';
 import { Container } from '../../shared/ui/Container';
@@ -40,7 +40,7 @@ export const Settings: FC = () => {
           Разработчики
         </Button>
       </div>
-      <img src={settingsBg} alt="" className={styles.settingsBg} />
+      <img src={settingsBg} alt="" className={styles.settingsBg} data-decor="true" />
       {showPopup && <DevelopersPopup changeShow={(show: boolean) => setShowPopup(show)} />}
     </Container>
   );

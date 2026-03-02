@@ -1,10 +1,10 @@
 import { type FC } from 'react';
 import styles from './style/homeStyle.module.scss';
-import homeCircle from '../../../public/icons/homeCircle.svg';
+import homeCircle from '/icons/homeCircle.svg';
 import { SettingIcon } from '../../shared/ui/SettingIcon';
-import homeLogo from '../../../public/icons/homeIcon-lzhets.svg';
+import homeLogo from '/icons/homeIcon-lzhets.svg';
 import { Button } from '../../shared/ui/Button';
-import bgIcon from '../../../public/icons/homeIcon-bg.svg';
+import bgIcon from '/icons/homeIcon-bg.svg';
 import { Container } from '../../shared/ui/Container';
 import { Link } from '../../shared/ui/Link';
 import rulesIcon from '../../shared/ui/icons/rulesIcon.svg';
@@ -18,16 +18,9 @@ import { useNavigate } from 'react-router-dom';
 export const Home: FC = () => {
   const navigate = useNavigate();
 
-  fetch('/api/hello', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
   return (
     <Container>
-      <img className={styles.circleIcon} src={homeCircle} alt="" />
+      <img className={styles.circleIcon} src={homeCircle} alt="" data-decor="true" />
       <SettingIcon className={styles.settingsBtn} />
       <img src={homeLogo} alt="" className={styles.logo} />
       <Button
@@ -35,13 +28,13 @@ export const Home: FC = () => {
         className={styles.homeBtn}
         onClick={() => navigate(`/${PageRoutes.CREATE_LOBBY}`)}
       >
-        Создатьzz2
+        Создать
       </Button>
       <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
         Присоедениться
       </Button>
       <div className={styles.bgBlock}>
-        <img src={bgIcon} alt="" className={styles.bgImage} />
+        <img src={bgIcon} alt="" className={styles.bgImage} data-decor="true" />
         <Link icon={profileIcon} route={`/${PageRoutes.PROFILE}`} className={styles.profileLink} />
         <Link icon={rulesIcon} route={`/${PageRoutes.RULES}`} className={styles.rulesLink} />
       </div>

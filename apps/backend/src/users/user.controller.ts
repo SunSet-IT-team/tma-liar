@@ -6,6 +6,15 @@ import { FindUsersDtoSchema, type FindUsersDto } from './dtos/user-findUsers.dto
 import { CreateUserDtoSchema, type CreateUserDto } from './dtos/user-create.dto';
 import { UpdateUserDtoSchema, type UpdateUserDto } from './dtos/user-update.dto';
 import { DeleteUserDtoSchema, type DeleteUserDto } from './dtos/user-delete.dto';
+import type { AuthRequest } from '../middlewares/auth.middleware';
+import { logger } from '../observability/logger';
+
+type UserUpdateRequest = Request & {
+  file?: {
+    mimetype: string;
+    buffer: Buffer;
+  };
+};
 
 /**
  * Класс контроллеров пользователей
@@ -20,7 +29,7 @@ export class UserController {
     const result = FindUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_USER_DATA_INVALID");
+      throw new ApiError(422, "FIND_USER_DATA_INVALID");
     }
 
     const dto: FindUserDto = result.data;
@@ -45,7 +54,7 @@ export class UserController {
     const result = FindUsersDtoSchema.safeParse({ telegramIds });
 
     if (!result.success) {
-      throw new ApiError(400, "FIND_USERS_DATA_INVALID");
+      throw new ApiError(422, "FIND_USERS_DATA_INVALID");
     }
 
     const dto: FindUsersDto = result.data;
@@ -61,7 +70,7 @@ export class UserController {
     const result = CreateUserDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "CREATE_USER_DATA_INVALID");
+      throw new ApiError(422, "CREATE_USER_DATA_INVALID");
     }
 
     const dto: CreateUserDto = result.data;
@@ -74,19 +83,59 @@ export class UserController {
    * Контроллер обновления пользователя
    */
   updateUser = async (req: Request, res: Response) => {
-    const bodyResult = UpdateUserDtoSchema.safeParse({
-      telegramId: req.params.telegramId,
-      ...req.body,
-    });
+    try {
+      const updateReq = req as UserUpdateRequest;
+      const authReq = req as AuthRequest;
+      const authHeader = req.headers.authorization;
+      if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+        throw new ApiError(403, 'TELEGRAM_AUTH_REQUIRED');
+      }
 
-    if (!bodyResult.success) {
-      throw new ApiError(400, "UPDATE_USER_DATA_INVALID");
+      if (!authReq.userId) {
+        throw new ApiError(401, 'UNAUTHORIZED');
+      }
+
+      const currentUser = await this.userService.findUserByAuthId({ authUserId: authReq.userId });
+      if (currentUser.telegramId !== req.params.telegramId) {
+        throw new ApiError(403, 'USER_UPDATE_FORBIDDEN');
+      }
+
+      let profileImgFromFile: string | undefined;
+      if (updateReq.file) {
+        if (!updateReq.file.mimetype.startsWith('image/')) {
+          throw new ApiError(422, 'INVALID_PROFILE_IMAGE_TYPE');
+        }
+        profileImgFromFile = `data:${updateReq.file.mimetype};base64,${updateReq.file.buffer.toString('base64')}`;
+      }
+
+      const safeBody = (req.body ?? {}) as Record<string, unknown>;
+
+      const bodyResult = UpdateUserDtoSchema.safeParse({
+        telegramId: req.params.telegramId,
+        ...safeBody,
+        profileImg: profileImgFromFile ?? safeBody.profileImg,
+      });
+
+      if (!bodyResult.success) {
+        throw new ApiError(422, "UPDATE_USER_DATA_INVALID");
+      }
+
+      const dto: UpdateUserDto = bodyResult.data;
+      const user = await this.userService.updateUser(dto);
+
+      return res.status(200).json(success(user));
+    } catch (error) {
+      logger.error(
+        {
+          error,
+          telegramIdParam: req.params.telegramId,
+          hasFile: Boolean((req as UserUpdateRequest).file),
+          bodyKeys: Object.keys((req.body ?? {}) as Record<string, unknown>),
+        },
+        'Error handling update user',
+      );
+      throw error;
     }
-
-    const dto: UpdateUserDto = bodyResult.data;
-    const user = await this.userService.updateUser(dto);
-
-    return res.status(200).json(success(user));
   };
 
   /**
@@ -96,7 +145,7 @@ export class UserController {
     const result = DeleteUserDtoSchema.safeParse({ telegramId: req.params.telegramId });
 
     if (!result.success) {
-      throw new ApiError(400, "DELETE_USER_DATA_INVALID");
+      throw new ApiError(422, "DELETE_USER_DATA_INVALID");
     }
 
     const dto: DeleteUserDto = result.data;

@@ -24,12 +24,11 @@ export const SettingsMusic: FC = () => {
   }, [isMusicPlay]);
 
   const changeMusic = () => {
-    playSound();
     setIsMusicPlay(!isMusicPlay);
   };
 
   return (
-    <button onClick={changeMusic}>
+    <button onPointerDown={() => playSound()} onClick={changeMusic}>
       <img src={isMusicPlay ? musicRed : musicWhite} alt="" className={styles.musicImg} />
     </button>
   );

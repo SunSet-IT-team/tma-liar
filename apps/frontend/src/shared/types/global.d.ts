@@ -25,3 +25,24 @@ declare module '*.webp' {
   const src: string;
   export default src;
 }
+
+interface TelegramWebAppUser {
+  id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+}
+
+interface TelegramWebApp {
+  initData: string;
+  initDataUnsafe?: {
+    user?: TelegramWebAppUser;
+  };
+}
+
+interface Window {
+  Telegram?: {
+    WebApp?: TelegramWebApp;
+  };
+}

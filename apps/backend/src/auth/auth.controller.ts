@@ -10,13 +10,13 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   /**
-   * Контроллер логина по telegramId
+   * Контроллер логина через Telegram Mini App initData
    */
-  getAuthTelegram = async (req: Request, res: Response) => {
-    const result = AuthLoginDtoSchema.safeParse({ telegramId: req.params.telegramId });
+  loginWithTma = async (req: Request, res: Response) => {
+    const result = AuthLoginDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "LOGIN_DATA_INVALID");
+      throw new ApiError(422, "LOGIN_DATA_INVALID");
     }
 
     const dto: AuthLoginDto = result.data;

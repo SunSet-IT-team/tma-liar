@@ -1,7 +1,7 @@
 .buttonBase {
     cursor: pointer;
     font-family: 'CodeProBoldLC';
-    font-size: 4vh;
+    font-size: clamp(22px, 3.6vw, 34px);
     color: var(--black-main-color);
   }
   
@@ -18,10 +18,4 @@
     height: 10px;
     background: var(--red-color);
     clip-path: ellipse(50% 40% at 50% 50%);
-  }
-
-  @media (min-height: 750px) {
-    .buttonBase {
-      font-size: 3vh;
-    }
   }

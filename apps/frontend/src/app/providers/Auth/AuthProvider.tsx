@@ -1,16 +1,22 @@
+import { retrieveRawInitData } from '@tma.js/sdk';
 import { createContext, useEffect, useState } from 'react';
 import { authService } from '../../../shared/services/auth.service';
 import { fetchToken } from '../../../shared/services/api/auth.api';
-import { createUser } from '../../../shared/services/api/user.api';
+
+type AuthMode = 'full' | 'guest';
 
 export const AuthContext = createContext({
   isAuth: false,
   isLoading: true,
+  mode: 'guest' as AuthMode,
+  requiresTmaLogin: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuth, setIsAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [mode, setMode] = useState<AuthMode>('guest');
+  const [requiresTmaLogin, setRequiresTmaLogin] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -19,37 +25,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (token) {
           setIsAuth(true);
+          setMode('full');
+          setRequiresTmaLogin(false);
           return;
         }
 
-        const tg = window.Telegram?.WebApp;
-        const telegramUser = tg?.initDataUnsafe?.user;
+        const normalizedInitData = retrieveRawInitData();
 
-        if (!telegramUser?.id) {
-          throw new Error('TELEGRAM_USER_NOT_FOUND');
+        if (!normalizedInitData) {
+          throw new Error('INIT_DATA_NOT_FOUND');
         }
 
-        const telegramId = String(telegramUser.id);
-
-        try {
-          // Пробуем получить токен
-          token = await fetchToken(telegramId);
-        } catch (err: any) {
-          // Если юзер не зарегистрирован — создаём
-          if (err?.response?.data?.message === 'USER_NOT_REGISTERED') {
-            await createUser(telegramId, telegramUser.username);
-            token = await fetchToken(telegramId);
-          } else {
-            throw err;
-          }
-        }
+        token = await fetchToken(normalizedInitData);
         
-        if (token !== null)
-        authService.setToken(token);
+        if (token !== null) authService.setToken(token);
+
         setIsAuth(true);
+        setMode('full');
+        setRequiresTmaLogin(false);
       } catch (e) {
         authService.removeToken();
         setIsAuth(false);
+        setMode('guest');
+        setRequiresTmaLogin(true);
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   if (isLoading) return null; // или Loader
 
   return (
-    <AuthContext.Provider value={{ isAuth, isLoading }}>
+    <AuthContext.Provider value={{ isAuth, isLoading, mode, requiresTmaLogin }}>
       {children}
     </AuthContext.Provider>
   );

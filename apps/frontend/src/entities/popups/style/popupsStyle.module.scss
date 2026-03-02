@@ -1,21 +1,29 @@
 .deckPopupContent {
     width: 100%;
     max-width: 480px;
-    height: 70vh;
-    max-height: 100%;
-    padding: 20px 5vh;
-    margin: 20px;
+    max-height: calc(100dvh - 48px);
+    padding: 20px 16px;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
-.deckPopupContent p {
-    font-size: 3.5vh;
+.deckPopupContent p,
+.deckPopupContent span {
+    font-size: clamp(16px, 2.2vh, 24px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .title {
     width: 100%;
     text-align: center;
     color: var(--red-color);
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    font-size: clamp(24px, 4vh, 42px) !important;
+    line-height: 1.1;
 }
 
 .title {
@@ -26,10 +34,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    align-items: baseline;
 }
 
 .dataDeck {
-    margin-top: 6vh;
+    margin-top: 16px;
+    line-height: 1.25;
+    white-space: pre-wrap;
 }
 
 .leavePopupContent {

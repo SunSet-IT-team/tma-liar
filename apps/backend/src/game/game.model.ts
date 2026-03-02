@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 import { GameStages } from '../lobby/entities/lobby.entity';
 import type { Game } from './entities/game.entity';
-import { SettingsModel } from '../lobby/settings.modal';
+import { SettingsModel } from '../lobby/settings.model';
 import { PlayerModel } from '../lobby/player.model';
 
 /**
@@ -42,6 +42,12 @@ export const GameSchema = new Schema<Game>(
       default: null,
     },
 
+    /** Временная метка старта текущей стадии (ms) */
+    stageStartedAt: {
+      type: Number,
+      default: () => Date.now(),
+    },
+
     /** Список id вопросов, которые уже задавались */
     questionHistory: {
       type: [String],
@@ -64,6 +70,12 @@ export const GameSchema = new Schema<Game>(
     doLie: {
       type: Boolean,
       default: null,
+    },
+
+    /** Пары лайков в текущем раунде (senderId:receiverId), чтобы блокировать дубли */
+    roundLikePairs: {
+      type: [String],
+      default: [],
     },
 
     /** Задание для проигравшего (из настроек игрока) */

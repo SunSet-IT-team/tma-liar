@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 import styles from './style/taimerStyle.module.scss';
-import taimerCircle from '../../../../public/icons/taimerCircle.svg';
+import timerCircle from '/icons/taimerCircle.svg';
 import { useAppSelector } from '../../../app/store/hook';
 
 /**
@@ -11,11 +11,14 @@ export const Timer: FC = () => {
   const time = useAppSelector((state) => state.timer.time);
 
   return (
-    <div className={styles.content}>
-      <img src={taimerCircle} alt="" className={styles.taimerIcon} />
-      <div className={styles.loaderWrapper}>
-        <div className={styles.loader} style={{ animationDuration: `${time}s` }} />
+    <>
+      <div className={styles.spacer} aria-hidden />
+      <div className={styles.content}>
+        <img src={timerCircle} alt="Timer circle" className={styles.taimerIcon} />
+        <div className={styles.loaderWrapper}>
+          <div className={styles.loader} style={{ animationDuration: `${time}s` }} />
+        </div>
       </div>
-    </div>
+    </>
   );
 };

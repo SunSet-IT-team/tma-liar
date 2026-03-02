@@ -9,9 +9,9 @@
 .checkmark {
     border-radius: 10px;
     display: inline-block;
-    width: 7vh;
-    height: 7vh;
-    outline: 0.4vh solid var(--black-main-color);
+    width: clamp(50px, 12vw, 70px);
+    height: clamp(50px, 12vw, 70px);
+    outline: 3px solid var(--black-main-color);
 }
 
 .check:checked + .checkmark {

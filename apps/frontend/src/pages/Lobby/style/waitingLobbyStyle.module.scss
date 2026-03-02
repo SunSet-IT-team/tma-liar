@@ -1,59 +1,110 @@
 .container {
-    justify-content: space-around;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .lobbyBlock {
-    width: 100%;
-    margin-bottom: 30px;
+  width: 100%;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 .lobbyTitle {
-    position: relative; 
-    display: inline-block;
-    color: var(--red-color);
-    font-size: 10vh;
+  position: relative;
+  display: block;
+  color: var(--red-color) !important;
+  font-size: clamp(32px, 8.2vw, 56px);
+  line-height: 0.95;
+  text-align: left;
 }
 
 .lobbyCode {
-    position: absolute;
-    right: -20px;
+  font-size: clamp(14px, 3.6vw, 20px);
+  line-height: 1;
+  opacity: 0.9;
+  text-align: center;
+  margin-top: 4px;
 }
 
 .lobbyPlayers {
-    gap: 1.3vh;
+  padding: 20px 0;
+  width: 100%;
 }
 
 .taskBlock {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 10px 12px;
+  border-radius: 18px;
 }
 
 .taskLoserText {
-    color: var(--red-color);
-    margin-top: 3vh;
-    margin-bottom: 3vh;
-    text-align: center;
+  color: var(--red-color);
+  margin-top: 0;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: clamp(14px, 4.6vw, 20px);
 }
 
 .container .taskLoserWrapper {
-    width: 100%;
-    max-width: unset;
-    margin-bottom: 25px;
+  width: 100%;
+  max-width: unset;
+  margin-bottom: 8px;
 }
 
 .container .taskLoserInput {
-    width: 100%;
-    font-size: 14px;
-    padding-bottom: 5px;
+  width: 100%;
+  font-size: clamp(16px, 4.8vw, 22px);
+  padding-bottom: 4px;
 }
 
 .connectedPlayers {
-    margin-bottom: 1vh;
+  margin-bottom: 0;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .readyBtn {
-    color: var(--red-color);
-    font-size: 8vh;
+  color: var(--red-color);
+  font-size: clamp(24px, 6.2vw, 38px);
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+  padding-bottom: 2px;
+}
+
+.secondaryAction {
+  opacity: 0.78;
+}
+
+.errorText {
+  width: 100%;
+  text-align: center;
+  color: var(--red-color);
+  font-size: clamp(12px, 3.4vw, 16px);
+}
+
+.statusHint {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+@media (max-width: 440px) {
+  .taskBlock {
+    padding: 8px 8px 10px;
+  }
+
+  .lobbyTitle {
+    font-size: clamp(30px, 9vw, 46px);
+  }
 }

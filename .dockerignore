@@ -3,8 +3,8 @@ node_modules
 **/node_modules
 npm-debug.log
 yarn-error.log
-bun.lock
-bun.lockb
+!bun.lock
+!bun.lockb
 package-lock.json
 yarn.lock
 
@@ -53,4 +53,3 @@ coverage
 # Logs
 logs
 *.log
-

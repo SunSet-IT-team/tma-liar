@@ -1,5 +1,4 @@
 import { type FC } from 'react';
-import { PageRoutes } from '../../app/routes/pages';
 import { GameProcess } from '../../features/GameProcess';
 import { ResultUsersBadge } from '../../features/UsersBadge/ui/ResultUsersBadge';
 import { Container } from '../../shared/ui/Container';
@@ -13,7 +12,7 @@ export const ResultGame: FC = () => {
     <Container>
       <Header inGame />
       <ResultUsersBadge />
-      <GameProcess route={`/${PageRoutes.END_GAME}`} />
+      <GameProcess />
     </Container>
   );
 };

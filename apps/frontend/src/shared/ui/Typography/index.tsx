@@ -1,4 +1,4 @@
-import { type FC, JSX, ReactNode } from 'react';
+import type { FC, JSX, ReactNode } from 'react';
 import styles from './style/typographyStyle.module.scss';
 import clsx from 'clsx';
 

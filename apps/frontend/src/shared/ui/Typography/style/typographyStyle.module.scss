@@ -4,51 +4,25 @@
   }
   
   .titleLarge {
-    font-size: 12vh;
+    font-size: clamp(64px, 10vw, 104px);
   }
   
   .titleMiniLarge {
-    font-size: 10vh;
+    font-size: clamp(54px, 8.5vw, 88px);
   }
   
   .titleMedium {
-    font-size: 8vh;
+    font-size: clamp(42px, 6.8vw, 72px);
   }
   
   .body {
-    font-size: 4vh;
+    font-size: clamp(24px, 3.9vw, 36px);
   }
   
   .text {
-    font-size: 3.5vh;
+    font-size: clamp(20px, 3.2vw, 32px);
   }
   
   .caption {
-    font-size: 2vh;
+    font-size: clamp(12px, 1.9vw, 18px);
   }
-
-@media (min-height: 750px) {
-  .titleLarge {
-    font-size: 10vh;
-  }
-  
-  .titleMiniLarge {
-    font-size: 8vh;
-  }
-  
-  .titleMedium {
-    font-size: 6.5vh;
-  }
-  
-  .body {
-    font-size: 3.5vh;
-  }
-  
-  .text {
-    font-size: 3vh;
-  }
-  
-  .caption {
-    font-size: 1.5vh;
-  }
-}

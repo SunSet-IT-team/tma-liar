@@ -5,22 +5,13 @@ import styles from './style/choosingLiarStyle.module.scss';
 import { Typography } from '../../shared/ui/Typography';
 import { Container } from '../../shared/ui/Container';
 import { GameProcess } from '../../features/GameProcess';
-import { PageRoutes } from '../../app/routes/pages';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../app/store/hook';
-import { updateTimer } from '../../entities/game/model/timerSlice';
+import { useChooseLiar } from '@features/ChooseLiar';
 
 /**
  * Страница с выбором вранья лжеца
  */
 export const ChoosingLiar: FC = () => {
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const route = `/${PageRoutes.ANSWER_LIAR}`;
-  const choosingLiar = () => {
-    dispatch(updateTimer());
-    navigate(route);
-  };
+  const { isSubmitting, errorText, chooseStrategy } = useChooseLiar();
 
   return (
     <Container className={styles.container}>
@@ -29,11 +20,16 @@ export const ChoosingLiar: FC = () => {
           Будешь врать?
         </Typography>
         <div className={styles.choosingBtns}>
-          <Button onClick={choosingLiar}>Да</Button>
-          <Button onClick={choosingLiar}>нет</Button>
+          <Button onClick={() => void chooseStrategy(true)} disabled={isSubmitting}>
+            Да
+          </Button>
+          <Button onClick={() => void chooseStrategy(false)} disabled={isSubmitting}>
+            Нет
+          </Button>
         </div>
+        {errorText ? <Typography>{errorText}</Typography> : null}
       </div>
-      <GameProcess route={route} />
+      <GameProcess />
       <Timer />
     </Container>
   );

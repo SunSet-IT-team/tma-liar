@@ -11,8 +11,8 @@
   }
   
   .avatar {
-    width: 28vh;
-    height: 28vh;
+    width: clamp(160px, 42vw, 260px);
+    height: clamp(160px, 42vw, 260px);
     border-radius: 8px;
     object-fit: cover;
     cursor: pointer;
@@ -26,4 +26,9 @@
   .error {
     color: var(--red-color);
     text-align: center;
+  }
+
+  .helper {
+    text-align: center;
+    opacity: 0.8;
   }

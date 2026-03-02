@@ -6,22 +6,17 @@ import { Typography } from '../../shared/ui/Typography';
 import { TextInput } from '../../shared/ui/TextInput';
 import { Button } from '../../shared/ui/Button';
 import { UserBadge } from '../../entities/user/ui/UserBadge';
-import circleIcon from '../../../public/icons/profileCircle.svg';
+import circleIcon from '/icons/profileCircle.svg';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../app/routes/pages';
-import { usePlaySound } from '../../shared/lib/sound/usePlaySound';
+import { useJoinLobby } from '@features/JoinLobby';
 
 /**
  * Экран присоединения к лобби
  */
 export const ConnectLobby: FC = () => {
   const navigate = useNavigate();
-  const playSound = usePlaySound();
-
-  const player = () => {
-    playSound();
-    navigate(`/${PageRoutes.PROFILE}`);
-  };
+  const { user, lobbyCode, isSubmitting, errorText, setLobbyCode, joinLobby } = useJoinLobby();
 
   return (
     <Container>
@@ -32,14 +27,22 @@ export const ConnectLobby: FC = () => {
         </Typography>
         Лобби
       </Typography>
-      <TextInput placeholder="task" className={styles.lobbyInput} />
-      <Button className={styles.connectBtn} onClick={() => navigate(`/${PageRoutes.LOBBY_PLAYER}`)}>
-        Присоедениться
+      <TextInput
+        placeholder="Введите код лобби"
+        className={styles.lobbyInput}
+        value={lobbyCode}
+        onChange={(event) => setLobbyCode(event.target.value)}
+      />
+      <Button className={styles.connectBtn} onClick={joinLobby} disabled={isSubmitting}>
+        {isSubmitting ? 'Подключаю...' : 'Присоединиться'}
       </Button>
-      <button onClick={player}>
-        <UserBadge variant="large" id={1} name="Бешеный татар" />
+
+      {errorText && <Typography>{errorText}</Typography>}
+
+      <button onClick={() => navigate(`/${PageRoutes.PROFILE}`)}>
+        <UserBadge variant="large" id={1} name={user.nickname} photo={user.profileImg} />
       </button>
-      <img src={circleIcon} alt="" className={styles.circleIcon} />
+      <img src={circleIcon} alt="" className={styles.circleIcon} data-decor="true" />
     </Container>
   );
 };

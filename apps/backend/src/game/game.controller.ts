@@ -20,7 +20,7 @@ export class GameController {
     const result = GameNextStageDtoSchema.safeParse({ gameId: req.params.gameId });
 
     if (!result.success) {
-      throw new ApiError(400, "NEXT_STAGE_DATA_INVALID");
+      throw new ApiError(422, "NEXT_STAGE_DATA_INVALID");
     }
 
     const dto: GameNextStageDto = result.data;
@@ -36,7 +36,7 @@ export class GameController {
     const result = GameLiarChoosesDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "LIAR_CHOOSES_DATA_INVALID");
+      throw new ApiError(422, "LIAR_CHOOSES_DATA_INVALID");
     }
 
     const dto: GameLiarChoosesDto = result.data;
@@ -52,7 +52,7 @@ export class GameController {
     const result = GamePlayerVotedDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "SET_ANSWER_DATA_INVALID");
+      throw new ApiError(422, "SET_ANSWER_DATA_INVALID");
     }
 
     const dto: GamePlayerVotedDto = result.data;
@@ -68,7 +68,7 @@ export class GameController {
     const result = GamePlayerSecuredDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "CONFIRM_ANSWER_DATA_INVALID");
+      throw new ApiError(422, "CONFIRM_ANSWER_DATA_INVALID");
     }
 
     const dto: GamePlayerSecuredDto = result.data;
@@ -84,7 +84,7 @@ export class GameController {
     const result = GamePlayerLikedDtoSchema.safeParse(req.body);
 
     if (!result.success) {
-      throw new ApiError(400, "LIKE_ANSWER_DATA_INVALID");
+      throw new ApiError(422, "LIKE_ANSWER_DATA_INVALID");
     }
 
     const dto: GamePlayerLikedDto = result.data;
