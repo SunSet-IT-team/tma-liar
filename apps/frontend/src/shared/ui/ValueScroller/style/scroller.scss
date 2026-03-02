@@ -9,7 +9,7 @@
 
 .scrollerSwiper {
   width: 100%;
-  height: clamp(90px, 12vh, 120px);
+  height: clamp(74px, 20vw, 104px);
   overflow: hidden;
 }
 
@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: clamp(90px, 12vh, 120px);
+  height: clamp(74px, 20vw, 104px);
 }
 
 .scrollerValue {

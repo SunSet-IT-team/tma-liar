@@ -1,7 +1,9 @@
-import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom"
+import { lazy, Suspense, type ReactElement } from "react";
+import { Route, Routes, useLocation } from "react-router-dom"
 import { PageRoutes } from "./pages"
 import { useBackgroundMusic } from "../providers/BackgroundMusicProvider"
+import { AnimatePresence, motion } from 'framer-motion';
+import styles from './appRouterStyle.module.scss';
 
 const Home = lazy(() => import("@pages/Home").then((module) => ({ default: module.Home })));
 const Profile = lazy(() => import("@pages/Profile").then((module) => ({ default: module.Profile })));
@@ -23,30 +25,43 @@ const NotFound = lazy(() => import("@pages/NotFound").then((module) => ({ defaul
 
 export const AppRouter = () => {  
   useBackgroundMusic();
+  const location = useLocation();
+
+  const withTransition = (element: ReactElement) => (
+    <motion.div
+      className={styles.routeTransition}
+      initial={{ opacity: 0, y: 12, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.985 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+    >
+      {element}
+    </motion.div>
+  );
 
   return (
     <Suspense fallback={null}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path={`/${PageRoutes.PROFILE}`} element={<Profile />} />
-        <Route path={`/${PageRoutes.ANSWER_LIAR}`} element={<AnswerLiar />} />
-        <Route path={`/${PageRoutes.ANSWER_SOLVED}`} element={<AnswerSolved />} />
-        <Route path={`/${PageRoutes.ANSWERS_PLAYERS}`} element={<AnswersPlayers />} />
-        <Route path={`/${PageRoutes.CHOOSING_LIAR}`} element={<ChoosingLiar />} />
-        <Route path={`/${PageRoutes.CONNECT_LOBBY}`} element={<ConnectLobby />} />
-        <Route path={`/${PageRoutes.CREATE_LOBBY}`} element={<CreateLobby />} />
-        <Route path={`/${PageRoutes.END_GAME}`} element={<EndGame />} />
-        <Route path={`/${PageRoutes.RATE_PLAYERS}`} element={<RatePlayers />} />
-        <Route path={`/${PageRoutes.RESULT_GAME}`} element={<ResultGame />} />
-        <Route path={`/${PageRoutes.RULES}`} element={<Rules />} />
-        <Route path={`/${PageRoutes.SETTINGS}`} element={<Settings />} />
-        <Route path={`/${PageRoutes.LOBBY_ADMIN}`} element={<LobbyAdmin />} />
-        <Route path={`/${PageRoutes.LOBBY_PLAYER}`} element={<LobbyPlayer />} />
-        <Route path={`/${PageRoutes.WAITING_PLAYERS}`} element={<WaitingPlayers />} />
-
-        {/* Резервный маршрут 404 */}
-        <Route path='*' element={<NotFound />} />
-      </Routes>
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={withTransition(<Home />)} />
+          <Route path={`/${PageRoutes.PROFILE}`} element={withTransition(<Profile />)} />
+          <Route path={`/${PageRoutes.ANSWER_LIAR}`} element={withTransition(<AnswerLiar />)} />
+          <Route path={`/${PageRoutes.ANSWER_SOLVED}`} element={withTransition(<AnswerSolved />)} />
+          <Route path={`/${PageRoutes.ANSWERS_PLAYERS}`} element={withTransition(<AnswersPlayers />)} />
+          <Route path={`/${PageRoutes.CHOOSING_LIAR}`} element={withTransition(<ChoosingLiar />)} />
+          <Route path={`/${PageRoutes.CONNECT_LOBBY}`} element={withTransition(<ConnectLobby />)} />
+          <Route path={`/${PageRoutes.CREATE_LOBBY}`} element={withTransition(<CreateLobby />)} />
+          <Route path={`/${PageRoutes.END_GAME}`} element={withTransition(<EndGame />)} />
+          <Route path={`/${PageRoutes.RATE_PLAYERS}`} element={withTransition(<RatePlayers />)} />
+          <Route path={`/${PageRoutes.RESULT_GAME}`} element={withTransition(<ResultGame />)} />
+          <Route path={`/${PageRoutes.RULES}`} element={withTransition(<Rules />)} />
+          <Route path={`/${PageRoutes.SETTINGS}`} element={withTransition(<Settings />)} />
+          <Route path={`/${PageRoutes.LOBBY_ADMIN}`} element={withTransition(<LobbyAdmin />)} />
+          <Route path={`/${PageRoutes.LOBBY_PLAYER}`} element={withTransition(<LobbyPlayer />)} />
+          <Route path={`/${PageRoutes.WAITING_PLAYERS}`} element={withTransition(<WaitingPlayers />)} />
+          <Route path='*' element={withTransition(<NotFound />)} />
+        </Routes>
+      </AnimatePresence>
     </Suspense>
   )
 }

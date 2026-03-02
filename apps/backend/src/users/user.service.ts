@@ -6,11 +6,13 @@ import type { CreateUserDto } from './dtos/user-create.dto';
 import type { UpdateUserDto } from './dtos/user-update.dto';
 import type { DeleteUserDto } from './dtos/user-delete.dto';
 import { UserRepository } from './user.repository';
+import { LobbyRepository } from '../lobby/lobby.repository';
 
 /**
  * Интерфейс для сервиса пользователей
  */
 export interface UserServiceMethods {
+  findUserById: (param: { id: string }) => Promise<User>;
   findUser: (param: FindUserDto) => Promise<User | null>;
   findUsers: (param: FindUsersDto) => Promise<User[]>;
   createUser: (param: CreateUserDto) => Promise<User>;
@@ -22,7 +24,20 @@ export interface UserServiceMethods {
  * Сервис пользователей
  */
 export class UserService implements UserServiceMethods {
-  constructor(private readonly userRepository: UserRepository = new UserRepository()) {}
+  constructor(
+    private readonly userRepository: UserRepository = new UserRepository(),
+    private readonly lobbyRepository: LobbyRepository = new LobbyRepository(),
+  ) {}
+
+  public async findUserById(param: { id: string }): Promise<User> {
+    const user = await this.userRepository.findById(param.id);
+
+    if (!user) {
+      throw new ApiError(404, 'USER_NOT_FOUND');
+    }
+
+    return user;
+  }
 
   public async findUser(param: FindUserDto): Promise<User> {
     const user = await this.userRepository.findByTelegramId(param.telegramId);
@@ -52,6 +67,10 @@ export class UserService implements UserServiceMethods {
     const updatedUser = await this.userRepository.updateByTelegramId(param);
 
     if (!updatedUser) throw new ApiError(404, 'USER_NOT_FOUND');
+
+    if (typeof param.profileImg === 'string') {
+      await this.lobbyRepository.updatePlayerProfileImg(param.telegramId, param.profileImg);
+    }
 
     return updatedUser;
   }

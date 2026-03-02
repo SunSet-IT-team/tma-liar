@@ -12,18 +12,21 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .subtitle {
     color: var(--white-main-color);
-    margin-bottom: 4vh;
+    margin-bottom: 2.5vh;
 }
 
 .rulesText {
-    max-height: 30vh;
-    overflow: scroll;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding-right: 8px;
     color: var(--white-main-color);
+    width: 100%;
+    line-height: 1.2;
 
     /* Скрыть скроллбар для Chrome, Safari, Opera */
     &::-webkit-scrollbar {
@@ -37,15 +40,41 @@
     -ms-overflow-style: none;
 }
 
+.section {
+    margin-bottom: 16px;
+}
+
+.sectionTitle {
+    color: var(--white-main-color);
+    margin-bottom: 8px;
+}
+
+.paragraph {
+    color: var(--white-main-color);
+    font-family: 'CodeProLC';
+    margin: 0;
+}
+
+.list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--white-main-color);
+    font-family: 'CodeProLC';
+}
+
+.list li {
+    margin-bottom: 6px;
+}
+
 .rulesIconBlock {
-    padding-bottom: 40px;
+    padding-bottom: 20px;
     display: flex;
     width: 100%;
     justify-content: center;
 }
 
 .rulesIcon {
-    width: 28vh;
+    width: min(28vh, 220px);
 }
 
 @media (max-width: 370px) {

@@ -4,6 +4,7 @@ import { GameSocketEvents } from '@common/message-types';
 import { SocketSystemEvents } from '@common/message-types';
 import type { SocketErrorPayload } from '@common/message-types';
 import { PageRoutes } from '@app/routes/pages';
+import { preloadAllScreens } from '@app/routes/preloadScreens';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';
 import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
@@ -21,6 +22,9 @@ export function useStartGame({ lobbyCode, onSyncLobbyState }: UseStartGameParams
 
   const startGame = () => {
     if (!lobbyCode || isStarting) return;
+
+    // Прогреваем lazy-чанки экранов до переходов в игровой поток.
+    void preloadAllScreens();
 
     setIsStarting(true);
     setStartError(null);

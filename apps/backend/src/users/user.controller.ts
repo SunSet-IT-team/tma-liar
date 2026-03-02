@@ -6,6 +6,14 @@ import { FindUsersDtoSchema, type FindUsersDto } from './dtos/user-findUsers.dto
 import { CreateUserDtoSchema, type CreateUserDto } from './dtos/user-create.dto';
 import { UpdateUserDtoSchema, type UpdateUserDto } from './dtos/user-update.dto';
 import { DeleteUserDtoSchema, type DeleteUserDto } from './dtos/user-delete.dto';
+import type { AuthRequest } from '../middlewares/auth.middleware';
+
+type UserUpdateRequest = Request & {
+  file?: {
+    mimetype: string;
+    buffer: Buffer;
+  };
+};
 
 /**
  * Класс контроллеров пользователей
@@ -74,9 +82,34 @@ export class UserController {
    * Контроллер обновления пользователя
    */
   updateUser = async (req: Request, res: Response) => {
+    const updateReq = req as UserUpdateRequest;
+    const authReq = req as AuthRequest;
+    const authHeader = req.headers.authorization;
+    if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+      throw new ApiError(403, 'TELEGRAM_AUTH_REQUIRED');
+    }
+
+    if (!authReq.userId) {
+      throw new ApiError(401, 'UNAUTHORIZED');
+    }
+
+    const currentUser = await this.userService.findUserById({ id: authReq.userId });
+    if (currentUser.telegramId !== req.params.telegramId) {
+      throw new ApiError(403, 'USER_UPDATE_FORBIDDEN');
+    }
+
+    let profileImgFromFile: string | undefined;
+    if (updateReq.file) {
+      if (!updateReq.file.mimetype.startsWith('image/')) {
+        throw new ApiError(422, 'INVALID_PROFILE_IMAGE_TYPE');
+      }
+      profileImgFromFile = `data:${updateReq.file.mimetype};base64,${updateReq.file.buffer.toString('base64')}`;
+    }
+
     const bodyResult = UpdateUserDtoSchema.safeParse({
       telegramId: req.params.telegramId,
       ...req.body,
+      profileImg: profileImgFromFile ?? req.body?.profileImg,
     });
 
     if (!bodyResult.success) {

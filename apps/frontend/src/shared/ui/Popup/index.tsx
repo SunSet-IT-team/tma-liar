@@ -18,13 +18,12 @@ type PopupProps = {
 export const Popup: FC<PopupProps> = ({ className, children, changeShow }) => {
   const playSound = usePlaySound();
   const closePopup = () => {
-    playSound();
     changeShow(false);
   };
   return (
     <div className={styles.container}>
       <div className={clsx(styles.content, className)}>{children}</div>
-      <div className={styles.closedPlace} onClick={closePopup}></div>
+      <div className={styles.closedPlace} onPointerDown={() => playSound()} onClick={closePopup}></div>
     </div>
   );
 };

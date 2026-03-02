@@ -58,7 +58,12 @@ export const CreateLobby: FC = () => {
           </Button>
         </div>
       ) : (
-        <Button variant="buttonUnderline" onClick={createLobby} disabled={isSubmitting}>
+        <Button
+          variant="buttonUnderline"
+          soundTrigger="click"
+          onClick={createLobby}
+          disabled={isSubmitting}
+        >
           {isSubmitting ? 'Создаю...' : 'Создать'}
         </Button>
       )}

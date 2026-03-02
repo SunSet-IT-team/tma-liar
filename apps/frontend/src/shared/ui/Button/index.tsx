@@ -18,6 +18,7 @@ export interface BtnProps {
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
+  soundTrigger?: 'pointerdown' | 'click';
 }
 
 /**
@@ -30,17 +31,21 @@ export const Button: FC<BtnProps> = ({
   children,
   onClick,
   disabled,
+  soundTrigger = 'pointerdown',
 }) => {
   const playSound = usePlaySound();
 
   const handleClick = () => {
-    playSound();
+    if (soundTrigger === 'click') {
+      playSound();
+    }
     onClick?.();
   };
 
   return (
     <Component
       className={clsx(styles.buttonBase, styles[variant], className)}
+      onPointerDown={soundTrigger === 'pointerdown' ? () => playSound() : undefined}
       onClick={handleClick}
       disabled={disabled}
     >

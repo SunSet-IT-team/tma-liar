@@ -1,11 +1,10 @@
-import { type FC } from 'react';
+import { type FC, useEffect } from 'react';
 import styles from '../style/waitingLobbyStyle.module.scss';
 import { Header } from '@widgets/Header';
 import { Typography } from '@shared/ui/Typography';
 import { LobbyUsersBadge } from '@features/UsersBadge';
 import { TextInput } from '@shared/ui/TextInput';
 import { Container } from '@shared/ui/Container';
-import { Button } from '@shared/ui/Button';
 import { ReadyToggle } from '@features/ReadyToggle';
 import { useLobbyRealtimeSession } from '@features/LobbyRealtime';
 import { useStartGame } from '@features/StartGame';
@@ -50,6 +49,14 @@ export const LobbyAdmin: FC = () => {
         ? 'Нужно задание проигравшему'
         : null;
 
+  useEffect(() => {
+    if (!session) return;
+    if (session.status === 'started') return;
+    if (isStarting) return;
+    if (startBlockReason) return;
+    startGame();
+  }, [isStarting, session, startBlockReason, startGame]);
+
   if (!session) return null;
 
   return (
@@ -93,17 +100,9 @@ export const LobbyAdmin: FC = () => {
           onValidationError={setReadyError}
           onBeforeToggle={toggleReady}
         />
-        {startBlockReason ? (
-          <Typography className={styles.statusHint}>{startBlockReason}</Typography>
-        ) : (
-          <Button
-            className={`${styles.readyBtn} ${styles.secondaryAction}`}
-            onClick={startGame}
-            disabled={isStarting}
-          >
-            {isStarting ? 'Запуск...' : 'Начать'}
-          </Button>
-        )}
+        <Typography className={styles.statusHint}>
+          {startBlockReason ?? (isStarting ? 'Запуск игры...' : 'Игра запускается автоматически')}
+        </Typography>
       </div>
     </Container>
   );

@@ -5,6 +5,7 @@ import type { LobbyStatePayload } from '@common/message-types';
 import type { SocketErrorPayload } from '@common/message-types';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
+import { preloadAllScreens } from '@app/routes/preloadScreens';
 import { getCurrentTmaUser } from '@shared/lib/tma/user';
 import {
   applyLobbyDiff,
@@ -172,6 +173,14 @@ export function useLobbyRealtimeSession(mode: Mode) {
       });
 
     const onGameStatusChanged = (payload: ChangeGameStatusPayload) => {
+      const status = payload.diff?.status ?? payload.status ?? null;
+      const hasGameId = Object.prototype.hasOwnProperty.call(payload.diff ?? {}, 'currentGameId')
+        ? Boolean(payload.diff?.currentGameId)
+        : false;
+      if (status === 'started' || hasGameId) {
+        void preloadAllScreens();
+      }
+
       setSession((prev) => {
         if (!prev) return prev;
 

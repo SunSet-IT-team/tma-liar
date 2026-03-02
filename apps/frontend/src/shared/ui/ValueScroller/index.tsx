@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FC, ReactNode } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -51,6 +51,10 @@ export const ValueScroller: FC<ScrollerProps> = ({
   children,
 }) => {
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
+  const onChangeRef = useRef(onChange);
+  const lastReportedIndexRef = useRef<number | null>(null);
+  const suppressSlideSoundRef = useRef(false);
+  const userInteractionRef = useRef(false);
   const normalizedMin = Math.min(min, max);
   const normalizedMax = Math.max(min, max);
   const values = useMemo(() => {
@@ -81,23 +85,35 @@ export const ValueScroller: FC<ScrollerProps> = ({
   const playSound = usePlaySound();
 
   useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
     if (!swiperInstance || values.length === 0) return;
 
+    suppressSlideSoundRef.current = true;
     if (isLoopEnabled) {
       swiperInstance.slideToLoop(initialValue, 0, false);
     } else {
       swiperInstance.slideTo(initialValue, 0, false);
     }
+    requestAnimationFrame(() => {
+      suppressSlideSoundRef.current = false;
+    });
 
     const selected = values[initialValue];
     if (selected !== undefined) {
-      onChange?.(selected);
+      lastReportedIndexRef.current = initialValue;
+      onChangeRef.current?.(selected);
     }
-  }, [swiperInstance, values, initialValue, isLoopEnabled, onChange]);
+  }, [swiperInstance, values, initialValue, isLoopEnabled]);
 
   return (
     <div className="scrollerContent">
       <Swiper
+        onMouseDown={() => {
+          userInteractionRef.current = true;
+        }}
         direction={'vertical'}
         className="swiper scrollerSwiper"
         initialSlide={initialValue}
@@ -108,10 +124,21 @@ export const ValueScroller: FC<ScrollerProps> = ({
         onSwiper={setSwiperInstance}
         onSlideChange={(swiper: SwiperType) => {
           const index = swiper.realIndex;
+          if (lastReportedIndexRef.current === index) return;
           const selected = values[index];
           if (selected === undefined) return;
-          onChange?.(selected); // realIndex — индекс с учётом loop
-          playSound();
+          lastReportedIndexRef.current = index;
+          onChangeRef.current?.(selected); // realIndex — индекс с учётом loop
+          if (!suppressSlideSoundRef.current && userInteractionRef.current) {
+            playSound();
+            userInteractionRef.current = false;
+          }
+        }}
+        onTouchStart={() => {
+          userInteractionRef.current = true;
+        }}
+        onSliderMove={() => {
+          userInteractionRef.current = true;
         }}
       >
         {values.map((value, i) => (

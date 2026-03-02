@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { isGameStatusChangedPayload } from '@common/message-types';
+import { isLobbyStatusChangedPayload } from '@common/message-types';
 import type { StatusChangedPayload } from '@common/message-types';
 import { SocketSystemEvents } from '@common/message-types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../routes/pages';
+import { preloadAllScreens } from '../../routes/preloadScreens';
 import { store } from '../../store';
 import { resetTimer, startTimer } from '../../../entities/game/model/timerSlice';
 import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
@@ -262,6 +264,7 @@ export function SessionRehydration() {
         }
 
         // Игра активна: восстанавливаем поля текущей стадии и переводим на нужный экран.
+        void preloadAllScreens();
         const gameState = await subscribeGameRoom(baseSession.currentGameId);
         const nextSession = applyGameStateToSession(baseSession, gameState);
         lobbySessionService.set(nextSession);
@@ -310,16 +313,19 @@ export function SessionRehydration() {
     const eventName = SocketSystemEvents.STATUS_CHANGED;
 
     const onGameStatusChanged = (payload: StatusChangedPayload) => {
-      if (!isGameStatusChangedPayload(payload)) {
+      const isGamePayload = isGameStatusChangedPayload(payload);
+      const isLobbyPayload = isLobbyStatusChangedPayload(payload);
+      if (!isGamePayload && !isLobbyPayload) {
         return;
       }
+      const gamePayload = isGamePayload ? payload : null;
 
       const syncBySocketEvent = async () => {
         const session = lobbySessionService.get();
         if (!session) return;
 
-        const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
-        const incomingGameId = payload.gameId ?? null;
+        const incomingStage = gamePayload?.stage ?? payload.diff?.stage ?? null;
+        const incomingGameId = gamePayload?.gameId ?? null;
         // Игнорируем запоздалые события от уже завершенной/удаленной игры.
         const isLateResultFromPreviousGame =
           session.status === 'waiting' &&
@@ -339,7 +345,7 @@ export function SessionRehydration() {
         const hasDiffCurrentGameId = Boolean(
           payload.diff && Object.prototype.hasOwnProperty.call(payload.diff, 'currentGameId'),
         );
-        const gameId = payload.gameId ?? (hasDiffCurrentGameId ? payload.diff?.currentGameId ?? null : session.currentGameId ?? null);
+        const gameId = gamePayload?.gameId ?? (hasDiffCurrentGameId ? payload.diff?.currentGameId ?? null : session.currentGameId ?? null);
         const rawStatus = payload.diff?.status ?? payload.status ?? null;
         const lobbyStatusFromPayload =
           rawStatus === 'waiting' || rawStatus === 'started' || rawStatus === 'finished' ? rawStatus : null;
@@ -348,15 +354,15 @@ export function SessionRehydration() {
         // В этом случае дополнительно сверяемся с актуальным снимком лобби:
         // только если `currentGameId` совпадает и статус действительно `started`,
         // разрешаем обработку события. Это не дает "воскресить" старую игру.
-        if (payload.gameId && !session.currentGameId && !hasDiffCurrentGameId) {
-          const incomingStage = payload.stage ?? payload.diff?.stage ?? null;
+        if (gamePayload?.gameId && !session.currentGameId && !hasDiffCurrentGameId) {
+          const incomingStage = gamePayload.stage ?? payload.diff?.stage ?? null;
           if (incomingStage === 'game_results' || incomingStage === 'end') {
             return;
           }
 
           try {
             const lobbySnapshot = await findLobbyRequest(session.lobbyCode);
-            const isSameGame = lobbySnapshot.currentGameId === payload.gameId;
+            const isSameGame = lobbySnapshot.currentGameId === gamePayload.gameId;
             const isStarted = lobbySnapshot.status === 'started';
             if (!isSameGame || !isStarted) {
               return;
@@ -368,17 +374,21 @@ export function SessionRehydration() {
         }
 
         const nextStatus = lobbyStatusFromPayload ?? (gameId ? 'started' : session.status);
-        let stage = payload.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
-        let stageStartedAt = payload.stageStartedAt ?? session.currentStageStartedAt ?? null;
-        let stageDurationMs = payload.stageDurationMs ?? session.currentStageDurationMs ?? null;
-        let liarId = payload.liarId ?? session.currentLiarId ?? null;
-        let activeQuestion = payload.activeQuestion ?? payload.diff?.activeQuestion ?? session.currentQuestionId ?? null;
-        let activeQuestionText = payload.activeQuestionText ?? session.currentQuestionText ?? null;
-        let winnerId = payload.winnerId ?? payload.diff?.winnerId ?? session.currentWinnerId ?? null;
-        let loserId = payload.loserId ?? payload.diff?.loserId ?? session.currentLoserId ?? null;
-        let loserTask = payload.loserTask ?? payload.diff?.loserTask ?? session.currentLoserTask ?? null;
+        let stage = gamePayload?.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
+        let stageStartedAt = gamePayload?.stageStartedAt ?? session.currentStageStartedAt ?? null;
+        let stageDurationMs = gamePayload?.stageDurationMs ?? session.currentStageDurationMs ?? null;
+        let liarId = gamePayload?.liarId ?? session.currentLiarId ?? null;
+        let activeQuestion =
+          gamePayload?.activeQuestion ??
+          gamePayload?.diff?.activeQuestion ??
+          session.currentQuestionId ??
+          null;
+        let activeQuestionText = gamePayload?.activeQuestionText ?? session.currentQuestionText ?? null;
+        let winnerId = gamePayload?.winnerId ?? gamePayload?.diff?.winnerId ?? session.currentWinnerId ?? null;
+        let loserId = gamePayload?.loserId ?? gamePayload?.diff?.loserId ?? session.currentLoserId ?? null;
+        let loserTask = gamePayload?.loserTask ?? gamePayload?.diff?.loserTask ?? session.currentLoserTask ?? null;
         let gamePlayers =
-          mergeGamePlayers(session.gamePlayers, payload.players) ??
+          mergeGamePlayers(session.gamePlayers, gamePayload?.players) ??
           mergeGamePlayers(session.gamePlayers, payload.diff?.players) ??
           session.gamePlayers;
 

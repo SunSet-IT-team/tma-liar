@@ -328,6 +328,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (leaveResult.deleted) {
         emitToRoom(io, lobbyCode, LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
+        if (gameIdToDiscard) {
+          emitToRoom(io, gameIdToDiscard, LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
+        }
         logger.info({ lobbyCode }, 'Lobby deleted after player left');
       } else if (leaveResult.newAdminId) {
         logger.info({ lobbyCode, previousAdmin: telegramId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
@@ -348,6 +351,14 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
+        if (gameIdToDiscard) {
+          emitToRoom(
+            io,
+            gameIdToDiscard,
+            SocketSystemEvents.STATUS_CHANGED,
+            buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
+          );
+        }
       } else if (leaveResult.lobby) {
         const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
         emitToRoom(
@@ -356,6 +367,14 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
+        if (gameIdToDiscard) {
+          emitToRoom(
+            io,
+            gameIdToDiscard,
+            SocketSystemEvents.STATUS_CHANGED,
+            buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
+          );
+        }
       }
       socket.leave(lobbyCode);
       ack?.({ ok: true });
@@ -422,6 +441,12 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       emitToRoom(
         io,
         lobbyCode,
+        SocketSystemEvents.STATUS_CHANGED,
+        buildStatePayload(LobbyMessageTypes.PLAYER_EXIT_GAME, findDiff(snapForDiff, nextForDiff)),
+      );
+      emitToRoom(
+        io,
+        lobbySnap.currentGameId,
         SocketSystemEvents.STATUS_CHANGED,
         buildStatePayload(LobbyMessageTypes.PLAYER_EXIT_GAME, findDiff(snapForDiff, nextForDiff)),
       );

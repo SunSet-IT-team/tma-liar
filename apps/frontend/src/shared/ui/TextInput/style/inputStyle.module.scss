@@ -11,7 +11,7 @@
     outline: none;
     position: relative;
     font-family: 'CodeProBoldLC';
-    font-size: 28px;
+    font-size: clamp(18px, 4.8vw, 26px);
     color: var(--black-main-color);
     border: none;
     text-transform: uppercase;
@@ -19,7 +19,7 @@
 
 .input::placeholder {
     color: var(--black-main-color);
-    opacity: 1;
+    opacity: 0.5;
 }
 
 .wrapper::after {

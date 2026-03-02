@@ -9,9 +9,9 @@ import type { LobbyDeck as BackendLobbyDeck } from '@shared/types/lobby';
 
 function mapDeckToBackendDeck(deck: (typeof testDecks)[number], deckIndex: number): BackendLobbyDeck {
   return {
-    name: `Колода ${deckIndex + 1}`,
+    name: deck.name,
     questionsCount: deck.questions.length,
-    cover: '/icons/blackPhoto.svg',
+    cover: deck.cover ?? '/icons/blackPhoto.svg',
     questions: deck.questions.map((content, index) => ({
       id: `deck-${deckIndex + 1}-q-${index + 1}`,
       type: 'general',
@@ -97,4 +97,3 @@ export function useCreateLobby() {
     createLobby,
   };
 }
-

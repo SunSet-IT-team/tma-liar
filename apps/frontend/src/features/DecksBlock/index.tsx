@@ -3,7 +3,12 @@ import './style/decksStyle.scss';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import { Mousewheel } from 'swiper/modules';
-import deckIcon from '/icons/blackPhoto.svg';
+import fallbackDeckCover from '/icons/blackPhoto.svg';
+import deckCover1 from '../../shared/ui/icons/decks/deck-1.svg';
+import deckCover2 from '../../shared/ui/icons/decks/deck-2.svg';
+import deckCover3 from '../../shared/ui/icons/decks/deck-3.svg';
+import deckCover4 from '../../shared/ui/icons/decks/deck-4.svg';
+import deckCover5 from '../../shared/ui/icons/decks/deck-5.svg';
 
 import 'swiper/css';
 
@@ -20,6 +25,9 @@ type DecksProps = {
 
 export const testDecks = [
   {
+    name: 'Повседневность',
+    description: 'Лёгкие вопросы про обычные ситуации, общение и поведение в быту.',
+    cover: deckCover1,
     ageLimit: 12,
     questions: [
       'Бывало ли, что ты говорил «я уже выхожу», хотя даже не начал собираться?',
@@ -31,6 +39,9 @@ export const testDecks = [
     categories: ['Повседневность', 'Социум'],
   },
   {
+    name: 'Эмоции',
+    description: 'Колода про чувства, реакции и внутренние состояния в разных моментах.',
+    cover: deckCover2,
     ageLimit: 16,
     questions: [
       'Ты когда-нибудь злился, но делал вид, что всё нормально?',
@@ -57,6 +68,9 @@ export const testDecks = [
     categories: ['Эмоции', 'Социум'],
   },
   {
+    name: 'Отношения',
+    description: 'Более откровенные вопросы про доверие, близость и личные границы.',
+    cover: deckCover3,
     ageLimit: 18,
     questions: [
       'Ты когда-нибудь испытывал симпатию к человеку, находясь в отношениях?',
@@ -73,6 +87,9 @@ export const testDecks = [
     categories: ['Отношения'],
   },
   {
+    name: 'Страхи',
+    description: 'Вопросы про тревоги, неуверенность и то, что обычно скрывают.',
+    cover: deckCover4,
     ageLimit: 16,
     questions: [
       'Ты боялся быть осуждённым за своё мнение?',
@@ -84,6 +101,9 @@ export const testDecks = [
     categories: ['Страхи', 'Социум'],
   },
   {
+    name: 'Решения',
+    description: 'Короткая колода о выборе, последствиях и личных принципах.',
+    cover: deckCover5,
     ageLimit: 14,
     questions: [
       'Ты выбирал более простой путь, понимая, что он не лучший?',
@@ -114,10 +134,18 @@ export const DecksBlock: FC<DecksProps> = ({ loop = true, onChangeActiveDeck }) 
           onChangeActiveDeck?.(swiper.realIndex);
         }}
       >
-        {testDecks.map((_, i) => (
+        {testDecks.map((deck, i) => (
           <SwiperSlide key={i} className="swiperSlide deckSwiperSlide">
             <div className="deckSlideItem">
-              <img src={deckIcon} alt="" className="deckIcon" />
+              <img
+                src={deck.cover}
+                alt={`Deck cover ${i + 1}`}
+                className="deckIcon"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.src = fallbackDeckCover;
+                }}
+              />
             </div>
           </SwiperSlide>
         ))}

@@ -2,6 +2,7 @@ import { retrieveLaunchParams } from '@tma.js/sdk';
 import type { LobbyPlayerPayload } from '../../types/lobby';
 
 const GUEST_USER_STORAGE_KEY = 'guest_tma_user';
+const TMA_USER_OVERRIDES_STORAGE_KEY = 'tma_user_overrides';
 
 export type CurrentTmaUser = {
   telegramId: string;
@@ -9,6 +10,42 @@ export type CurrentTmaUser = {
   username?: string;
   profileImg?: string;
 };
+
+type TmaUserOverrides = {
+  profileImg?: string;
+};
+
+function getUserOverrides(telegramId: string): TmaUserOverrides {
+  const raw = localStorage.getItem(TMA_USER_OVERRIDES_STORAGE_KEY);
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, TmaUserOverrides>;
+    return parsed?.[telegramId] ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export function setTmaUserOverrides(telegramId: string, patch: TmaUserOverrides) {
+  const raw = localStorage.getItem(TMA_USER_OVERRIDES_STORAGE_KEY);
+  let parsed: Record<string, TmaUserOverrides> = {};
+
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw) as Record<string, TmaUserOverrides>;
+    } catch {
+      parsed = {};
+    }
+  }
+
+  parsed[telegramId] = {
+    ...(parsed[telegramId] ?? {}),
+    ...patch,
+  };
+
+  localStorage.setItem(TMA_USER_OVERRIDES_STORAGE_KEY, JSON.stringify(parsed));
+}
 
 export function isGuestUser(user: Pick<CurrentTmaUser, 'telegramId'>): boolean {
   return user.telegramId.startsWith('guest_');
@@ -50,11 +87,13 @@ export function getCurrentTmaUser(): CurrentTmaUser {
 
     const fallbackNickname = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 
+    const overrides = getUserOverrides(String(user.id));
+
     return {
       telegramId: String(user.id),
       nickname: user.username ?? fallbackNickname ?? `user_${user.id}`,
       username: user.username,
-      profileImg: user.photo_url,
+      profileImg: overrides.profileImg ?? user.photo_url,
     };
   } catch {
     return getOrCreateGuestUser();

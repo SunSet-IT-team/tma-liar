@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameSocketEvents } from '@common/message-types';
 import { SocketSystemEvents } from '@common/message-types';
@@ -16,7 +16,9 @@ export function useSolverAnswer() {
   const navigate = useNavigate();
   const [believe, setBelieve] = useState<boolean | null>(null);
   const [fixed, setFixed] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
+  const [isSecuring, setIsSecuring] = useState(false);
+  const [pendingSecure, setPendingSecure] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const user = useMemo(() => getCurrentTmaUser(), []);
   const session = lobbySessionService.get();
@@ -63,7 +65,7 @@ export function useSolverAnswer() {
   }, [user.telegramId]);
 
   const sendVote = (value: boolean) => {
-    if (fixed || isSubmitting) return;
+    if (fixed || isVoting || isSecuring) return;
     if (!session?.currentGameId) {
       setErrorText('Игра не найдена. Обновите страницу.');
       return;
@@ -71,7 +73,7 @@ export function useSolverAnswer() {
 
     setErrorText(null);
     setBelieve(value);
-    setIsSubmitting(true);
+    setIsVoting(true);
 
     const socket = getLobbySocket();
     const onError = (error: SocketErrorPayload) => {
@@ -86,7 +88,7 @@ export function useSolverAnswer() {
         setErrorText(toUserSocketError(error, 'Не удалось отправить выбор'));
       }
       offEvent(socket, SocketSystemEvents.ERROR, onError);
-      setIsSubmitting(false);
+      setIsVoting(false);
     };
 
     onEvent(socket, SocketSystemEvents.ERROR, onError);
@@ -98,12 +100,12 @@ export function useSolverAnswer() {
 
     window.setTimeout(() => {
       offEvent(socket, SocketSystemEvents.ERROR, onError);
-      setIsSubmitting(false);
+      setIsVoting(false);
     }, 900);
   };
 
-  const secureVote = () => {
-    if (believe === null || fixed || isSubmitting) return;
+  const runSecureVote = useCallback(() => {
+    if (believe === null || fixed || isSecuring) return;
     if (!session?.currentGameId) {
       setErrorText('Игра не найдена. Обновите страницу.');
       return;
@@ -111,7 +113,7 @@ export function useSolverAnswer() {
 
     setErrorText(null);
     setFixed(true);
-    setIsSubmitting(true);
+    setIsSecuring(true);
 
     const socket = getLobbySocket();
     const onError = (error: SocketErrorPayload) => {
@@ -128,7 +130,7 @@ export function useSolverAnswer() {
         setFixed(false);
       }
       offEvent(socket, SocketSystemEvents.ERROR, onError);
-      setIsSubmitting(false);
+      setIsSecuring(false);
     };
 
     onEvent(socket, SocketSystemEvents.ERROR, onError);
@@ -139,9 +141,28 @@ export function useSolverAnswer() {
 
     window.setTimeout(() => {
       offEvent(socket, SocketSystemEvents.ERROR, onError);
-      setIsSubmitting(false);
+      setIsSecuring(false);
     }, 900);
+  }, [believe, fixed, isSecuring, session?.currentGameId, user.telegramId]);
+
+  const secureVote = () => {
+    if (believe === null || fixed || isSecuring) return;
+
+    // Если голос ещё отправляется, запоминаем намерение и
+    // зафиксируем автоматически сразу после завершения отправки.
+    if (isVoting) {
+      setPendingSecure(true);
+      return;
+    }
+
+    runSecureVote();
   };
+
+  useEffect(() => {
+    if (!pendingSecure || isVoting || isSecuring || fixed || believe === null) return;
+    setPendingSecure(false);
+    runSecureVote();
+  }, [believe, fixed, isSecuring, isVoting, pendingSecure, runSecureVote]);
 
   return {
     session,
@@ -149,7 +170,7 @@ export function useSolverAnswer() {
     liarPlayer,
     believe,
     fixed,
-    isSubmitting,
+    isSubmitting: isSecuring,
     errorText,
     sendVote,
     secureVote,

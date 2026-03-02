@@ -48,7 +48,6 @@ export const BackArrow: FC<BackArrowProps> = ({
   const src = srcMap[variant];
   const playSound = usePlaySound();
   const toLeave = (value: boolean) => {
-    playSound();
     if (leaveLobby && inGame) {
       leaveLobby(value);
     } else {
@@ -57,7 +56,7 @@ export const BackArrow: FC<BackArrowProps> = ({
   };
 
   return (
-    <button onClick={() => toLeave(true)} {...rest}>
+    <button onPointerDown={() => playSound()} onClick={() => toLeave(true)} {...rest}>
       <img src={src} className={styles.backArrow} />
     </button>
   );

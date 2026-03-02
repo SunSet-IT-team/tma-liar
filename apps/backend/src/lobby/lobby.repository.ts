@@ -160,4 +160,18 @@ export class LobbyRepository {
 
     return (updated as Lobby | null) ?? null;
   }
+
+  public async updatePlayerProfileImg(telegramId: string, profileImg: string): Promise<void> {
+    await LobbyModel.updateMany(
+      { 'players.telegramId': telegramId },
+      {
+        $set: {
+          'players.$[target].profileImg': profileImg,
+        },
+      },
+      {
+        arrayFilters: [{ 'target.telegramId': telegramId }],
+      },
+    );
+  }
 }

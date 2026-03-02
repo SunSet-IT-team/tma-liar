@@ -12,6 +12,8 @@ type DeckPopupProps = {
    * Колода
    */
   deck: {
+    name: string;
+    description: string;
     ageLimit: number;
     questions: string[];
     categories: string[];
@@ -25,6 +27,9 @@ export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
   return (
     <Popup changeShow={changeShow} className={styles.deckPopupContent}>
       <Typography as="span" variant="titleLarge" className={styles.title}>
+        {deck.name}
+      </Typography>
+      <Typography as="span" variant="titleLarge" className={styles.title}>
         {deck.ageLimit}+
       </Typography>
       <div className={styles.deckParams}>
@@ -34,11 +39,11 @@ export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
       <div className={styles.deckParams}>
         <Typography>Категории:</Typography>
         {deck.categories.map((category: string) => (
-          <Typography>{category}</Typography>
+          <Typography key={category}>{category}</Typography>
         ))}
       </div>
       <Typography className={styles.dataDeck}>
-        О колоде о колоде О колоде о колоде О колоде
+        {deck.description}
       </Typography>
     </Popup>
   );

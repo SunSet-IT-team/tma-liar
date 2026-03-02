@@ -1,4 +1,4 @@
-import { type FC, useEffect, useRef, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 import styles from '../../style/usersBadgeStyle.module.scss';
 import type { Player, PlayerSize } from '../../../../entities/user/model/types';
 import { UserBadge } from '../../../../entities/user/ui/UserBadge';
@@ -10,6 +10,8 @@ import drumSound from '../../../../shared/assets/sounds/drumroll.mp3';
 import { Button } from '../../../../shared/ui/Button';
 import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
 import { getCurrentTmaUser } from '../../../../shared/lib/tma/user';
+import { useAppSelector } from '../../../../app/store/hook';
+import { playCachedSound, stopCachedSound } from '../../../../shared/lib/sound/sound-pool';
 
 /**
  * Отображение мест игроков с анимацией
@@ -18,9 +20,9 @@ export const ResultUsersBadge: FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [task, setTask] = useState<string>('Здесь будет задание...');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const session = lobbySessionService.get();
   const me = getCurrentTmaUser();
+  const { sounds, volume } = useAppSelector((state) => state.appSettings);
 
   const sortedUsers =
     session?.gamePlayers && session.gamePlayers.length > 0
@@ -52,9 +54,9 @@ export const ResultUsersBadge: FC = () => {
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-    audioRef.current = new Audio(drumSound);
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => undefined);
+    if (sounds && volume > 0) {
+      playCachedSound(drumSound, volume / 100, false);
+    }
 
     const showNext = (index: number) => {
       if (index >= sortedUsers.length || sortedUsers.length === 0) {
@@ -84,11 +86,7 @@ export const ResultUsersBadge: FC = () => {
 
     return () => {
       clearTimeout(timeout);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
+      stopCachedSound(drumSound);
     };
   }, []);
 

@@ -5,6 +5,11 @@ import type { CreateUserDto } from './dtos/user-create.dto';
 import type { UpdateUserDto } from './dtos/user-update.dto';
 
 export class UserRepository {
+  public async findById(id: string): Promise<User | null> {
+    const user = await UserModel.findById(id).lean();
+    return (user as User | null) ?? null;
+  }
+
   public async findByTelegramId(telegramId: string): Promise<User | null> {
     const user = await UserModel.findOne({ telegramId }).lean();
     return (user as User | null) ?? null;
@@ -36,4 +41,3 @@ export class UserRepository {
     return (deletedUser as User | null) ?? null;
   }
 }
-

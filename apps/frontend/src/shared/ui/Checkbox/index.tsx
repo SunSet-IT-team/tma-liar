@@ -16,12 +16,11 @@ export const Checkbox: FC<CheckboxProps> = ({ onChange, checked }) => {
   const playSound = usePlaySound();
 
   const onCheckboxChange = (value: boolean) => {
-    playSound();
     onChange(value);
   };
 
   return (
-    <label className={styles.content} htmlFor={inputId}>
+    <label className={styles.content} htmlFor={inputId} onPointerDown={() => playSound()}>
       <input
         id={inputId}
         type="checkbox"

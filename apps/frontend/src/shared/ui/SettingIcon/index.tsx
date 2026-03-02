@@ -31,13 +31,12 @@ export const SettingIcon: FC<SettingsProps> = ({ variant = 'black', onClick, ...
   const playSound = usePlaySound();
 
   const onSetting = () => {
-    playSound();
     navigate(`/${PageRoutes.SETTINGS}`);
     if (onClick) onClick();
   };
 
   return (
-    <button onClick={onSetting} {...rest}>
+    <button onPointerDown={() => playSound()} onClick={onSetting} {...rest}>
       <img src={src} alt="" className={styles.settingsIcon} />
     </button>
   );
