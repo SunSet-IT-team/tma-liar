@@ -2,6 +2,7 @@ import { type FC } from 'react';
 import { Popup } from '../../../../shared/ui/Popup';
 import { Typography } from '../../../../shared/ui/Typography';
 import styles from '../../style/popupsStyle.module.scss';
+import type { Deck } from '../../../../shared/types/deck';
 
 type DeckPopupProps = {
   /**
@@ -11,13 +12,7 @@ type DeckPopupProps = {
   /**
    * Колода
    */
-  deck: {
-    name: string;
-    description: string;
-    ageLimit: number;
-    questions: string[];
-    categories: string[];
-  };
+  deck: Deck;
 };
 
 /**
@@ -30,20 +25,20 @@ export const DeckPopup: FC<DeckPopupProps> = ({ changeShow, deck }) => {
         {deck.name}
       </Typography>
       <Typography as="span" variant="titleLarge" className={styles.title}>
-        {deck.ageLimit}+
+        {(deck.ageLimit ?? 0) > 0 ? `${deck.ageLimit}+` : '0+'}
       </Typography>
       <div className={styles.deckParams}>
         <Typography>Вопросов:</Typography>
-        <Typography>{deck.questions.length}</Typography>
+        <Typography>{deck.questionsCount ?? deck.questions.length}</Typography>
       </div>
       <div className={styles.deckParams}>
         <Typography>Категории:</Typography>
-        {deck.categories.map((category: string) => (
+        {(deck.categories ?? ['Общее']).map((category: string) => (
           <Typography key={category}>{category}</Typography>
         ))}
       </div>
       <Typography className={styles.dataDeck}>
-        {deck.description}
+        {deck.description ?? 'Описание колоды будет добавлено позже'}
       </Typography>
     </Popup>
   );

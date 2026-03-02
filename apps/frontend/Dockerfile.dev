@@ -9,6 +9,7 @@ RUN apk add --no-cache nodejs npm
 COPY package.json bun.lock ./
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY apps/frontend/package.json ./apps/frontend/package.json
+COPY apps/deckEditor/package.json ./apps/deckEditor/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 
 # Детерминированная установка зависимостей по lockfile

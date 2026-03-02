@@ -23,6 +23,12 @@ export function errorMiddleware(
 
   if (err instanceof MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
+      if (req.originalUrl.includes('/api/admin/decks/upload-cover')) {
+        return res
+          .status(413)
+          .json(error(413, 'DECK_COVER_TOO_LARGE', 'DECK_COVER_TOO_LARGE'));
+      }
+
       return res
         .status(413)
         .json(error(413, 'PROFILE_IMAGE_TOO_LARGE', 'PROFILE_IMAGE_TOO_LARGE'));
@@ -37,6 +43,12 @@ export function errorMiddleware(
     return res
       .status(err.code)
       .json(error(err.code, err.errorCode, err.message, err.details));
+  }
+
+  if (err.name === 'ValidationError') {
+    return res
+      .status(422)
+      .json(error(422, 'VALIDATION_ERROR', 'VALIDATION_ERROR', err.message));
   }
 
   logger.error(

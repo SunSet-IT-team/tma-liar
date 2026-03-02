@@ -2,16 +2,40 @@ import { DeckModel } from './deck.model';
 import type { Deck } from './entities/deck.entity';
 import type { CreateDeckDto } from './dtos/deck-create.dto';
 import type { UpdateDeckDto } from './dtos/deck-update.dto';
+import { isValidObjectId } from 'mongoose';
+
+type DeckLeanLike = Deck & { _id?: unknown };
+
+function normalizeDeckId(deck: DeckLeanLike | null): Deck | null {
+  if (!deck) return null;
+  const rawId = deck._id ?? deck.id;
+  const id =
+    typeof rawId === 'string'
+      ? rawId
+      : rawId && typeof rawId === 'object' && 'toString' in rawId
+        ? (rawId as { toString: () => string }).toString()
+        : '';
+
+  return {
+    ...(deck as Deck),
+    id,
+  };
+}
 
 export class DeckRepository {
   public async findById(id: string): Promise<Deck | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
     const deck = await DeckModel.findOne({ _id: id }).lean();
-    return (deck as Deck | null) ?? null;
+    return normalizeDeckId(deck as DeckLeanLike | null);
   }
 
   public async findAll(): Promise<Deck[]> {
     const decks = await DeckModel.find().lean();
-    return decks as Deck[];
+    return decks
+      .map((deck) => normalizeDeckId(deck as DeckLeanLike))
+      .filter((deck): deck is Deck => deck !== null);
   }
 
   public async create(dto: CreateDeckDto): Promise<Deck> {
@@ -27,12 +51,21 @@ export class DeckRepository {
       { new: true }
     ).lean();
 
-    return (updatedDeck as Deck | null) ?? null;
+    return normalizeDeckId(updatedDeck as DeckLeanLike | null);
   }
 
   public async deleteById(id: string): Promise<Deck | null> {
     const deletedDeck = await DeckModel.findOneAndDelete({ _id: id }).lean();
-    return (deletedDeck as Deck | null) ?? null;
+    return normalizeDeckId(deletedDeck as DeckLeanLike | null);
+  }
+
+  public async addPurchaser(deckId: string, telegramId: string): Promise<Deck | null> {
+    const updatedDeck = await DeckModel.findOneAndUpdate(
+      { _id: deckId },
+      { $addToSet: { purchasedBy: telegramId } },
+      { new: true },
+    ).lean();
+
+    return normalizeDeckId(updatedDeck as DeckLeanLike | null);
   }
 }
-

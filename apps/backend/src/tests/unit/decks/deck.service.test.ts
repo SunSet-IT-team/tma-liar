@@ -10,17 +10,10 @@ describe('DeckService', () => {
     expect(deck.id).toBe('d1');
   });
 
-  it('findDeck returns mock deck when db miss and mock id is requested', async () => {
+  it('findDeck throws when db miss', async () => {
     const repo = { findById: mock(async () => null) };
     const service = new DeckService(repo as never);
 
-    const deck = await service.findDeck({ id: 'mock-deck-1' });
-    expect(deck.id).toBe('mock-deck-1');
-  });
-
-  it('findDeck throws when missing in db and mocks', async () => {
-    const repo = { findById: mock(async () => null) };
-    const service = new DeckService(repo as never);
     await expect(service.findDeck({ id: 'd1' })).rejects.toBeInstanceOf(ApiError);
   });
 
@@ -31,12 +24,11 @@ describe('DeckService', () => {
     expect(decks.length).toBe(1);
   });
 
-  it('findDecks returns mock decks when db is empty', async () => {
+  it('findDecks returns empty list when db is empty', async () => {
     const repo = { findAll: mock(async () => []) };
     const service = new DeckService(repo as never);
     const decks = await service.findDecks();
-    expect(decks.length).toBeGreaterThan(0);
-    expect(decks[0]?.id).toContain('mock-deck-');
+    expect(decks.length).toBe(0);
   });
 
   it('createDeck returns created deck', async () => {

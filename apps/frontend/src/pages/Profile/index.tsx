@@ -126,7 +126,7 @@ export const Profile: FC = () => {
 
   return (
     <Container>
-      <img className={styles.circleIcon} src={circleIcon} alt="" />
+      <img className={styles.circleIcon} src={circleIcon} alt="" data-decor="true" />
       <Header className={styles.header} />
       <LoadAvatar
         initialImage={avatarSrc}

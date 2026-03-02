@@ -19,10 +19,10 @@ async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games
 /**
  * Подключение к БД
  */
-export async function connectToDatabase() {
+export async function connectToDatabase(uriOverride?: string) {
   if (mongoose.connection.readyState === 1) return;
 
-  await mongoose.connect(env.DB_CONN_STRING, {
+  await mongoose.connect(uriOverride ?? env.DB_CONN_STRING, {
     dbName: env.DB_NAME,
   });
 

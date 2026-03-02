@@ -20,7 +20,7 @@ export const Home: FC = () => {
 
   return (
     <Container>
-      <img className={styles.circleIcon} src={homeCircle} alt="" />
+      <img className={styles.circleIcon} src={homeCircle} alt="" data-decor="true" />
       <SettingIcon className={styles.settingsBtn} />
       <img src={homeLogo} alt="" className={styles.logo} />
       <Button
@@ -34,7 +34,7 @@ export const Home: FC = () => {
         Присоедениться
       </Button>
       <div className={styles.bgBlock}>
-        <img src={bgIcon} alt="" className={styles.bgImage} />
+        <img src={bgIcon} alt="" className={styles.bgImage} data-decor="true" />
         <Link icon={profileIcon} route={`/${PageRoutes.PROFILE}`} className={styles.profileLink} />
         <Link icon={rulesIcon} route={`/${PageRoutes.RULES}`} className={styles.rulesLink} />
       </div>

@@ -15,8 +15,11 @@ import authRouter from './auth/auth.router';
 import { userRouter } from './users/user.router';
 import { lobbyRouter } from './lobby/lobby.router';
 import { deckRouter } from './decks/deck.router';
+import { deckAdminRouter } from './decks/deck-admin.router';
+import { paymentRouter } from './payments/payment.router';
 import { createGameRouter } from './game/game.router';
 import { registerSocketHandlers } from './socket';
+import path from 'node:path';
 
 const app = express();
 export const httpServer = createServer(app);
@@ -51,6 +54,16 @@ app.use(
 app.use(httpLogger);
 app.use(helmet());
 app.use(express.json({ limit: '1mb' }));
+app.use(
+  '/uploads',
+  express.static(path.resolve(process.cwd(), 'uploads'), {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-store, max-age=0');
+    },
+  }),
+);
 
 app.get('/api/hello', (_, res) => res.status(200).json({ message: 'Hello from backend!' }));
 app.get('/api/health', (_, res) =>
@@ -63,11 +76,13 @@ app.get('/api/health', (_, res) =>
 
 /** Роуты без авторизации */
 app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/payments', paymentRouter);
+app.use('/api/admin/decks', deckAdminRouter);
 
 app.use('/api/users', authMiddleware, userRouter);
 
 app.use('/api/lobbies', authMiddleware, lobbyRouter);
-app.use('/api/decks', authMiddleware,deckRouter);
+app.use('/api/decks', authMiddleware, deckRouter);
 app.use('/api/game', authMiddleware, createGameRouter(io));
 
 app.use(errorMiddleware);

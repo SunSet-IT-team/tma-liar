@@ -35,7 +35,7 @@ export const EndGame: FC = () => {
         </Button>
       </div>
       {errorText ? <Typography>{errorText}</Typography> : null}
-      <img src={endIcon} alt="" className={styles.endIcon} />
+      <img src={endIcon} alt="" className={styles.endIcon} data-decor="true" />
     </Container>
   );
 };

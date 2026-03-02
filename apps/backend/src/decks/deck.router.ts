@@ -19,17 +19,12 @@ deckRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   await deckController.findDecks(req, res);
 }));
 
-/** Маршрут для создания колоды*/
-deckRouter.post('/', asyncHandler(async (req: Request, res: Response) => {
-  await deckController.createDeck(req, res);
+/** Маршрут создания платежа за платную колоду */
+deckRouter.post('/:id/purchase', asyncHandler(async (req: Request, res: Response) => {
+  await deckController.createPurchase(req, res);
 }));
 
-/** Маршрут для обновления колоды*/
-deckRouter.put('/', asyncHandler(async (req: Request, res: Response) => {
-  await deckController.updateDeck(req, res);
-}));
-
-/** Маршрут для удаления колоды*/
-deckRouter.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
-  await deckController.deleteDeck(req, res);
+/** Маршрут подтверждения покупки платной колоды */
+deckRouter.post('/:id/purchase/confirm', asyncHandler(async (req: Request, res: Response) => {
+  await deckController.confirmPurchase(req, res);
 }));

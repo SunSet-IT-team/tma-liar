@@ -45,6 +45,10 @@ const envSchema = z.object({
   GAME_RESULTS_FIELDS: z.string().default('doLie,loserTask,winnerId,loserId'),
   LOBBY_CODE_ALPHABET: z.string().min(1).default('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'),
   LOBBY_CODE_LENGTH: z.coerce.number().int().positive().default(6),
+  YOOKASSA_SHOP_ID: z.string().optional(),
+  YOOKASSA_SECRET_KEY: z.string().optional(),
+  YOOKASSA_RETURN_URL: z.string().url().optional(),
+  YOOKASSA_WEBHOOK_TOKEN: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

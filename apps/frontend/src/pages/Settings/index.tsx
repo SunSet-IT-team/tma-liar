@@ -40,7 +40,7 @@ export const Settings: FC = () => {
           Разработчики
         </Button>
       </div>
-      <img src={settingsBg} alt="" className={styles.settingsBg} />
+      <img src={settingsBg} alt="" className={styles.settingsBg} data-decor="true" />
       {showPopup && <DevelopersPopup changeShow={(show: boolean) => setShowPopup(show)} />}
     </Container>
   );

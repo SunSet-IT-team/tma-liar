@@ -63,6 +63,27 @@ services:
       - ./packages/shared:/app/packages/shared
       - frontend_node_modules:/app/apps/frontend/node_modules
 
+  deck-editor:
+    build:
+      context: .
+      dockerfile: apps/deckEditor/Dockerfile.dev
+    container_name: tma-liar-deck-editor-dev
+    restart: unless-stopped
+    ports:
+      - '5174:5174'
+    environment:
+      NODE_ENV: development
+      VITE_API_PROXY_TARGET: http://backend:3000
+    depends_on:
+      - backend
+    networks:
+      - tma-liar-network-dev
+    volumes:
+      - ./apps/deckEditor:/app/apps/deckEditor
+      - ./apps/common:/app/apps/common
+      - ./packages/shared:/app/packages/shared
+      - deck_editor_node_modules:/app/apps/deckEditor/node_modules
+
   # Ngrok для создания HTTPS туннеля к frontend
   ngrok:
     image: ngrok/ngrok:latest
@@ -94,6 +115,8 @@ volumes:
   backend_node_modules:
     driver: local
   frontend_node_modules:
+    driver: local
+  deck_editor_node_modules:
     driver: local
 
 networks:

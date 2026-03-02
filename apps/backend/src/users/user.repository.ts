@@ -3,9 +3,13 @@ import type { User } from './entities/user.entity';
 import type { FindUsersDto } from './dtos/user-findUsers.dto';
 import type { CreateUserDto } from './dtos/user-create.dto';
 import type { UpdateUserDto } from './dtos/user-update.dto';
+import { isValidObjectId } from 'mongoose';
 
 export class UserRepository {
   public async findById(id: string): Promise<User | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
     const user = await UserModel.findById(id).lean();
     return (user as User | null) ?? null;
   }

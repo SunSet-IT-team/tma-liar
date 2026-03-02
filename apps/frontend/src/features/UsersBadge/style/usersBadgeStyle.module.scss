@@ -121,7 +121,11 @@
 
 .ratePlayers {
     max-height: 100%;
-    padding: 5px;
+    padding: 24px 5px 5px;
+}
+
+.ratePlayers .playerBlock:first-child {
+    margin-top: 16px;
 }
 
 @media(max-width: 370px) {

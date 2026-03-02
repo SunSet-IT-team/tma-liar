@@ -17,8 +17,8 @@ export const WaitingPlayers: FC = () => {
         Ждем!
       </Typography>
       <Typography>Других игроков</Typography>
-      <img src={waitingIcon} alt="" className={styles.waitingIcon} />
-      <img src={waitingCircle} alt="" className={styles.waitingCircle} />
+      <img src={waitingIcon} alt="" className={styles.waitingIcon} data-decor="true" />
+      <img src={waitingCircle} alt="" className={styles.waitingCircle} data-decor="true" />
       <Typography className={styles.waitingText}>Уже скоро?</Typography>
     </Container>
   );

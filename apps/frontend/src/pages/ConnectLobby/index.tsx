@@ -42,7 +42,7 @@ export const ConnectLobby: FC = () => {
       <button onClick={() => navigate(`/${PageRoutes.PROFILE}`)}>
         <UserBadge variant="large" id={1} name={user.nickname} photo={user.profileImg} />
       </button>
-      <img src={circleIcon} alt="" className={styles.circleIcon} />
+      <img src={circleIcon} alt="" className={styles.circleIcon} data-decor="true" />
     </Container>
   );
 };

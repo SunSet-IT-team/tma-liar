@@ -3,6 +3,8 @@ import { env } from './env';
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
 ];
 
 function parseAllowedOrigins(raw?: string): string[] {
@@ -23,8 +25,15 @@ function isWildcardPattern(pattern: string): boolean {
 function matchesWildcardOrigin(origin: string, pattern: string): boolean {
   if (!isWildcardPattern(pattern)) return false;
 
+  let originHost = origin;
+  try {
+    originHost = new URL(origin).hostname;
+  } catch {
+    // keep raw origin as-is for non-standard values
+  }
+
   const domain = pattern.slice(2);
-  return origin.endsWith(`.${domain}`) || origin === domain;
+  return originHost.endsWith(`.${domain}`) || originHost === domain;
 }
 
 export const allowedOrigins = parseAllowedOrigins(env.CORS_ALLOWED_ORIGINS);

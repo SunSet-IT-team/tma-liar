@@ -7,12 +7,14 @@ import type { UpdateUserDto } from './dtos/user-update.dto';
 import type { DeleteUserDto } from './dtos/user-delete.dto';
 import { UserRepository } from './user.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
+import { logger } from '../observability/logger';
 
 /**
  * Интерфейс для сервиса пользователей
  */
 export interface UserServiceMethods {
   findUserById: (param: { id: string }) => Promise<User>;
+  findUserByAuthId: (param: { authUserId: string }) => Promise<User>;
   findUser: (param: FindUserDto) => Promise<User | null>;
   findUsers: (param: FindUsersDto) => Promise<User[]>;
   createUser: (param: CreateUserDto) => Promise<User>;
@@ -37,6 +39,20 @@ export class UserService implements UserServiceMethods {
     }
 
     return user;
+  }
+
+  public async findUserByAuthId(param: { authUserId: string }): Promise<User> {
+    const byId = await this.userRepository.findById(param.authUserId);
+    if (byId) {
+      return byId;
+    }
+
+    const byTelegramId = await this.userRepository.findByTelegramId(param.authUserId);
+    if (byTelegramId) {
+      return byTelegramId;
+    }
+
+    throw new ApiError(404, 'USER_NOT_FOUND');
   }
 
   public async findUser(param: FindUserDto): Promise<User> {
@@ -69,7 +85,14 @@ export class UserService implements UserServiceMethods {
     if (!updatedUser) throw new ApiError(404, 'USER_NOT_FOUND');
 
     if (typeof param.profileImg === 'string') {
-      await this.lobbyRepository.updatePlayerProfileImg(param.telegramId, param.profileImg);
+      try {
+        await this.lobbyRepository.updatePlayerProfileImg(param.telegramId, param.profileImg);
+      } catch (error) {
+        logger.warn(
+          { telegramId: param.telegramId, error },
+          'Failed to sync player profile image to lobby snapshots',
+        );
+      }
     }
 
     return updatedUser;

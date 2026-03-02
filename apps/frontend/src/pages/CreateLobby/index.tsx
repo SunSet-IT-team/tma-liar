@@ -16,14 +16,20 @@ export const CreateLobby: FC = () => {
   const {
     questionCount,
     answerTime,
+    decks,
+    activeDeckIndex,
+    isDecksLoading,
+    isBuyingDeck,
     isSubmitting,
     errorText,
     isGuest,
+    isSelectedDeckLocked,
     telegramBotUrl,
     setQuestionCount,
     setAnswerTime,
     setActiveDeckIndex,
     createLobby,
+    buySelectedDeck,
   } = useCreateLobby();
 
   return (
@@ -44,7 +50,11 @@ export const CreateLobby: FC = () => {
         choiceType="С"
         onChangeValue={(value: number) => setAnswerTime(value)}
       />
-      <LobbyDeck onChangeActiveDeck={setActiveDeckIndex} />
+      {isDecksLoading ? (
+        <Typography>Загружаем колоды...</Typography>
+      ) : (
+        <LobbyDeck decks={decks} activeDeckIndex={activeDeckIndex} onChangeActiveDeck={setActiveDeckIndex} />
+      )}
       {isGuest ? (
         <div className={styles.guestAuthBlock}>
           <Typography className={styles.guestAuthText}>
@@ -61,14 +71,20 @@ export const CreateLobby: FC = () => {
         <Button
           variant="buttonUnderline"
           soundTrigger="click"
-          onClick={createLobby}
-          disabled={isSubmitting}
+          onClick={isSelectedDeckLocked ? buySelectedDeck : createLobby}
+          disabled={isSubmitting || isDecksLoading || decks.length === 0 || isBuyingDeck}
         >
-          {isSubmitting ? 'Создаю...' : 'Создать'}
+          {isSelectedDeckLocked
+            ? isBuyingDeck
+              ? 'Переходим к оплате...'
+              : `Купить колоду за ${decks[activeDeckIndex]?.priceRub ?? 0} ₽`
+            : isSubmitting
+              ? 'Создаю...'
+              : 'Создать'}
         </Button>
       )}
       {errorText && <Typography>{errorText}</Typography>}
-      <img src={lobbyCircle} alt="" className={styles.lobbyCircle} />
+      <img src={lobbyCircle} alt="" className={styles.lobbyCircle} data-decor="true" />
     </Container>
   );
 };

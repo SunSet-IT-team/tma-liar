@@ -11,6 +11,16 @@ const DeckSchema = new Schema<Deck>(
       type: String, 
       required: true
     },
+    description: {
+      type: String,
+    },
+    ageLimit: {
+      type: Number,
+    },
+    categories: {
+      type: [String],
+      default: [],
+    },
 
     questionsCount: { 
       type: Number, 
@@ -25,6 +35,18 @@ const DeckSchema = new Schema<Deck>(
     questions: {
       type: [QuestionSchema], 
       required: true,
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    priceRub: {
+      type: Number,
+      default: 0,
+    },
+    purchasedBy: {
+      type: [String],
+      default: [],
     },
   },
   {
