@@ -16,6 +16,7 @@ type DecksProps = {
 
 export const DecksBlock: FC<DecksProps> = ({ decks, loop = true, onChangeActiveDeck }) => {
   const safeLoop = loop && decks.length > 2;
+  const safeRewind = !safeLoop && decks.length > 1;
 
   return (
     <div className="content">
@@ -29,6 +30,7 @@ export const DecksBlock: FC<DecksProps> = ({ decks, loop = true, onChangeActiveD
         mousewheel={{ forceToAxis: true, releaseOnEdges: true }}
         className="swiper deckSwiper"
         loop={safeLoop}
+        rewind={safeRewind}
         onSlideChange={(swiper: SwiperType) => {
           onChangeActiveDeck?.(swiper.realIndex);
         }}

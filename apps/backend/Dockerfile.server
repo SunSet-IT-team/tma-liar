@@ -1,0 +1,41 @@
+FROM public.ecr.aws/docker/library/node:20-alpine AS base
+
+FROM base AS deps
+WORKDIR /app
+
+COPY package.json ./
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/deckEditor/package.json ./apps/deckEditor/
+COPY apps/common ./apps/common
+COPY packages/shared ./packages/shared
+
+RUN npm install --include-workspace-root --workspaces
+
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN apk add --no-cache curl
+
+RUN curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.3.5/bun-linux-x64-musl.zip -o /tmp/bun.zip \
+  && unzip /tmp/bun.zip -d /tmp \
+  && mv /tmp/bun-linux-x64-musl/bun /usr/local/bin/bun \
+  && chmod +x /usr/local/bin/bun \
+  && rm -rf /tmp/bun.zip /tmp/bun-linux-x64-musl
+
+RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
+
+COPY --from=deps --chown=nodeuser:nodegroup /app/node_modules ./node_modules
+COPY --chown=nodeuser:nodegroup package.json tsconfig.json ./
+COPY --chown=nodeuser:nodegroup apps/backend ./apps/backend
+COPY --chown=nodeuser:nodegroup apps/common ./apps/common
+COPY --chown=nodeuser:nodegroup packages/shared ./packages/shared
+
+USER nodeuser
+
+EXPOSE 3000
+
+WORKDIR /app/apps/backend
+CMD ["bun", "src/index.ts"]

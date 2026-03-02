@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2.8
+    image: public.ecr.aws/docker/library/caddy:2.8
     container_name: tma-liar-caddy
     restart: unless-stopped
     ports:
@@ -17,7 +17,7 @@ services:
       - tma-liar-network
 
   mongodb:
-    image: mongo:8.2.3
+    image: public.ecr.aws/docker/library/mongo:8.2.3
     container_name: tma-liar-mongodb
     restart: unless-stopped
     environment:
@@ -33,7 +33,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: apps/backend/Dockerfile
+      dockerfile: apps/backend/Dockerfile.server
     container_name: tma-liar-backend
     restart: unless-stopped
     environment:
@@ -70,7 +70,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: apps/frontend/Dockerfile
+      dockerfile: apps/frontend/Dockerfile.server
     container_name: tma-liar-frontend
     restart: unless-stopped
     depends_on:
