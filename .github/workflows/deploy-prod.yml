@@ -1,0 +1,32 @@
+name: Deploy prod
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: prod
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH (docker compose)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT }}
+          script: |
+            set -e
+            cd "${{ secrets.PROD_PATH }}"
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker compose -f docker-compose.server.yml build --pull
+            docker compose -f docker-compose.server.yml up -d --remove-orphans
+            docker image prune -f
+
