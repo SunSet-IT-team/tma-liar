@@ -28,30 +28,36 @@
 }
 
 .bgImage {
-    max-width: 400px;
-    max-height: 45vh;
+    width: 100%;
+    height: auto;
+    display: block;
 }
 
 .bgBlock {
-    position: relative;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 70%;
 }
 
 .profileLink {
-    width: 50px;
-    height: 57px;
-    top: 15vh;
+    width: 11%;
+    top: 35%;
+    right: 18%;
 }
 
 .profileLink img {
-    height: 7vh;
+    width: 100%;
+    height: auto;
 }
 
 .rulesLink {
-    bottom: 11vh;
-    width: 48px;
-    height: 60px;
+    width: 11%;
+    bottom: 25%;
+    right: 18%;
 }
 
 .rulesLink img {
-    height: 7vh;
+    width: 100%;
+    height: auto;
 }

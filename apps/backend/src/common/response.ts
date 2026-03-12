@@ -1,5 +1,5 @@
-import type { GameMessageTypes } from "../../../common/message-types/game.types";
-import type { LobbyMessageTypes } from "../../../common/message-types/lobby.types";
+import type { GameMessageType } from "../../../common/message-types";
+import type { LobbyMessageType } from "../../../common/message-types";
 
 /**
  * Типизация ответов АПИ
@@ -12,11 +12,15 @@ enum ApiResponseStatus {
 export interface ApiResponse<T> { 
     status: ApiResponseStatus, 
     code?: number, 
+    errorCode?: string,
     message?: string, 
+    details?: unknown,
     payload: T | null,
 }
 
-
+/**
+ * Формирует успешный ответ API в едином формате.
+ */
 export function success<T>(payload: T): ApiResponse<T> { 
     return {
         status: ApiResponseStatus.SUCCESS, 
@@ -31,7 +35,7 @@ export function success<T>(payload: T): ApiResponse<T> {
  * @returns Объект с состоянием и разницей
  */
 export function buildStatePayload<T>(
-    messageType: GameMessageTypes | LobbyMessageTypes,
+    messageType: GameMessageType | LobbyMessageType,
     diff: T
   ) {
     return {
@@ -40,17 +44,35 @@ export function buildStatePayload<T>(
     };
   }
 
-export function error(code: number, message?: string): ApiResponse<null> {
+export function error(
+  code: number,
+  errorCode: string,
+  message?: string,
+  details?: unknown,
+): ApiResponse<null> {
   return {
     status: ApiResponseStatus.ERROR,
     code,
-    message: message,
+    errorCode,
+    message: message ?? errorCode,
+    details,
     payload: null,
   };
 }
 
+/**
+ * Бизнес-ошибка приложения.
+ * Пробрасывается из сервисов/контроллеров и преобразуется в HTTP/socket ответ.
+ */
 export class ApiError extends Error { 
-    constructor(public code: number, message?: string) {
-        super(message); 
+    public code: number;
+    public errorCode: string;
+    public details?: unknown;
+
+    constructor(code: number, errorCode: string, details?: unknown, message?: string) {
+        super(message ?? errorCode);
+        this.code = code;
+        this.errorCode = errorCode;
+        this.details = details;
     }
 }

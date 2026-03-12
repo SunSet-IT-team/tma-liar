@@ -1,63 +1,64 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC } from 'react';
 import styles from '../style/waitingLobbyStyle.module.scss';
-import { Header } from '../../../widgets/Header';
-import { Typography } from '../../../shared/ui/Typography';
-import { LobbyUsersBadge } from '../../../features/UsersBadge/ui/LobbyUsersBadge';
-import { TextInput } from '../../../shared/ui/TextInput';
-import { Container } from '../../../shared/ui/Container';
-import { Button } from '../../../shared/ui/Button';
-import { useNavigate } from 'react-router-dom';
-import { PageRoutes } from '../../../app/routes/pages';
-import { useAppDispatch } from '../../../app/store/hook';
-import { startTimer } from '../../../entities/game/model/timerSlice';
+import { Header } from '@widgets/Header';
+import { Typography } from '@shared/ui/Typography';
+import { LobbyUsersBadge } from '@features/UsersBadge';
+import { TextInput } from '@shared/ui/TextInput';
+import { Container } from '@shared/ui/Container';
+import { ReadyToggle } from '@features/ReadyToggle';
+import { useLobbyRealtimeSession } from '@features/LobbyRealtime';
 
 /**
  * Экран ожидания игроков в лобби (игрок)
  */
 export const LobbyPlayer: FC = () => {
-  const [ready, setReady] = useState<boolean>(false);
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
+  const { user, session, ready, loserTask, readyError, setLoserTask, setReadyError } =
+    useLobbyRealtimeSession('player');
 
-  useEffect(() => {
-    if (!ready) return;
-
-    dispatch(startTimer(10));
-
-    const timeout = setTimeout(() => {
-      navigate(`/${PageRoutes.WAITING_PLAYERS}`, {
-        state: {
-          nextRoute: `/${PageRoutes.ANSWER_SOLVED}`,
-        },
-        replace: true,
-      });
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [ready, dispatch, navigate]);
+  if (!session) return null;
 
   return (
     <Container className={styles.container}>
-      <Header className={styles.header} />
+      <Header className={styles.header} inGame />
       <div className={styles.lobbyBlock}>
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
-          <Typography className={styles.lobbyCode}>#13HJ</Typography>
         </Typography>
+        <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
       </div>
-      <LobbyUsersBadge className={styles.players} />
+      <LobbyUsersBadge
+        playersClassName={styles.lobbyPlayers}
+        players={session.players}
+        currentUserId={user.telegramId}
+      />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput
           placeholder="Task"
-          value="Task"
+          value={loserTask}
+          onChange={(event) => setLoserTask(event.target.value)}
           className={styles.taskLoserWrapper}
           inputClassName={styles.taskLoserInput}
         />
       </div>
-      <Button className={styles.readyBtn} onClick={() => setReady(!ready)}>
-        {ready ? 'Готов' : 'Не готов'}
-      </Button>
+      <Typography className={styles.statusHint}>
+        Готовы: {session.players.filter((player) => player.isReady).length}/{session.players.length}
+      </Typography>
+      {readyError ? <Typography className={styles.errorText}>{readyError}</Typography> : null}
+      <div className={styles.actions}>
+        <ReadyToggle
+          className={styles.readyBtn}
+          lobbyCode={session.lobbyCode}
+          playerId={user.telegramId}
+          ready={ready}
+          loserTask={loserTask}
+          fallbackLoserTask={
+            session.players.find((player) => player.id === user.telegramId)?.loserTask ?? null
+          }
+          onValidationError={setReadyError}
+          onBeforeToggle={() => setReadyError(null)}
+        />
+      </div>
     </Container>
   );
 };

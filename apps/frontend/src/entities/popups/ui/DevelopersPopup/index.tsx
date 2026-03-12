@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 import { Popup } from '../../../../shared/ui/Popup';
-import developerIcon from '../../../../../public/icons/developerIcon.svg';
+import developerIcon from '/icons/developerIcon.svg';
 import styles from '../../style/popupsStyle.module.scss';
 import { Typography } from '../../../../shared/ui/Typography';
 import { Button } from '../../../../shared/ui/Button';

@@ -24,11 +24,10 @@ export const SettingsTouches: FC = () => {
   }, [isSoundsPlay]);
 
   const changeSound = () => {
-    playSound();
     setIsSoundsPlay(!isSoundsPlay);
   };
   return (
-    <button onClick={changeSound}>
+    <button onPointerDown={() => playSound()} onClick={changeSound}>
       <img src={isSoundsPlay ? soundRed : soundWhite} alt="" className={styles.soundImg} />
     </button>
   );

@@ -1,12 +1,15 @@
-import axios from "axios";
+import { apiClient } from './client';
 
-/** 
+type AuthResponse = {
+  payload: {
+    token: string;
+  };
+};
+
+/**
  * Запрос токена с backend
-*/
-export const fetchToken = async (telegramId: string) => {
-  const res = await axios.get(
-    `http://localhost:3000/api/auth/${telegramId}`
-  );
-
-  return res.data.payload.token;
+ */
+export const fetchToken = async (initData: string) => {
+  const response = await apiClient.post<AuthResponse>('/api/auth/tma', { initData });
+  return response.data.payload.token;
 };

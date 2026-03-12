@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 import styles from './style/notFoundStyle.module.scss';
-import notFoundIcon from '../../../public/icons/notFoundIcon.svg';
+import notFoundIcon from '/icons/notFoundIcon.svg';
 import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { Typography } from '../../shared/ui/Typography';

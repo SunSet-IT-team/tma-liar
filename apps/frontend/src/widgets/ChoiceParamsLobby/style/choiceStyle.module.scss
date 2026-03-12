@@ -3,12 +3,18 @@
     width: 100%;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
 }
 
 .questionsText {
     max-width: 170px;
+    flex: 0 0 auto;
 }
 
 .scrollerType {
-    padding-bottom: 14px;
+    padding-bottom: 0;
+    line-height: 1;
+    min-width: 1ch;
+    display: flex;
+    align-items: center;
 }

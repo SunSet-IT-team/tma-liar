@@ -7,27 +7,24 @@ import { Typography } from '../../shared/ui/Typography';
 import { Header } from '../../widgets/Header';
 import styles from './style/answersPlayersStyle.module.scss';
 import { GameProcess } from '../../features/GameProcess';
-import { useAppDispatch } from '../../app/store/hook';
-import { stopTimer } from '../../entities/game/model/timerSlice';
-import { useNavigate } from 'react-router-dom';
-import { PageRoutes } from '../../app/routes/pages';
+import { lobbySessionService } from '../../shared/services/lobby/lobby-session.service';
 
 /**
  * Экран с ответами других игроков
  */
 export const AnswersPlayers: FC = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+  const session = lobbySessionService.get();
+  const liarId = session?.currentLiarId ?? null;
+  const players =
+    session?.gamePlayers
+      ?.filter((player) => player.id !== liarId)
+      .map((player) => ({
+        id: player.id,
+        nickname: player.nickname,
+        profileImg: player.profileImg,
+        answer: player.answer,
+      })) ?? [];
 
-  /** Переход на страницу результатов игры */
-  const further = () => {
-    dispatch(stopTimer());
-    navigate(`/${PageRoutes.WAITING_PLAYERS}`, {
-      state: {
-        nextRoute: `/${PageRoutes.RESULT_GAME}`,
-      },
-    });
-  };
   return (
     <Container>
       <Header inGame />
@@ -35,14 +32,14 @@ export const AnswersPlayers: FC = () => {
         Игроки
       </Typography>
       <Typography className={styles.answersText}>и их ответы</Typography>
-      <AnswersUserBadge className={styles.answersPlayers} />
+      <AnswersUserBadge className={styles.answersPlayers} players={players} />
       <div className={styles.bottomBlock}>
-        <Button className={styles.nextBtn} onClick={further}>
-          Далее
+        <Button className={styles.nextBtn} disabled>
+          Ожидание раунда...
         </Button>
         <AnswersTimer className={styles.time} />
       </div>
-      <GameProcess route={`/${PageRoutes.RESULT_GAME}`} />
+      <GameProcess />
     </Container>
   );
 };

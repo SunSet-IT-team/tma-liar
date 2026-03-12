@@ -4,7 +4,7 @@ import type { Player } from './entities/player.entity';
 export const PlayerModel = new Schema<Player>(
   {
     nickname: { type: String, required: true },
-    telegramId: { type: String, required: true, unique: true },
+    telegramId: { type: String, required: true },
     profileImg: { type: String },
     passwordHash: { type: String },
     token: { type: String },
@@ -17,6 +17,11 @@ export const PlayerModel = new Schema<Player>(
     isReady: { 
       type: Boolean, 
       default: null 
+    },
+
+    inGame: {
+      type: Boolean,
+      default: false,
     },
 
     loserTask: { 

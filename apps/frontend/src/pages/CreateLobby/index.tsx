@@ -1,30 +1,36 @@
-import { useState, type FC } from 'react';
+import { type FC } from 'react';
 import { Button } from '../../shared/ui/Button';
 import styles from './style/createLobbyStyle.module.scss';
-import lobbyCircle from '../../../public/icons/lobbyCircle.svg';
+import lobbyCircle from '/icons/lobbyCircle.svg';
 import { Header } from '../../widgets/Header';
 import { ChoiceParamsLobby } from '../../widgets/ChoiceParamsLobby';
 import { Typography } from '../../shared/ui/Typography';
 import { Container } from '../../shared/ui/Container';
-import { useNavigate } from 'react-router-dom';
-import { PageRoutes } from '../../app/routes/pages';
-import { useAppDispatch } from '../../app/store/hook';
-import { startTimer } from '../../entities/game/model/timerSlice';
 import { LobbyDeck } from '../../widgets/LobbyDeck';
+import { useCreateLobby } from '@features/CreateLobby';
 
 /**
  * Экран создания лобби
  */
 export const CreateLobby: FC = () => {
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const [activeValue, setActiveValue] = useState<number>(20);
-
-  const createLobby = () => {
-    dispatch(startTimer(activeValue));
-
-    navigate(`/${PageRoutes.LOBBY_ADMIN}`);
-  };
+  const {
+    questionCount,
+    answerTime,
+    decks,
+    activeDeckIndex,
+    isDecksLoading,
+    isBuyingDeck,
+    isSubmitting,
+    errorText,
+    isGuest,
+    isSelectedDeckLocked,
+    telegramBotUrl,
+    setQuestionCount,
+    setAnswerTime,
+    setActiveDeckIndex,
+    createLobby,
+    buySelectedDeck,
+  } = useCreateLobby();
 
   return (
     <Container className={styles.container}>
@@ -33,21 +39,52 @@ export const CreateLobby: FC = () => {
         Лобби
       </Typography>
       <ChoiceParamsLobby
-        reusedValues={{ min: 10, max: 200, step: 5, defaultValue: 30 }}
+        reusedValues={{ min: 10, max: 200, step: 5, defaultValue: questionCount }}
         choiceText="Кол-во вопросов"
         choiceType="В"
+        onChangeValue={(value: number) => setQuestionCount(value)}
       />
       <ChoiceParamsLobby
-        reusedValues={{ min: 5, max: 60, step: 5, defaultValue: activeValue }}
+        reusedValues={{ min: 5, max: 60, step: 5, defaultValue: answerTime }}
         choiceText="Таймер"
         choiceType="С"
-        onChangeValue={(value: number) => setActiveValue(value)}
+        onChangeValue={(value: number) => setAnswerTime(value)}
       />
-      <LobbyDeck />
-      <Button variant="buttonUnderline" onClick={createLobby}>
-        Создать
-      </Button>
-      <img src={lobbyCircle} alt="" className={styles.lobbyCircle} />
+      {isDecksLoading ? (
+        <Typography>Загружаем колоды...</Typography>
+      ) : (
+        <LobbyDeck decks={decks} activeDeckIndex={activeDeckIndex} onChangeActiveDeck={setActiveDeckIndex} />
+      )}
+      {isGuest ? (
+        <div className={styles.guestAuthBlock}>
+          <Typography className={styles.guestAuthText}>
+            Чтобы создавать лобби, нужно войти через Telegram
+          </Typography>
+          <Button
+            variant="buttonUnderline"
+            onClick={() => window.open(telegramBotUrl, '_blank', 'noopener,noreferrer')}
+          >
+            Войти
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="buttonUnderline"
+          soundTrigger="click"
+          onClick={isSelectedDeckLocked ? buySelectedDeck : createLobby}
+          disabled={isSubmitting || isDecksLoading || decks.length === 0 || isBuyingDeck}
+        >
+          {isSelectedDeckLocked
+            ? isBuyingDeck
+              ? 'Переходим к оплате...'
+              : `Купить колоду за ${decks[activeDeckIndex]?.priceRub ?? 0} ₽`
+            : isSubmitting
+              ? 'Создаю...'
+              : 'Создать'}
+        </Button>
+      )}
+      {errorText && <Typography>{errorText}</Typography>}
+      <img src={lobbyCircle} alt="" className={styles.lobbyCircle} data-decor="true" />
     </Container>
   );
 };

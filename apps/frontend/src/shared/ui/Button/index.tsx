@@ -1,4 +1,4 @@
-import { type FC, JSX, ReactNode } from 'react';
+import type { FC, JSX, ReactNode } from 'react';
 import clsx from 'clsx';
 import styles from './style/buttonsStyle.module.scss';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
@@ -17,6 +17,8 @@ export interface BtnProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  disabled?: boolean;
+  soundTrigger?: 'pointerdown' | 'click';
 }
 
 /**
@@ -28,18 +30,24 @@ export const Button: FC<BtnProps> = ({
   as: Component = 'button',
   children,
   onClick,
+  disabled,
+  soundTrigger = 'pointerdown',
 }) => {
   const playSound = usePlaySound();
 
   const handleClick = () => {
-    playSound();
+    if (soundTrigger === 'click') {
+      playSound();
+    }
     onClick?.();
   };
 
   return (
     <Component
       className={clsx(styles.buttonBase, styles[variant], className)}
+      onPointerDown={soundTrigger === 'pointerdown' ? () => playSound() : undefined}
       onClick={handleClick}
+      disabled={disabled}
     >
       {children}
     </Component>

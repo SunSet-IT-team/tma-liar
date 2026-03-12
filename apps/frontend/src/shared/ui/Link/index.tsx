@@ -24,12 +24,11 @@ export const Link: FC<LinkProps> = ({ icon, route, className }) => {
   const playSound = usePlaySound();
 
   const onLink = () => {
-    playSound();
     navigate(route);
   };
 
   return (
-    <button className={clsx(styles.link, className)} onClick={onLink}>
+    <button className={clsx(styles.link, className)} onPointerDown={() => playSound()} onClick={onLink}>
       <img src={icon} alt="" />
     </button>
   );

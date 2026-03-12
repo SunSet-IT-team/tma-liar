@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 import type { Lobby } from './entities/lobby.entity';
 import { LobbyStatus } from './entities/lobby.entity';
-import { SettingsModel } from './settings.modal';
+import { SettingsModel } from './settings.model';
 import { PlayerModel } from './player.model';
 
 /**

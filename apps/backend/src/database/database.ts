@@ -1,26 +1,31 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-import path from "path";
+import { env } from "../config/env";
 
-dotenv.config({ path: path.resolve(process.cwd(), "config/.env") });
+async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games') {
+  const db = mongoose.connection.db;
+  if (!db) return;
+
+  const collection = db.collection(collectionName);
+  const indexes = await collection.indexes();
+  const hasLegacyUniquePlayersTelegramIndex = indexes.some(
+    (index) => index.name === 'players.telegramId_1',
+  );
+
+  if (!hasLegacyUniquePlayersTelegramIndex) return;
+
+  await collection.dropIndex('players.telegramId_1');
+}
 
 /**
  * Подключение к БД
  */
-export async function connectToDatabase() {
+export async function connectToDatabase(uriOverride?: string) {
   if (mongoose.connection.readyState === 1) return;
 
-  const DB_CONN_STRING = process.env.DB_CONN_STRING ?? "";
-  const DB_NAME = process.env.DB_NAME ?? "liar";
-
-  if (!DB_CONN_STRING || !DB_NAME) {
-    console.log(process.cwd());
-    throw new Error("ENV_UNDEFINED");
-  }
-
-  await mongoose.connect(DB_CONN_STRING, {
-    dbName: DB_NAME,
+  await mongoose.connect(uriOverride ?? env.DB_CONN_STRING, {
+    dbName: env.DB_NAME,
   });
 
-    console.log("connected!");
+  await dropLegacyPlayersTelegramIndex('lobbies');
+  await dropLegacyPlayersTelegramIndex('games');
 }

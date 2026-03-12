@@ -9,13 +9,13 @@ export const GamePlayerVotedDtoSchema = z.object({
     message: "INVALID_GAME_ID"
   }),
   playerId: z.string().min(1),
-  answer: z.number().int().min(0).max(2),
+  answer: z.number().int().min(0).max(1),
 });
 
 /**
  * DTO для голосования игрока
  * @field gameId id игры
  * @field playerId id игрока
- * @field answer ответ игрока (0 - не верит, 1 - верит, 2 - не определился)
+ * @field answer ответ игрока (0 - не верит, 1 - верит)
  */
 export type GamePlayerVotedDto = z.infer<typeof GamePlayerVotedDtoSchema>;
