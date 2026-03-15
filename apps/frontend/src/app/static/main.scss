@@ -33,6 +33,10 @@
     user-select: text;
     -webkit-user-select: text;
   }
+
+  [data-decor="true"] {
+    pointer-events: none;
+  }
   
   button {
     background-color: transparent;

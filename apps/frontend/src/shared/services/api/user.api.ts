@@ -30,6 +30,16 @@ export const updateUserProfileImg = async (telegramId: string, profileImg: strin
 };
 
 /**
+ * Обновление никнейма пользователя
+ */
+export const updateUserNickname = async (telegramId: string, nickname: string) => {
+  const response = await apiClient.put<UpdateUserResponse>(`/api/users/${telegramId}`, {
+    nickname,
+  });
+  return response.data.payload;
+};
+
+/**
  * Обновление фото профиля пользователя через multipart/form-data
  */
 export const updateUserProfileImgFile = async (telegramId: string, file: File) => {

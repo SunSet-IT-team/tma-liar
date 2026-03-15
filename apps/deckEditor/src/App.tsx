@@ -59,12 +59,22 @@ const defaultDraft: DeckDraft = {
 };
 
 function readError(error: unknown): string {
-  if (!axios.isAxiosError(error)) {
-    return 'Неизвестная ошибка';
+  const maybeAxios = error as { response?: { data?: unknown }; message?: string };
+  const maybeEnvelope = maybeAxios.response?.data as { errorCode?: string; message?: string } | undefined;
+
+  if (maybeEnvelope?.errorCode) {
+    return maybeEnvelope.errorCode;
   }
 
-  const errorCode = (error.response?.data as { errorCode?: string } | undefined)?.errorCode;
-  return errorCode ?? error.message;
+  if (maybeEnvelope?.message) {
+    return maybeEnvelope.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Неизвестная ошибка';
 }
 
 export function App() {

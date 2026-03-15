@@ -11,6 +11,7 @@ import {
   createDeckPurchaseRequest,
   fetchDecksRequest,
 } from '@shared/services/api/decks.api';
+import { useNotify } from '@shared/lib/notify';
 
 const PENDING_DECK_PURCHASE_KEY = 'pending_deck_purchase';
 
@@ -30,6 +31,7 @@ function mapDeckToBackendDeck(deck: Deck, deckIndex: number): BackendLobbyDeck {
 
 export function useCreateLobby() {
   const navigate = useNavigate();
+  const { notifyError } = useNotify();
   const [questionCount, setQuestionCount] = useState<number>(30);
   const [answerTime, setAnswerTime] = useState<number>(20);
   const [activeDeckIndex, setActiveDeckIndex] = useState<number>(0);
@@ -37,7 +39,6 @@ export function useCreateLobby() {
   const [isDecksLoading, setIsDecksLoading] = useState(false);
   const [isBuyingDeck, setIsBuyingDeck] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorText, setErrorText] = useState<string | null>(null);
   const user = getCurrentTmaUser();
   const isGuest = isGuestUser(user);
   const telegramBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL ?? 'https://t.me/';
@@ -52,6 +53,8 @@ export function useCreateLobby() {
     let isMounted = true;
 
     const loadDecks = async () => {
+      if(isGuest ) return; // Гость не может создать лобби
+
       setIsDecksLoading(true);
       try {
         const fetchedDecks = await fetchDecksRequest();
@@ -59,7 +62,7 @@ export function useCreateLobby() {
         setDecks(fetchedDecks);
       } catch {
         if (!isMounted) return;
-        setErrorText('Не удалось загрузить список колод');
+        notifyError('Не удалось загрузить список колод. Проверьте подключение и попробуйте ещё раз.');
       } finally {
         if (isMounted) {
           setIsDecksLoading(false);
@@ -75,6 +78,7 @@ export function useCreateLobby() {
   }, []);
 
   useEffect(() => {
+    if(isGuest ) return; // Гость не может создать лобби
     const pendingRaw = sessionStorage.getItem(PENDING_DECK_PURCHASE_KEY);
     if (!pendingRaw) {
       return;
@@ -93,7 +97,6 @@ export function useCreateLobby() {
     }
 
     let isMounted = true;
-    setErrorText(null);
 
     const confirm = async () => {
       try {
@@ -101,7 +104,7 @@ export function useCreateLobby() {
         if (!isMounted) return;
 
         if (!result.purchased) {
-          setErrorText('Оплата не подтверждена');
+          notifyError('Оплата не подтверждена');
           return;
         }
 
@@ -109,10 +112,9 @@ export function useCreateLobby() {
         if (!isMounted) return;
 
         setDecks(fetchedDecks);
-        setErrorText(null);
       } catch {
         if (!isMounted) return;
-        setErrorText('Не удалось подтвердить оплату колоды');
+        notifyError('Не удалось подтвердить оплату колоды. Попробуйте ещё раз.');
       } finally {
         sessionStorage.removeItem(PENDING_DECK_PURCHASE_KEY);
       }
@@ -129,22 +131,21 @@ export function useCreateLobby() {
     if (isSubmitting) return;
 
     if (isGuest) {
-      setErrorText('Создание лобби доступно только при входе через Telegram.');
+      notifyError('Создание лобби доступно только при входе через Telegram.');
       return;
     }
 
     if (!selectedDeck) {
-      setErrorText('Выберите колоду');
+      notifyError('Выберите колоду');
       return;
     }
 
     if (isSelectedDeckLocked) {
-      setErrorText('Эта колода платная. Сначала купите её');
+      notifyError('Эта колода платная. Сначала купите её');
       return;
     }
 
     setIsSubmitting(true);
-    setErrorText(null);
 
     try {
       const selectedBackendDeck = mapDeckToBackendDeck(selectedDeck, activeDeckIndex);
@@ -180,7 +181,7 @@ export function useCreateLobby() {
 
       navigate(`/${PageRoutes.LOBBY_ADMIN}`);
     } catch {
-      setErrorText('Не удалось создать лобби. Попробуйте ещё раз.');
+      notifyError('Не удалось создать лобби. Попробуйте ещё раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -192,7 +193,6 @@ export function useCreateLobby() {
     }
 
     setIsBuyingDeck(true);
-    setErrorText(null);
 
     try {
       const result = await createDeckPurchaseRequest(selectedDeck.id);
@@ -208,7 +208,7 @@ export function useCreateLobby() {
       );
       window.location.href = result.confirmationUrl;
     } catch {
-      setErrorText('Не удалось создать оплату для колоды');
+      notifyError('Не удалось создать оплату для колоды');
     } finally {
       setIsBuyingDeck(false);
     }
@@ -223,7 +223,6 @@ export function useCreateLobby() {
     isDecksLoading,
     isBuyingDeck,
     isSubmitting,
-    errorText,
     isGuest,
     telegramBotUrl,
     isSelectedDeckLocked,

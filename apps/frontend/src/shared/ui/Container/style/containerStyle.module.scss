@@ -4,7 +4,7 @@
     overflow: hidden;
 }
 
-.container > * {
+.container > *:not([data-decor='true']) {
     position: relative;
     z-index: 1;
 }

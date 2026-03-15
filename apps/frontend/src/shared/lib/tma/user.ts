@@ -13,6 +13,8 @@ export type CurrentTmaUser = {
 
 type TmaUserOverrides = {
   profileImg?: string;
+  nickname?: string;
+  username?: string;
 };
 
 function getUserOverrides(telegramId: string): TmaUserOverrides {
@@ -88,11 +90,12 @@ export function getCurrentTmaUser(): CurrentTmaUser {
     const fallbackNickname = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 
     const overrides = getUserOverrides(String(user.id));
+    const baseNickname = user.username ?? fallbackNickname ?? `user_${user.id}`;
 
     return {
       telegramId: String(user.id),
-      nickname: user.username ?? fallbackNickname ?? `user_${user.id}`,
-      username: user.username,
+      nickname: overrides.nickname ?? baseNickname,
+      username: overrides.username ?? user.username,
       profileImg: overrides.profileImg ?? user.photo_url,
     };
   } catch {

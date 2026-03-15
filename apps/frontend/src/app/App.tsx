@@ -5,6 +5,7 @@ import { AppRouter } from './routes/AppRouter';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './providers/Auth/AuthProvider';
 import { SessionRehydration } from './providers/SessionRehydration';
+import { NotifyProvider } from '../shared/lib/notify';
 import '../shared/assets/fonts/fonts.scss';
 
 function App() {
@@ -12,9 +13,11 @@ function App() {
     <BrowserRouter>
       <Provider store={store}>
         <AuthProvider>
-          <SessionRehydration />
-          <Static />
-          <AppRouter />
+          <NotifyProvider>
+            <SessionRehydration />
+            <Static />
+            <AppRouter />
+          </NotifyProvider>
         </AuthProvider>
       </Provider>
     </BrowserRouter>

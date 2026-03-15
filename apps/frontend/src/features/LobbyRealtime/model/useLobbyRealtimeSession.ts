@@ -18,6 +18,7 @@ import {
 } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';
 import { offEvent, onEvent } from '@shared/services/socket/typed-socket';
+import { useNotify } from '@shared/lib/notify';
 
 type Mode = 'admin' | 'player';
 
@@ -48,6 +49,7 @@ function isLobbyMissingError(error: unknown): boolean {
 
 export function useLobbyRealtimeSession(mode: Mode) {
   const navigate = useNavigate();
+  const { notifyError } = useNotify();
 
   /**
    * Текущий пользователь
@@ -131,14 +133,18 @@ export function useLobbyRealtimeSession(mode: Mode) {
         }
         syncLobbyState(state);
       } catch (error) {
-        lobbySessionService.clear();
-        navigate(
-          isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/',
-          { replace: true },
-        );
+        if (isLobbyMissingError(error)) {
+          lobbySessionService.clear();
+          navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
+        } else {
+          setReadyError(
+            'Не удалось синхронизировать лобби. Обновите страницу и попробуйте ещё раз.',
+          );
+          notifyError('Не удалось синхронизировать лобби. Попробуйте ещё раз.');
+        }
       }
     },
-    [navigate, syncLobbyState, user.telegramId],
+    [navigate, notifyError, setReadyError, syncLobbyState, user.telegramId],
   );
 
   useEffect(() => {
@@ -166,10 +172,15 @@ export function useLobbyRealtimeSession(mode: Mode) {
         }
       })
       .catch((error) => {
-        navigate(
-          isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/',
-          { replace: true },
-        );
+        if (isLobbyMissingError(error)) {
+          lobbySessionService.clear();
+          navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
+        } else {
+          setReadyError(
+            'Не удалось подключиться к лобби. Обновите страницу и попробуйте ещё раз.',
+          );
+          notifyError('Не удалось подключиться к лобби. Попробуйте ещё раз.');
+        }
       });
 
     const onGameStatusChanged = (payload: ChangeGameStatusPayload) => {
@@ -216,6 +227,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
         setReadyError(
           `Не удалось изменить готовность (${code}). Обновите страницу и попробуйте снова.`,
         );
+        notifyError('Не удалось изменить готовность. Попробуйте ещё раз.');
       }
     };
 

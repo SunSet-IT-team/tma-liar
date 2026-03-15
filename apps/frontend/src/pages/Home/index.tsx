@@ -1,10 +1,7 @@
 import { type FC } from 'react';
 import styles from './style/homeStyle.module.scss';
-import homeCircle from '/icons/homeCircle.svg';
 import { SettingIcon } from '../../shared/ui/SettingIcon';
-import homeLogo from '/icons/homeIcon-lzhets.svg';
 import { Button } from '../../shared/ui/Button';
-import bgIcon from '/icons/homeIcon-bg.svg';
 import { Container } from '../../shared/ui/Container';
 import { Link } from '../../shared/ui/Link';
 import rulesIcon from '../../shared/ui/icons/rulesIcon.svg';
@@ -20,9 +17,9 @@ export const Home: FC = () => {
 
   return (
     <Container>
-      <img className={styles.circleIcon} src={homeCircle} alt="" data-decor="true" />
+      <div className={styles.circleIcon} data-decor="true" />
       <SettingIcon className={styles.settingsBtn} />
-      <img src={homeLogo} alt="" className={styles.logo} />
+      <div className={styles.logo} />
       <Button
         variant="buttonUnderline"
         className={styles.homeBtn}
@@ -33,8 +30,7 @@ export const Home: FC = () => {
       <Button className={styles.homeBtn} onClick={() => navigate(`/${PageRoutes.CONNECT_LOBBY}`)}>
         Присоедениться
       </Button>
-      <div className={styles.bgBlock}>
-        <img src={bgIcon} alt="" className={styles.bgImage} data-decor="true" />
+      <div className={styles.bgBlock} data-decor="true">
         <Link icon={profileIcon} route={`/${PageRoutes.PROFILE}`} className={styles.profileLink} />
         <Link icon={rulesIcon} route={`/${PageRoutes.RULES}`} className={styles.rulesLink} />
       </div>

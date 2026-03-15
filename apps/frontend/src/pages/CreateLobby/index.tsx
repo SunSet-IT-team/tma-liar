@@ -1,7 +1,6 @@
 import { type FC } from 'react';
 import { Button } from '../../shared/ui/Button';
 import styles from './style/createLobbyStyle.module.scss';
-import lobbyCircle from '/icons/lobbyCircle.svg';
 import { Header } from '../../widgets/Header';
 import { ChoiceParamsLobby } from '../../widgets/ChoiceParamsLobby';
 import { Typography } from '../../shared/ui/Typography';
@@ -21,7 +20,6 @@ export const CreateLobby: FC = () => {
     isDecksLoading,
     isBuyingDeck,
     isSubmitting,
-    errorText,
     isGuest,
     isSelectedDeckLocked,
     telegramBotUrl,
@@ -50,11 +48,13 @@ export const CreateLobby: FC = () => {
         choiceType="С"
         onChangeValue={(value: number) => setAnswerTime(value)}
       />
-      {isDecksLoading ? (
+      {isGuest ?
+      <> </> : 
+      (isDecksLoading ? (
         <Typography>Загружаем колоды...</Typography>
       ) : (
         <LobbyDeck decks={decks} activeDeckIndex={activeDeckIndex} onChangeActiveDeck={setActiveDeckIndex} />
-      )}
+      ))}
       {isGuest ? (
         <div className={styles.guestAuthBlock}>
           <Typography className={styles.guestAuthText}>
@@ -83,8 +83,7 @@ export const CreateLobby: FC = () => {
               : 'Создать'}
         </Button>
       )}
-      {errorText && <Typography>{errorText}</Typography>}
-      <img src={lobbyCircle} alt="" className={styles.lobbyCircle} data-decor="true" />
+      <div className={styles.lobbyCircle} data-decor="true" />
     </Container>
   );
 };

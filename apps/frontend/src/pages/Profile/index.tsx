@@ -7,7 +7,11 @@ import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { LoadAvatar } from '../../shared/ui/LoadAvatar';
 import { getCurrentTmaUser, isGuestUser, setTmaUserOverrides } from '../../shared/lib/tma/user';
-import { findUserByTelegramId, updateUserProfileImgFile } from '../../shared/services/api/user.api';
+import {
+  findUserByTelegramId,
+  updateUserNickname,
+  updateUserProfileImgFile,
+} from '../../shared/services/api/user.api';
 import { AuthContext } from '../../app/providers/Auth/AuthProvider';
 
 async function compressImageToFile(file: File): Promise<File> {
@@ -64,6 +68,9 @@ export const Profile: FC = () => {
   const canUploadProfile = mode === 'full' && !isGuestUser(user);
   const [avatarSrc, setAvatarSrc] = useState<string>(user.profileImg ?? '');
   const [statusText, setStatusText] = useState<string>('');
+  const [displayName, setDisplayName] = useState<string>(
+    profileUsername ? `@${profileUsername}` : '',
+  );
 
   useEffect(() => {
     if (!canUploadProfile) {
@@ -80,6 +87,28 @@ export const Profile: FC = () => {
         // silently ignore: fallback to local profile image
       });
   }, [canUploadProfile, user.telegramId]);
+
+  useEffect(() => {
+    return () => {
+      const raw = displayName.trim();
+      const normalized = raw.replace(/^@+/, '');
+
+      if (!normalized || normalized === profileUsername) {
+        return;
+      }
+
+      setTmaUserOverrides(user.telegramId, {
+        nickname: normalized,
+        username: normalized,
+      });
+
+      if (canUploadProfile) {
+        void updateUserNickname(user.telegramId, normalized).catch(() => {
+          // ignore nickname update errors here, локальный override уже применён
+        });
+      }
+    };
+  }, [canUploadProfile, displayName, profileUsername, user.telegramId]);
 
   const handleAvatarUpload = async (file: File | null) => {
     if (!file) return;
@@ -140,7 +169,8 @@ export const Profile: FC = () => {
       {statusText ? <span className={styles.status}>{statusText}</span> : null}
       <TextInput
         placeholder="Username"
-        defaultValue={profileUsername ? `@${profileUsername}` : ''}
+        value={displayName}
+        onChange={(event) => setDisplayName(event.target.value)}
         className={styles.profileInputWrapper}
       />
       <img src={logo} alt="" className={styles.logo} />
