@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 import { LobbyService } from './lobby.service';
+import { UserService } from '../users/user.service';
 import { ApiError, success } from '../common/response';
 import type { CreateLobbyDto } from './dtos/lobby-create.dto';
 import { FindLobbyDtoSchema, type FindLobbyDto } from './dtos/lobby-find.dto';
@@ -34,7 +35,10 @@ export class LobbyController {
    * Контроллер получения одного лобби
    */
 
-  constructor(private readonly lobbyService = new LobbyService()) {}
+  constructor(
+    private readonly lobbyService = new LobbyService(),
+    private readonly userService = new UserService(),
+  ) {}
 
   public async findLobby(req: Request, res: Response) {
     const result = FindLobbyDtoSchema.safeParse({ lobbyCode: req.params.lobbyCode });
@@ -69,9 +73,9 @@ export class LobbyController {
     }
 
     const authReq = req as AuthRequest;
-    const userId = authReq.userId;
+    const authUserId = authReq.userId;
 
-    if (!userId) {
+    if (!authUserId) {
       throw new ApiError(401, 'UNAUTHORIZED');
     }
 
@@ -80,13 +84,33 @@ export class LobbyController {
     const profileImgFromPayload = result.data.profileImg ?? sourcePlayer?.profileImg;
     const loserTaskFromPayload = result.data.loserTask ?? sourcePlayer?.loserTask;
 
+    // Источник правды — сервер: id из User, telegramId — отдельное поле. Если пользователя нет (гость) — используем authUserId.
+    let adminId: string;
+    let playerId: string;
+    let playerTelegramId: string;
+    let nickname: string;
+
+    try {
+      const user = await this.userService.findUserByAuthId({ authUserId });
+      const resolvedId = user.id ?? (user as { _id?: { toString: () => string } })._id?.toString?.() ?? user.telegramId;
+      adminId = resolvedId;
+      playerId = resolvedId;
+      playerTelegramId = user.telegramId;
+      nickname = nicknameFromPayload?.trim() ? nicknameFromPayload.trim() : user.nickname;
+    } catch {
+      adminId = authUserId;
+      playerId = authUserId;
+      playerTelegramId = authUserId;
+      nickname = nicknameFromPayload?.trim() ? nicknameFromPayload.trim() : `Guest_${authUserId.slice(-4)}`;
+    }
+
     const dto: CreateLobbyDto = {
-      adminId: userId,
+      adminId,
       players: [
         {
-          id: userId,
-          telegramId: userId,
-          nickname: nicknameFromPayload?.trim() ? nicknameFromPayload.trim() : `Guest_${userId.slice(-4)}`,
+          id: playerId,
+          telegramId: playerTelegramId,
+          nickname,
           profileImg: profileImgFromPayload ?? '',
           score: 0,
           isReady: false,

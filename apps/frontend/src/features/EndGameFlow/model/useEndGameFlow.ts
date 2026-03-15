@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { updateLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { disconnectLobbySocket } from '@shared/services/socket/lobby.socket';
@@ -9,7 +9,7 @@ import { disconnectLobbySocket } from '@shared/services/socket/lobby.socket';
 export function useEndGameFlow() {
   const navigate = useNavigate();
   const session = lobbySessionService.get();
-  const me = getCurrentTmaUser();
+  const me = getCurrentUser();
   const [errorText, setErrorText] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -17,7 +17,7 @@ export function useEndGameFlow() {
     () => [...(session?.gamePlayers ?? [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)),
     [session?.gamePlayers],
   );
-  const myPlace = sortedPlayers.findIndex((player) => player.id === me.telegramId) + 1;
+  const myPlace = sortedPlayers.findIndex((player) => player.id === getCurrentUserId(me)) + 1;
 
   const handlePlayAgain = async () => {
     if (!session?.lobbyCode || isSubmitting) return;
@@ -48,7 +48,7 @@ export function useEndGameFlow() {
         currentLoserTask: null,
         gamePlayers: undefined,
         players: lobby.players.map((player) => ({
-          id: player.telegramId,
+          id: player.id ?? player.telegramId,
           nickname: player.nickname,
           profileImg: player.profileImg ?? '',
           isReady: player.isReady,
@@ -61,7 +61,7 @@ export function useEndGameFlow() {
       // Пересоздаем соединение для чистого перехода в новое лобби-состояние.
       disconnectLobbySocket();
 
-      const target = lobby.adminId === me.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+      const target = lobby.adminId === getCurrentUserId(me) ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
       navigate(`/${target}`, { replace: true });
     } catch {
       setErrorText('Не удалось вернуться в лобби. Попробуйте ещё раз.');

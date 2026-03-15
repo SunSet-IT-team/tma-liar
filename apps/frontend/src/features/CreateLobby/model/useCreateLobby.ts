@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
-import { getCurrentTmaUser, isGuestUser } from '@shared/lib/tma/user';
+import { getCurrentUser, isGuestUser } from '@shared/lib/tma/user';
 import { createLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import type { LobbyDeck as BackendLobbyDeck } from '@shared/types/lobby';
@@ -11,7 +11,7 @@ import {
   createDeckPurchaseRequest,
   fetchDecksRequest,
 } from '@shared/services/api/decks.api';
-import { useNotify } from '@shared/lib/notify';
+import { useNotify } from '@shared/lib/notify/notify';
 
 const PENDING_DECK_PURCHASE_KEY = 'pending_deck_purchase';
 
@@ -39,7 +39,7 @@ export function useCreateLobby() {
   const [isDecksLoading, setIsDecksLoading] = useState(false);
   const [isBuyingDeck, setIsBuyingDeck] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const user = getCurrentTmaUser();
+  const user = getCurrentUser();
   const isGuest = isGuestUser(user);
   const telegramBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL ?? 'https://t.me/';
   const selectedDeck = decks[activeDeckIndex] ?? null;

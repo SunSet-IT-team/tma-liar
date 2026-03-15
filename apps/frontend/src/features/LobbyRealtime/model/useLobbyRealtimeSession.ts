@@ -6,7 +6,7 @@ import type { SocketErrorPayload } from '@common/message-types';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
 import { preloadAllScreens } from '@app/routes/preloadScreens';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import {
   applyLobbyDiff,
   getCurrentPlayerReady,
@@ -18,7 +18,7 @@ import {
 } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';
 import { offEvent, onEvent } from '@shared/services/socket/typed-socket';
-import { useNotify } from '@shared/lib/notify';
+import { useNotify } from '@shared/lib/notify/notify';
 
 type Mode = 'admin' | 'player';
 
@@ -54,7 +54,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
   /**
    * Текущий пользователь
    */
-  const user = useMemo(() => getCurrentTmaUser(), []);
+  const user = useMemo(() => getCurrentUser(), []);
 
   /**
    * Сессия
@@ -107,7 +107,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
       /**
        * Получаем информацию о себе по id
        */
-      const me = state.players.find((player) => player.id === user.telegramId);
+      const me = state.players.find((player) => player.id === getCurrentUserId(user));
 
       /**
        * Проверяем свою готовность
@@ -118,16 +118,20 @@ export function useLobbyRealtimeSession(mode: Mode) {
 
       setLoserTask(typeof me?.loserTask === 'string' ? me.loserTask : '');
     },
-    [user.telegramId],
+    [getCurrentUserId(user)],
   );
 
+  /**
+   * Может оно и не нужно
+   */
   const refreshLobby = useCallback(
     async (lobbyCode: string) => {
       try {
         const state = await subscribeLobbyRoom(lobbyCode);
-        const meInLobby = state.players.some((player) => player.id === user.telegramId);
+        const meInLobby = state.players.some((player) => player.id === getCurrentUserId(user));
         if (!meInLobby) {
           lobbySessionService.clear();
+          console.log('meInLobby === false 2');
           navigate('/', { replace: true });
           return;
         }
@@ -135,6 +139,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
       } catch (error) {
         if (isLobbyMissingError(error)) {
           lobbySessionService.clear();
+          console.log('isLobbyMissingError 2');
           navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
         } else {
           setReadyError(
@@ -144,11 +149,12 @@ export function useLobbyRealtimeSession(mode: Mode) {
         }
       }
     },
-    [navigate, notifyError, setReadyError, syncLobbyState, user.telegramId],
+    [navigate, notifyError, setReadyError, syncLobbyState, getCurrentUserId(user)],
   );
 
   useEffect(() => {
     if (!session?.lobbyCode) {
+      console.log('session?.lobbyCode === null');
       navigate('/');
       return;
     }
@@ -156,24 +162,28 @@ export function useLobbyRealtimeSession(mode: Mode) {
     const socket = getLobbySocket();
     const lobbyCode = session.lobbyCode;
 
-    void subscribeLobbyRoom(lobbyCode)
+    subscribeLobbyRoom(lobbyCode)
       .then((state) => {
-        const meInLobby = state.players.some((player) => player.id === user.telegramId);
+        console.log(state);
+        const meInLobby = state.players.some((player) => player.id === getCurrentUserId(user));
         if (!meInLobby) {
           lobbySessionService.clear();
+          console.log('meInLobby === false');
           navigate('/', { replace: true });
           return;
         }
 
         syncLobbyState(state);
 
-        if (mode === 'admin' && state.adminId !== user.telegramId) {
+        if (mode === 'admin' && state.adminId !== getCurrentUserId(user)) {
+          console.log('adminId !== getCurrentUserId(user)');
           navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
         }
       })
       .catch((error) => {
         if (isLobbyMissingError(error)) {
           lobbySessionService.clear();
+          console.log('isLobbyMissingError');
           navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
         } else {
           setReadyError(
@@ -200,24 +210,26 @@ export function useLobbyRealtimeSession(mode: Mode) {
         return next;
       });
 
-      const currentPlayerReady = getCurrentPlayerReady(payload, user.telegramId);
+      const currentPlayerReady = getCurrentPlayerReady(payload, getCurrentUserId(user));
       if (currentPlayerReady !== null) {
         setReady(currentPlayerReady);
       }
 
-      const currentPlayer = payload.diff?.players?.find((player) => player.id === user.telegramId);
+      const currentPlayer = payload.diff?.players?.find((player) => player.id === getCurrentUserId(user));
       if (typeof currentPlayer?.loserTask === 'string') {
         setLoserTask(currentPlayer.loserTask);
       }
 
       const nextAdminId = payload.diff?.adminId;
-      if (mode === 'admin' && nextAdminId && nextAdminId !== user.telegramId) {
+      if (mode === 'admin' && nextAdminId && nextAdminId !== getCurrentUserId(user)) {
+        console.log('onAdminChanged');
         navigate(`/${PageRoutes.LOBBY_PLAYER}`, { replace: true });
       }
     };
 
     const onLobbyDeleted = () => {
       lobbySessionService.clear();
+      console.log('onLobbyDeleted');
       navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
     };
 
@@ -240,7 +252,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
       offEvent(socket, LobbySocketEvents.LOBBY_DELETED, onLobbyDeleted);
       offEvent(socket, SocketSystemEvents.ERROR, onSocketError);
     };
-  }, [mode, navigate, refreshLobby, session?.lobbyCode, syncLobbyState, user.telegramId]);
+  }, [mode, navigate, refreshLobby, session?.lobbyCode, syncLobbyState, getCurrentUserId(user)]);
 
   return {
     user,

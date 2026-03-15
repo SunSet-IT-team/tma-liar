@@ -6,7 +6,7 @@ import type { SocketErrorPayload } from '@common/message-types';
 import { useAppDispatch } from '@app/store/hook';
 import { PageRoutes } from '@app/routes/pages';
 import { updateTimer } from '@entities/game/model/timerSlice';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { findLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket, subscribeGameRoom } from '@shared/services/socket/lobby.socket';
@@ -18,7 +18,7 @@ export function useChooseLiar() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const user = useMemo(() => getCurrentTmaUser(), []);
+  const user = useMemo(() => getCurrentUser(), []);
 
   const chooseStrategy = async (answer: boolean) => {
     if (isSubmitting) return;
@@ -41,7 +41,7 @@ export function useChooseLiar() {
 
     if (!freshSession?.currentGameId) {
       const targetRoute =
-        freshSession?.adminId === user.telegramId
+        freshSession?.adminId === getCurrentUserId(user)
           ? PageRoutes.LOBBY_ADMIN
           : PageRoutes.LOBBY_PLAYER;
       navigate(`/${targetRoute}`, { replace: true });
@@ -62,7 +62,7 @@ export function useChooseLiar() {
         return;
       }
 
-      if (liarId !== user.telegramId) {
+      if (liarId !== getCurrentUserId(user)) {
         setErrorText('Вы не лжец в этом раунде.');
         setIsSubmitting(false);
         return;
@@ -70,7 +70,7 @@ export function useChooseLiar() {
     } catch {
       const fallbackSession = lobbySessionService.get();
       const targetRoute =
-        fallbackSession?.adminId === user.telegramId
+        fallbackSession?.adminId === getCurrentUserId(user)
           ? PageRoutes.LOBBY_ADMIN
           : PageRoutes.LOBBY_PLAYER;
       navigate(`/${targetRoute}`, { replace: true });
@@ -92,7 +92,7 @@ export function useChooseLiar() {
         if (code === 'GAME_NOT_FOUND') {
           const fallbackSession = lobbySessionService.get();
           const targetRoute =
-            fallbackSession?.adminId === user.telegramId
+            fallbackSession?.adminId === getCurrentUserId(user)
               ? PageRoutes.LOBBY_ADMIN
               : PageRoutes.LOBBY_PLAYER;
           navigate(`/${targetRoute}`, { replace: true });
@@ -109,7 +109,7 @@ export function useChooseLiar() {
     onEvent(socket, SocketSystemEvents.ERROR, onError);
     emitEvent(socket, GameSocketEvents.LIAR_CHOSE, {
       gameId: freshSession.currentGameId,
-      playerId: user.telegramId,
+      playerId: getCurrentUserId(user),
       answer,
     });
 

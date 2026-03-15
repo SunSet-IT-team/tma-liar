@@ -85,6 +85,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
     return null;
   };
   const serializePlayersForClient = (players: Array<{
+    id?: string;
     telegramId: string;
     nickname: string;
     profileImg?: string;
@@ -97,7 +98,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
     score?: number;
   }>) =>
     players.map((player) => ({
-      id: player.telegramId,
+      id: player.id ?? player.telegramId,
       nickname: player.nickname,
       profileImg: player.profileImg ?? '',
       isReady: player.isReady,
@@ -140,6 +141,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
       loserTask?: string | null;
       settings?: { deck?: { questions?: Array<{ id: string; content: string }> } };
       players?: Array<{
+        id?: string;
         telegramId: string;
         nickname: string;
         profileImg?: string;
@@ -185,7 +187,7 @@ export function registerGameHandler(io: Server, socket: Socket) {
         stageDurationMs: getStageDurationMs(game.stage),
         liarId: game.liarId,
         players: game.players.map((player) => ({
-          id: player.telegramId,
+          id: player.id ?? player.telegramId,
           nickname: player.nickname,
           profileImg: player.profileImg ?? '',
           isReady: player.isReady,

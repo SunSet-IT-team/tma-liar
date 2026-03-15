@@ -7,6 +7,7 @@ import { TextInput } from '@shared/ui/TextInput';
 import { Container } from '@shared/ui/Container';
 import { ReadyToggle } from '@features/ReadyToggle';
 import { useLobbyRealtimeSession } from '@features/LobbyRealtime';
+import { getCurrentUserId } from '@shared/lib/tma/user';
 
 /**
  * Экран ожидания игроков в лобби (игрок)
@@ -29,7 +30,7 @@ export const LobbyPlayer: FC = () => {
       <LobbyUsersBadge
         playersClassName={styles.lobbyPlayers}
         players={session.players}
-        currentUserId={user.telegramId}
+        currentUserId={getCurrentUserId(user)}
       />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
@@ -49,11 +50,11 @@ export const LobbyPlayer: FC = () => {
         <ReadyToggle
           className={styles.readyBtn}
           lobbyCode={session.lobbyCode}
-          playerId={user.telegramId}
+          playerId={getCurrentUserId(user)}
           ready={ready}
           loserTask={loserTask}
           fallbackLoserTask={
-            session.players.find((player) => player.id === user.telegramId)?.loserTask ?? null
+            session.players.find((player) => player.id === getCurrentUserId(user))?.loserTask ?? null
           }
           onValidationError={setReadyError}
           onBeforeToggle={() => setReadyError(null)}

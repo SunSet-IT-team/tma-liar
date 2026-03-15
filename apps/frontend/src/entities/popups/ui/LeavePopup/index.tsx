@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../../app/store/hook';
 import { PageRoutes } from '../../../../app/routes/pages';
 import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
-import { getCurrentTmaUser } from '../../../../shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '../../../../shared/lib/tma/user';
 import { exitGameBySocket, leaveLobbyBySocket } from '../../../../shared/services/socket/lobby.socket';
 import { Button } from '../../../../shared/ui/Button';
 import { Popup } from '../../../../shared/ui/Popup';
@@ -67,9 +67,9 @@ export const LeavePopup: FC<LeavePopupProps> = ({ popupStyle = 'red', changeShow
           });
           dispatch(resetTimer());
 
-          const user = getCurrentTmaUser();
+          const user = getCurrentUser();
           const targetRoute =
-            session.adminId === user.telegramId ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
+            session.adminId === getCurrentUserId(user) ? PageRoutes.LOBBY_ADMIN : PageRoutes.LOBBY_PLAYER;
           navigate(`/${targetRoute}`, { replace: true });
           return;
         }

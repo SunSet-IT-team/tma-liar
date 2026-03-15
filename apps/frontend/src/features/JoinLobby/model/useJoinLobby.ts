@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { findLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { joinLobbyBySocket } from '@shared/services/socket/lobby.socket';
 
 export function useJoinLobby() {
   const navigate = useNavigate();
-  const user = getCurrentTmaUser();
+  const user = getCurrentUser();
   const [lobbyCode, setLobbyCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function useJoinLobby() {
       });
 
       navigate(
-        lobbyView.adminId === user.telegramId
+        lobbyView.adminId === getCurrentUserId(user)
           ? `/${PageRoutes.LOBBY_ADMIN}`
           : `/${PageRoutes.LOBBY_PLAYER}`,
       );

@@ -1,15 +1,43 @@
 import { apiClient } from './client';
+import { setCachedServerUser } from '../../lib/tma/user';
+
+type UserPayload = {
+  id: string;
+  telegramId: string;
+  nickname: string;
+  profileImg?: string;
+};
 
 type UserResponse = {
-  payload: {
-    id: string;
-    telegramId: string;
-    nickname: string;
-    profileImg?: string;
-  };
+  payload: UserPayload;
 };
 
 type UpdateUserResponse = UserResponse;
+
+/**
+ * Текущий пользователь по auth (источник правды — сервер). Для гостей — 404.
+ */
+export const getMe = async (): Promise<UserPayload | null> => {
+  try {
+    const response = await apiClient.get<UserResponse>('/api/users/me');
+    const user = response.data.payload;
+    console.log('getMe')
+    console.log(user)
+    if (user?.telegramId) {
+      const id = user.id ?? user.telegramId;
+      setCachedServerUser({
+        id,
+        telegramId: user.telegramId,
+        nickname: user.nickname,
+        profileImg: user.profileImg,
+      });
+      return { ...user, id };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Получение пользователя по telegramId

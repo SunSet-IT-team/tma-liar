@@ -1,10 +1,16 @@
 import { Schema } from 'mongoose';
 import type { Player } from './entities/player.entity';
 
+/**
+ * id храним как поле: это id пользователя из коллекции users (источник правды).
+ * Виртуальный id от _id не подходит — у каждого элемента массива players свой _id (subdocument),
+ * а нам нужен именно user.id.
+ */
 export const PlayerModel = new Schema<Player>(
   {
+    id: { type: String, index: true, unique: true },
     nickname: { type: String, required: true },
-    telegramId: { type: String, required: true },
+    telegramId: { type: String, required: true, index: true, unique: true },
     profileImg: { type: String },
     passwordHash: { type: String },
     token: { type: String },
@@ -55,7 +61,3 @@ export const PlayerModel = new Schema<Player>(
     toObject: { virtuals: true }, 
   }
 );
-
-PlayerModel.virtual('id').get(function () {
-  return this._id.toString();
-});

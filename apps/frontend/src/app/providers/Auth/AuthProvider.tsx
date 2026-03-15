@@ -2,6 +2,7 @@ import { retrieveRawInitData } from '@tma.js/sdk';
 import { createContext, useEffect, useState } from 'react';
 import { authService } from '../../../shared/services/auth.service';
 import { fetchToken } from '../../../shared/services/api/auth.api';
+import { getMe } from '../../../shared/services/api/user.api';
 
 type AuthMode = 'full' | 'guest';
 
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsAuth(true);
           setMode('full');
           setRequiresTmaLogin(false);
+          void getMe();
           return;
         }
 
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAuth(true);
         setMode('full');
         setRequiresTmaLogin(false);
+        void getMe();
       } catch (e) {
         authService.removeToken();
         setIsAuth(false);

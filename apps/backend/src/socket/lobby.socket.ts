@@ -15,7 +15,7 @@ import type { GameStartDto } from "../game/dtos/game-start.dto";
 import { GameService } from "../game/game.service";
 import { logger } from "../observability/logger";
 import z from 'zod';
-import { UserRepository } from '../users/user.repository';
+import { UserService } from '../users/user.service';
 import { env } from '../config/env';
 import { SettingsSchema } from '../lobby/entities/settings.entity';
 import { GameStages, LobbyStatus } from '../lobby/entities/lobby.entity';
@@ -75,7 +75,7 @@ function buildLobbyState(lobby: {
     status: lobby.status,
     players: lobby.players.map((player) =>
       PlayerInfoSchema.parse({
-        id: player.telegramId,
+        id: player.id ?? player.telegramId,
         nickname: player.nickname,
         profileImg: player.profileImg ?? '',
         isReady: player.isReady ?? false,
@@ -92,6 +92,7 @@ function buildLobbyDiffState(lobby: {
   currentGameId: string | null;
   status: string;
     players: Array<{
+      id?: string;
       telegramId: string;
       nickname: string;
       profileImg?: string;
@@ -106,7 +107,7 @@ function buildLobbyDiffState(lobby: {
     currentGameId: lobby.currentGameId,
     status: lobby.status,
     players: lobby.players.map((player) => ({
-      id: player.telegramId,
+      id: player.id ?? player.telegramId,
       nickname: player.nickname,
       profileImg: player.profileImg ?? '',
       isReady: player.isReady ?? false,
@@ -166,7 +167,6 @@ function emitSocketError(socket: Socket, fallbackErrorCode: string, error: unkno
 export function registerLobbyHandler(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
-  const userRepository = new UserRepository();
 
   socket.on(LobbyMessageTypes.LOBBY_SUBSCRIBE, async (data: unknown) => {
     try {
@@ -210,22 +210,42 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const normalizedUserId = socketUserId.trim();
-      const user = await userRepository.findByTelegramId(normalizedUserId);
-      const requestedNickname = result.data.nickname ?? result.data.player?.nickname;
-      const requestedProfileImg = result.data.profileImg ?? result.data.player?.profileImg;
+      const userService = new UserService();
+      let playerId: string;
+      let playerTelegramId: string;
+      let nickname: string;
+      let profileImg: string;
+
+      try {
+        const user = await userService.findUserByAuthId({ authUserId: normalizedUserId });
+        playerId = user.id;
+        playerTelegramId = user.telegramId;
+        const requestedNickname = result.data.nickname ?? result.data.player?.nickname;
+        nickname =
+          typeof requestedNickname === 'string' && requestedNickname.trim().length > 0
+            ? requestedNickname.trim()
+            : user.nickname;
+        profileImg = result.data.profileImg ?? result.data.player?.profileImg ?? user.profileImg ?? '';
+      } catch {
+        playerId = normalizedUserId;
+        playerTelegramId = normalizedUserId;
+        const requestedNickname = result.data.nickname ?? result.data.player?.nickname;
+        nickname =
+          typeof requestedNickname === 'string' && requestedNickname.trim().length > 0
+            ? requestedNickname.trim()
+            : `Guest_${normalizedUserId.slice(-4)}`;
+        profileImg = result.data.profileImg ?? result.data.player?.profileImg ?? '';
+      }
+
       const requestedLoserTask = result.data.loserTask ?? result.data.player?.loserTask;
 
       const dto: JoinLobbyDto = {
         lobbyCode: result.data.lobbyCode,
         player: {
-          id: normalizedUserId,
-          telegramId: normalizedUserId,
-          nickname:
-            user?.nickname ??
-            (typeof requestedNickname === 'string' && requestedNickname.trim().length > 0
-              ? requestedNickname.trim()
-              : `Guest_${normalizedUserId.slice(-4)}`),
-          profileImg: user?.profileImg ?? requestedProfileImg ?? '',
+          id: playerId,
+          telegramId: playerTelegramId,
+          nickname,
+          profileImg,
           score: 0,
           isReady: false,
           inGame: false,
@@ -280,9 +300,12 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         throw new ApiError(401, 'UNAUTHORIZED');
       }
 
-      const telegramId = socketUserId.trim();
+      const userId = socketUserId.trim();
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
+      const leavingPlayer = lobbySnap.players.find((p) => p.id === userId || p.telegramId === userId);
+      const loserIdForGame = leavingPlayer?.id ?? leavingPlayer?.telegramId ?? userId;
+
       const snapForDiff = buildLobbyDiffState(lobbySnap);
       let resetToWaitingAfterLeave = false;
 
@@ -298,28 +321,28 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           if (firstRoundNotFinished) {
             resetToWaitingAfterLeave = true;
             logger.info(
-              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
+              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: loserIdForGame },
               'Player left before first round end, lobby will be reset to waiting',
             );
           } else {
             await gameService.finishGameBecausePlayerLeft({
               gameId: lobbySnap.currentGameId,
-              loserId: telegramId,
+              loserId: loserIdForGame,
             });
             logger.info(
-              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId },
+              { lobbyCode, gameId: lobbySnap.currentGameId, loserId: loserIdForGame },
               'Game finished because player left during active match',
             );
           }
         } catch (finishError) {
           logger.warn(
-            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: telegramId, error: finishError },
+            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: loserIdForGame, error: finishError },
             'Failed to finish game on player leave, continuing leave flow',
           );
         }
       }
 
-      const leaveResult = await lobbyService.leaveLobby({ lobbyCode, telegramId });
+      const leaveResult = await lobbyService.leaveLobby({ lobbyCode, userId });
       const gameIdToDiscard = lobbySnap.currentGameId;
 
       if (resetToWaitingAfterLeave && gameIdToDiscard) {
@@ -333,9 +356,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         }
         logger.info({ lobbyCode }, 'Lobby deleted after player left');
       } else if (leaveResult.newAdminId) {
-        logger.info({ lobbyCode, previousAdmin: telegramId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
+        logger.info({ lobbyCode, previousAdmin: userId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
       } else {
-        logger.info({ lobbyCode, telegramId }, 'Player left lobby');
+        logger.info({ lobbyCode, userId }, 'Player left lobby');
       }
 
       if (leaveResult.lobby && resetToWaitingAfterLeave) {
@@ -417,7 +440,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
       const userId = socketUserId.trim();
-      const playerExists = lobbySnap.players.some((player) => player.telegramId === userId);
+      const playerExists = lobbySnap.players.some((player) => player.id === userId || player.telegramId === userId);
 
       if (!playerExists) {
         throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
@@ -495,7 +518,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       const normalizedUserId = socketUserId.trim();
       const lobbySnap = await lobbyService.findLobby({ lobbyCode: result.data.lobbyCode });
-      let currentPlayer = lobbySnap.players.find((player) => player.telegramId === normalizedUserId);
+      let currentPlayer = lobbySnap.players.find(
+        (player) => player.id === normalizedUserId || player.telegramId === normalizedUserId,
+      );
 
       if (!currentPlayer && result.data.playerId) {
         const byId = lobbySnap.players.find(
@@ -569,24 +594,34 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       }
 
       const lobby = await lobbyService.findLobby({ lobbyCode: dtoResult.data.lobbyCode });
+      const normalizedUserId = socketUserId.trim();
+      const adminPlayer = lobby.players.find(
+        (p) => p.id === lobby.adminId || p.telegramId === lobby.adminId,
+      );
+      if (!adminPlayer) {
+        throw new ApiError(404, 'ADMIN_PLAYER_NOT_FOUND');
+      }
+      if (adminPlayer.id !== normalizedUserId && adminPlayer.telegramId !== normalizedUserId) {
+        throw new ApiError(403, 'PLAYER_IS_NOT_ADMIN');
+      }
 
       const normalizedSettings = normalizeLobbySettings(lobby.settings);
 
       const dto: GameStartDto = GameStartDtoSchema.parse({
         lobbyCode: dtoResult.data.lobbyCode,
         player: {
-          id: socketUserId.trim(),
-          telegramId: socketUserId.trim(),
-          nickname: '',
-          profileImg: '',
-          score: 0,
-          isReady: false,
-          inGame: false,
-          loserTask: 'task',
-          wasLiar: 0,
-          answer: null,
-          likes: 0,
-          isConfirmed: false,
+          id: adminPlayer.id ?? adminPlayer.telegramId,
+          telegramId: adminPlayer.telegramId,
+          nickname: adminPlayer.nickname ?? '',
+          profileImg: adminPlayer.profileImg ?? '',
+          score: adminPlayer.score ?? 0,
+          isReady: adminPlayer.isReady ?? false,
+          inGame: adminPlayer.inGame ?? false,
+          loserTask: adminPlayer.loserTask ?? 'task',
+          wasLiar: adminPlayer.wasLiar ?? 0,
+          answer: adminPlayer.answer ?? null,
+          likes: adminPlayer.likes ?? 0,
+          isConfirmed: adminPlayer.isConfirmed ?? false,
         },
         settings: normalizedSettings,
       });

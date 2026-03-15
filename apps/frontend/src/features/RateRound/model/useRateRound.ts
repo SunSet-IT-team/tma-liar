@@ -3,28 +3,28 @@ import { GameSocketEvents } from '@common/message-types';
 import { SocketSystemEvents } from '@common/message-types';
 import type { SocketErrorPayload } from '@common/message-types';
 import { useAppSelector } from '@app/store/hook';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
 import { toUserSocketError } from '@shared/services/socket/socket-error';
 import { emitEvent, offEvent, onEvent } from '@shared/services/socket/typed-socket';
 
 export function useRateRound() {
-  const user = useMemo(() => getCurrentTmaUser(), []);
+  const user = useMemo(() => getCurrentUser(), []);
   const session = lobbySessionService.get();
   const tickSeconds = useAppSelector((state) => state.timer.tickSeconds);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(
-    Boolean(session?.gamePlayers?.find((player) => player.id === user.telegramId)?.isConfirmed),
+    Boolean(session?.gamePlayers?.find((player) => player.id === getCurrentUserId(user))?.isConfirmed),
   );
   const sentLikeIdsRef = useRef<Set<string>>(new Set());
   const finalizedRef = useRef(false);
 
   const players =
     session?.gamePlayers?.filter(
-      (player) => player.id !== user.telegramId && player.id !== session.currentLiarId,
+      (player) => player.id !== getCurrentUserId(user) && player.id !== session.currentLiarId,
     ) ?? [];
 
   const toggleLike = (playerId: string, checked: boolean) => {
@@ -68,7 +68,7 @@ export function useRateRound() {
       sentLikeIdsRef.current.add(receiverId);
       emitEvent(socket, GameSocketEvents.PLAYER_LIKED, {
         gameId: session.currentGameId,
-        senderId: user.telegramId,
+        senderId: getCurrentUserId(user),
         receiverId,
       });
     }
@@ -113,7 +113,7 @@ export function useRateRound() {
     onEvent(socket, SocketSystemEvents.ERROR, onError);
     emitEvent(socket, GameSocketEvents.PLAYER_SECURED, {
       gameId: session.currentGameId,
-      playerId: user.telegramId,
+      playerId: getCurrentUserId(user),
     });
 
     window.setTimeout(() => {

@@ -73,12 +73,16 @@ export class LobbyRepository {
     return (deleted as Lobby | null) ?? null;
   }
 
+  /** Не пускаем в лобби, если уже есть игрок с таким же id (серверный) или telegramId. */
   public async joinIfAllowed(dto: JoinLobbyDto): Promise<Lobby | null> {
     const updated = await LobbyModel.findOneAndUpdate(
       {
         lobbyCode: dto.lobbyCode,
         status: { $in: [LobbyStatus.WAITING, LobbyStatus.STARTED] },
-        'players.telegramId': { $ne: dto.player.telegramId },
+        $nor: [
+          { 'players.id': dto.player.id },
+          { 'players.telegramId': dto.player.telegramId },
+        ],
       },
       { $push: { players: dto.player } },
       { new: true }
@@ -133,13 +137,11 @@ export class LobbyRepository {
     return (updated as Lobby | null) ?? null;
   }
 
-  public async removePlayer(lobbyCode: string, telegramId: string, session?: ClientSession): Promise<Lobby | null> {
+  /** Удаляет игрока по userId: серверный id или telegramId (гости/сокет шлёт по-разному). */
+  public async removePlayer(lobbyCode: string, userId: string, session?: ClientSession): Promise<Lobby | null> {
     const updated = await LobbyModel.findOneAndUpdate(
-      {
-        lobbyCode,
-        'players.telegramId': telegramId,
-      },
-      { $pull: { players: { telegramId } } },
+      { lobbyCode },
+      { $pull: { players: { $or: [{ id: userId }, { telegramId: userId }] } } },
       { new: true, session }
     ).lean();
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from '../auth.service';
-import { getCurrentTmaUser } from '../../lib/tma/user';
+import { getCurrentUser } from '../../lib/tma/user';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
@@ -34,14 +34,15 @@ if (import.meta.env.DEV) {
 
 apiClient.interceptors.request.use((config) => {
   const token = authService.getToken();
-  const user = getCurrentTmaUser();
+  const user = getCurrentUser();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  if (user.telegramId) {
-    config.headers['x-dev-user-id'] = user.telegramId;
+  const userId = user.id ?? user.telegramId;
+  if (userId) {
+    config.headers['x-dev-user-id'] = userId;
   }
 
   return config;

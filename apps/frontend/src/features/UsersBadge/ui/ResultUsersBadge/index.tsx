@@ -9,7 +9,7 @@ import { RESULT_ANIMATION_CONFIG } from '../../config/resultAnimationConfig';
 import drumSound from '../../../../shared/assets/sounds/drumroll.mp3';
 import { Button } from '../../../../shared/ui/Button';
 import { lobbySessionService } from '../../../../shared/services/lobby/lobby-session.service';
-import { getCurrentTmaUser } from '../../../../shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '../../../../shared/lib/tma/user';
 import { useAppSelector } from '../../../../app/store/hook';
 import { playCachedSound, stopCachedSound } from '../../../../shared/lib/sound/sound-pool';
 
@@ -21,7 +21,7 @@ export const ResultUsersBadge: FC = () => {
   const [finished, setFinished] = useState(false);
   const [task, setTask] = useState<string>('Здесь будет задание...');
   const session = lobbySessionService.get();
-  const me = getCurrentTmaUser();
+  const me = getCurrentUser();
   const { sounds, volume } = useAppSelector((state) => state.appSettings);
 
   const sortedUsers =
@@ -34,7 +34,7 @@ export const ResultUsersBadge: FC = () => {
             photo: player.profileImg ?? '',
             name: player.nickname,
             points: player.score ?? 0,
-            currentPlayer: player.id === me.telegramId,
+            currentPlayer: player.id === getCurrentUserId(me),
             task: player.loserTask ?? '',
           }))
       : [];

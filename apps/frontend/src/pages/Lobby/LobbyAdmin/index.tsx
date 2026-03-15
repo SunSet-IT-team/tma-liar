@@ -8,6 +8,7 @@ import { Container } from '@shared/ui/Container';
 import { ReadyToggle } from '@features/ReadyToggle';
 import { useLobbyRealtimeSession } from '@features/LobbyRealtime';
 import { useStartGame } from '@features/StartGame';
+import { getCurrentUserId } from '@shared/lib/tma/user';
 
 const MIN_PLAYERS_TO_START = 3;
 
@@ -29,7 +30,7 @@ export const LobbyAdmin: FC = () => {
     lobbyCode: session?.lobbyCode,
     onSyncLobbyState: syncLobbyState,
   });
-  const adminPlayer = session?.players.find((player) => player.id === user.telegramId);
+  const adminPlayer = session?.players.find((player) => player.id === getCurrentUserId(user));
   const adminReady = Boolean(adminPlayer?.isReady);
   const allPlayersReady = session ? session.players.every((player) => player.isReady) : false;
   const enoughPlayers = session ? session.players.length >= MIN_PLAYERS_TO_START : false;
@@ -71,7 +72,7 @@ export const LobbyAdmin: FC = () => {
       <LobbyUsersBadge
         playersClassName={styles.lobbyPlayers}
         players={session.players}
-        currentUserId={user.telegramId}
+        currentUserId={getCurrentUserId(user)}
       />
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
@@ -93,7 +94,7 @@ export const LobbyAdmin: FC = () => {
         <ReadyToggle
           className={styles.readyBtn}
           lobbyCode={session.lobbyCode}
-          playerId={adminPlayer?.id ?? user.telegramId}
+          playerId={adminPlayer?.id ?? getCurrentUserId(user)}
           ready={adminReady}
           loserTask={loserTask}
           fallbackLoserTask={adminPlayer?.loserTask ?? null}

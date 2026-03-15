@@ -8,7 +8,7 @@ import { PageRoutes } from '../../routes/pages';
 import { preloadAllScreens } from '../../routes/preloadScreens';
 import { store } from '../../store';
 import { resetTimer, startTimer } from '../../../entities/game/model/timerSlice';
-import { getCurrentTmaUser } from '../../../shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '../../../shared/lib/tma/user';
 import { findLobbyRequest } from '../../../shared/services/lobby/lobby.api';
 import { lobbySessionService } from '../../../shared/services/lobby/lobby-session.service';
 import {
@@ -227,7 +227,7 @@ export function SessionRehydration() {
         // и актуального состояния на бэкенде.
         // "Hydration" обычно про SSR -> привязку клиентского React к готовой разметке.
         // Здесь "Rehydration": восстановление ранее сохраненного состояния рантайма/сессии.
-        const user = getCurrentTmaUser();
+        const user = getCurrentUser();
         const lobbyState = await subscribeLobbyRoom(session.lobbyCode);
         const lobbyFull = await findLobbyRequest(session.lobbyCode);
 
@@ -244,12 +244,12 @@ export function SessionRehydration() {
 
         // Если пользователь больше не числится в лобби (например, его удалили),
         // локальную сессию считаем невалидной.
-        const meInLobby = baseSession.players.some((player) => player.id === user.telegramId);
+        const meInLobby = baseSession.players.some((player) => player.id === getCurrentUserId(user));
         if (!meInLobby) {
           throw new Error('USER_NOT_IN_LOBBY');
         }
 
-        const isAdmin = baseSession.adminId === user.telegramId;
+        const isAdmin = baseSession.adminId === getCurrentUserId(user);
 
         // Нет активной игры: оставляем пользователя на экране лобби и очищаем игровой таймер/состояние.
         if (baseSession.status !== 'started' || !baseSession.currentGameId) {
@@ -283,12 +283,12 @@ export function SessionRehydration() {
           stageTimerRef.current = initialStageKey;
         }
 
-        const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === user.telegramId);
+        const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === getCurrentUserId(user));
         const target = resolveGameRoute({
           stage: nextSession.currentStage ?? null,
           isAdmin,
           isLiar,
-          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === user.telegramId)),
+          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user))),
         });
         if (!target) return;
 
@@ -341,7 +341,7 @@ export function SessionRehydration() {
           return;
         }
 
-        const user = getCurrentTmaUser();
+        const user = getCurrentUser();
         const hasDiffCurrentGameId = Boolean(
           payload.diff && Object.prototype.hasOwnProperty.call(payload.diff, 'currentGameId'),
         );
@@ -453,13 +453,13 @@ export function SessionRehydration() {
         const routeStage = shouldResetGameState ? 'lobby' : stage;
         if (!routeStage) return;
 
-        const isAdmin = nextSession.adminId === user.telegramId;
-        const isLiar = Boolean(liarId && liarId === user.telegramId);
+        const isAdmin = nextSession.adminId === getCurrentUserId(user);
+        const isLiar = Boolean(liarId && liarId === getCurrentUserId(user));
         const resolvedTarget = resolveGameRoute({
           stage: routeStage,
           isAdmin,
           isLiar,
-          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === user.telegramId)),
+          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user))),
         });
         if (!resolvedTarget) return;
 

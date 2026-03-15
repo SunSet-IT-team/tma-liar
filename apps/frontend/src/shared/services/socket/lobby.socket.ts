@@ -16,7 +16,7 @@ import {
 } from '@common/message-types';
 import type { JoinLobbySocketPayload, LobbyCodePayload } from '@common/message-types';
 import { authService } from '../auth.service';
-import { getCurrentTmaUser } from '../../lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '../../lib/tma/user';
 import { emitEvent, emitEventWithAck, offEvent, onceEvent } from './typed-socket';
 
 let socket: Socket | null = null;
@@ -63,7 +63,7 @@ function bindSocketDebug(s: Socket) {
 
 export function getLobbySocket(): Socket {
   const token = authService.getToken();
-  const userId = getCurrentTmaUser().telegramId;
+  const userId = getCurrentUserId(getCurrentUser());
 
   // Reuse the same socket instance for the same user even while it is connecting/reconnecting.
   if (socket && socketUserId === userId) {

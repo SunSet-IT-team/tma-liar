@@ -23,6 +23,18 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   /**
+   * Текущий пользователь по auth. Источник правды — сервер (id + telegramId).
+   */
+  getMe = async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    if (!authReq.userId) {
+      throw new ApiError(401, 'UNAUTHORIZED');
+    }
+    const user = await this.userService.findUserByAuthId({ authUserId: authReq.userId });
+    return res.status(200).json(success(user));
+  };
+
+  /**
    * Контроллер поиска одного пользователя
    */
   findUser = async (req: Request, res: Response) => {

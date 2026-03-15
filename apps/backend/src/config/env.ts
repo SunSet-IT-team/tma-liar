@@ -39,7 +39,9 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   SCORE_NOT_STATED: z.coerce.number().int().nonnegative().default(50),
   SCORE_TRICKED: z.coerce.number().int().nonnegative().default(100),
-  GAME_STAGE_TIMER_MS: z.coerce.number().int().positive().default(1000),
+  /** Длительность стадий: вопрос лжецу, результаты вопроса, результаты игры (мс). */
+  GAME_STAGE_TIMER_MS: z.coerce.number().int().positive().default(20000),
+  /** Длительность стадии выбора лжеца (врать/нет) (мс). */
   LIAR_CHOOSES_TIMER_MS: z.coerce.number().int().positive().default(10000),
   HIDDEN_DURING_GAME_FIELDS: z.string().default('doLie,questionHistory,liarId,timerId'),
   GAME_RESULTS_FIELDS: z.string().default('doLie,loserTask,winnerId,loserId'),
@@ -77,3 +79,6 @@ export const env = {
   hiddenDuringGameFields: splitCsv(parsedEnv.data.HIDDEN_DURING_GAME_FIELDS),
   gameResultsFields: splitCsv(parsedEnv.data.GAME_RESULTS_FIELDS),
 } as const;
+
+console.log(env)
+console.log('env')

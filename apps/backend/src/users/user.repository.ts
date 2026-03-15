@@ -5,23 +5,31 @@ import type { CreateUserDto } from './dtos/user-create.dto';
 import type { UpdateUserDto } from './dtos/user-update.dto';
 import { isValidObjectId } from 'mongoose';
 
+/** .lean() не возвращает виртуальные поля — подставляем id из _id для единообразия API. */
+function leanUserWithId(doc: User | null): User | null {
+  if (!doc) return null;
+  const id = doc.id ?? (doc as { _id?: { toString: () => string } })._id?.toString?.();
+  return id ? { ...doc, id } : doc;
+}
+
 export class UserRepository {
+
   public async findById(id: string): Promise<User | null> {
     if (!isValidObjectId(id)) {
       return null;
     }
     const user = await UserModel.findById(id).lean();
-    return (user as User | null) ?? null;
+    return leanUserWithId(user as User | null);
   }
 
   public async findByTelegramId(telegramId: string): Promise<User | null> {
     const user = await UserModel.findOne({ telegramId }).lean();
-    return (user as User | null) ?? null;
+    return leanUserWithId(user as User | null);
   }
 
   public async findByTelegramIds(dto: FindUsersDto): Promise<User[]> {
     const users = await UserModel.find({ telegramId: { $in: dto.telegramIds } }).lean();
-    return users as User[];
+    return (users as User[]).map((u) => leanUserWithId(u) as User);
   }
 
   public async create(dto: CreateUserDto): Promise<User> {
@@ -37,11 +45,11 @@ export class UserRepository {
       { new: true }
     ).lean();
 
-    return (updatedUser as User | null) ?? null;
+    return leanUserWithId(updatedUser as User | null);
   }
 
   public async deleteByTelegramId(telegramId: string): Promise<User | null> {
     const deletedUser = await UserModel.findOneAndDelete({ telegramId }).lean();
-    return (deletedUser as User | null) ?? null;
+    return leanUserWithId(deletedUser as User | null);
   }
 }

@@ -16,6 +16,11 @@ const upload = multer({
 
 /** Маршруты для работы с пользователями */
 
+/** Текущий пользователь по auth (JWT или x-dev-user-id). Для гостей — 404. */
+userRouter.get('/me', asyncHandler(async (req: Request, res: Response) => {
+  await userController.getMe(req, res);
+}));
+
 /** Маршрут для получения нескольких пользователей (query: telegramIds — строка через запятую или массив) */
 userRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   await userController.findUsers(req, res);

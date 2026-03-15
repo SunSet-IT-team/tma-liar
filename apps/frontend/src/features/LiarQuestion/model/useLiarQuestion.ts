@@ -1,15 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 
 export function useLiarQuestion() {
   const navigate = useNavigate();
-  const user = useMemo(() => getCurrentTmaUser(), []);
+  const user = useMemo(() => getCurrentUser(), []);
   const session = lobbySessionService.get();
   const questionText = session?.currentQuestionText ?? 'Ожидаем вопрос...';
-  const isLiar = session?.currentLiarId === user.telegramId;
+  const isLiar = session?.currentLiarId === getCurrentUserId(user);
 
   useEffect(() => {
     if (!session?.currentStage) return;

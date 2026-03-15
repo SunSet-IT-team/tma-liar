@@ -6,7 +6,7 @@ import logo from '/icons/homeIcon-lzhets.svg';
 import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { LoadAvatar } from '../../shared/ui/LoadAvatar';
-import { getCurrentTmaUser, isGuestUser, setTmaUserOverrides } from '../../shared/lib/tma/user';
+import { getCurrentUser, isGuestUser, setTmaUserOverrides } from '../../shared/lib/tma/user';
 import {
   findUserByTelegramId,
   updateUserNickname,
@@ -63,7 +63,7 @@ async function compressImageToFile(file: File): Promise<File> {
  */
 export const Profile: FC = () => {
   const { mode } = useContext(AuthContext);
-  const user = getCurrentTmaUser();
+  const user = getCurrentUser();
   const profileUsername = user.username ?? user.nickname;
   const canUploadProfile = mode === 'full' && !isGuestUser(user);
   const [avatarSrc, setAvatarSrc] = useState<string>(user.profileImg ?? '');
@@ -72,6 +72,8 @@ export const Profile: FC = () => {
     profileUsername ? `@${profileUsername}` : '',
   );
 
+  console.log(user);
+
   useEffect(() => {
     if (!canUploadProfile) {
       return;
@@ -79,6 +81,7 @@ export const Profile: FC = () => {
 
     void findUserByTelegramId(user.telegramId)
       .then((serverUser) => {
+        console.log(serverUser);
         const nextProfileImg = serverUser.profileImg ?? '';
         setAvatarSrc(nextProfileImg);
         setTmaUserOverrides(user.telegramId, { profileImg: nextProfileImg });

@@ -6,7 +6,7 @@ import type { StatusChangedPayload } from '@common/message-types';
 import { isGameStatusChangedPayload } from '@common/message-types';
 import type { SocketErrorPayload } from '@common/message-types';
 import { PageRoutes } from '@app/routes/pages';
-import { getCurrentTmaUser } from '@shared/lib/tma/user';
+import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
 import { toUserSocketError } from '@shared/services/socket/socket-error';
@@ -20,7 +20,7 @@ export function useSolverAnswer() {
   const [isSecuring, setIsSecuring] = useState(false);
   const [pendingSecure, setPendingSecure] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const user = useMemo(() => getCurrentTmaUser(), []);
+  const user = useMemo(() => getCurrentUser(), []);
   const session = lobbySessionService.get();
   const liarId = session?.currentLiarId ?? null;
   const liarPlayer =
@@ -31,23 +31,23 @@ export function useSolverAnswer() {
     if (!session?.currentStage) return;
 
     if (session.currentStage === 'liar_chooses') {
-      navigate(`/${liarId === user.telegramId ? PageRoutes.CHOOSING_LIAR : PageRoutes.WAITING_PLAYERS}`, {
+      navigate(`/${liarId === getCurrentUserId(user) ? PageRoutes.CHOOSING_LIAR : PageRoutes.WAITING_PLAYERS}`, {
         replace: true,
       });
       return;
     }
 
-    if (liarId === user.telegramId && session.currentStage === 'question_to_liar') {
+    if (liarId === getCurrentUserId(user) && session.currentStage === 'question_to_liar') {
       navigate(`/${PageRoutes.ANSWER_LIAR}`, { replace: true });
     }
-  }, [liarId, navigate, session?.currentStage, user.telegramId]);
+  }, [liarId, navigate, session?.currentStage, user]);
 
   useEffect(() => {
     const socket = getLobbySocket();
     const onStatusChanged = (payload: StatusChangedPayload) => {
       if (!isGameStatusChangedPayload(payload)) return;
 
-      const me = payload.diff?.players?.find((player) => player.id === user.telegramId);
+      const me = payload.diff?.players?.find((player) => player.id === getCurrentUserId(user));
       if (!me) return;
 
       if (typeof me.answer === 'number') {
@@ -62,7 +62,7 @@ export function useSolverAnswer() {
     return () => {
       offEvent(socket, SocketSystemEvents.STATUS_CHANGED, onStatusChanged);
     };
-  }, [user.telegramId]);
+  }, [user]);
 
   const sendVote = (value: boolean) => {
     if (fixed || isVoting || isSecuring) return;
@@ -94,7 +94,7 @@ export function useSolverAnswer() {
     onEvent(socket, SocketSystemEvents.ERROR, onError);
     emitEvent(socket, GameSocketEvents.PLAYER_VOTED, {
       gameId: session.currentGameId,
-      playerId: user.telegramId,
+      playerId: getCurrentUserId(user),
       answer: value ? 1 : 0,
     });
 
@@ -136,14 +136,14 @@ export function useSolverAnswer() {
     onEvent(socket, SocketSystemEvents.ERROR, onError);
     emitEvent(socket, GameSocketEvents.PLAYER_SECURED, {
       gameId: session.currentGameId,
-      playerId: user.telegramId,
+      playerId: getCurrentUserId(user),
     });
 
     window.setTimeout(() => {
       offEvent(socket, SocketSystemEvents.ERROR, onError);
       setIsSecuring(false);
     }, 900);
-  }, [believe, fixed, isSecuring, session?.currentGameId, user.telegramId]);
+  }, [believe, fixed, isSecuring, session?.currentGameId, user]);
 
   const secureVote = () => {
     if (believe === null || fixed || isSecuring) return;

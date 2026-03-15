@@ -25,6 +25,10 @@ const SCORE_NOT_STATED = env.SCORE_NOT_STATED;
 const SCORE_TRICKED = env.SCORE_TRICKED;
 const GAME_STAGE_TIMER_MS = env.GAME_STAGE_TIMER_MS;
 const LIAR_CHOOSES_TIMER_MS = env.LIAR_CHOOSES_TIMER_MS;
+
+console.log("LIAR_CHOOSES_TIMER_MS GAME_STAGE_TIMER_MS")
+console.log(GAME_STAGE_TIMER_MS)
+console.log(LIAR_CHOOSES_TIMER_MS)
 const stageTransitionLocks = new Map<string, Promise<void>>();
 const stageTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -111,7 +115,7 @@ export class GameService implements GameMethods {
       answer === 0 || answer === 1 ? answer : null;
 
     return game.players.map((player) => ({
-      id: player.telegramId,
+      id: player.id ?? player.telegramId,
       nickname: player.nickname,
       profileImg: player.profileImg ?? '',
       isReady: player.isReady,
@@ -122,6 +126,14 @@ export class GameService implements GameMethods {
       isConfirmed: player.isConfirmed ?? false,
       score: player.score ?? 0,
     }));
+  }
+
+  private playerId(player: { id?: string; telegramId: string }): string {
+    return player.id ?? player.telegramId;
+  }
+
+  private findPlayerById(game: Pick<Game, 'players'>, id: string) {
+    return game.players.find((p) => p.id === id || p.telegramId === id);
   }
   /**
    * Функция поиска игры
@@ -371,18 +383,18 @@ export class GameService implements GameMethods {
       this.clearStageTimer(gameId);
       game.timerId = null;
 
-      const leftPlayer = game.players.find((player) => player.telegramId === loserId);
+      const leftPlayer = this.findPlayerById(game, loserId);
       if (leftPlayer) {
         const minScore = Math.min(...game.players.map((player) => player.score ?? 0));
         leftPlayer.score = Math.min(leftPlayer.score ?? 0, minScore - 1);
       }
 
-      const winnersPool = game.players.filter((player) => player.telegramId !== loserId);
+      const winnersPool = game.players.filter((p) => this.playerId(p) !== loserId);
       const winner = winnersPool.length > 0
         ? [...winnersPool].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
         : null;
 
-      game.winnerId = winner?.telegramId ?? null;
+      game.winnerId = winner ? this.playerId(winner) : null;
       game.loserId = loserId;
       game.loserTask = winner?.loserTask ?? null;
       game.stage = GameStages.GAME_RESULTS;
@@ -534,8 +546,8 @@ export class GameService implements GameMethods {
       const winner = sortedPlayers[0];
       if(!winner) throw new ApiError(404, 'WINNER_NOT_FOUND')
         
-      game.winnerId = winner.telegramId;
-      game.loserId = loser.telegramId;  
+      game.winnerId = this.playerId(winner);
+      game.loserId = this.playerId(loser);
       game.loserTask = winner.loserTask;
 
       nextStage = GameStages.GAME_RESULTS;
@@ -585,7 +597,7 @@ export class GameService implements GameMethods {
     
     if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND');
     liar.wasLiar = (liar.wasLiar ?? 0) + 1;
-    game.liarId = liar.telegramId;
+    game.liarId = this.playerId(liar);
 
     game.markModified('players');
     game.markModified('liarId');
@@ -602,7 +614,8 @@ export class GameService implements GameMethods {
     if (!game) throw new ApiError(404, 'LOBBY_NOT_FOUND');
 
     if (game.stage !== GameStages.LIAR_CHOOSES) throw new ApiError(403, 'WRONG_STAGE');
-    if (!game.liarId || game.liarId !== playerId) throw new ApiError(403, 'LIAR_CHOOSE_FORBIDDEN');
+    const liarMatch = this.findPlayerById(game, game.liarId ?? '');
+    if (!game.liarId || !liarMatch || this.playerId(liarMatch) !== playerId) throw new ApiError(403, 'LIAR_CHOOSE_FORBIDDEN');
 
     game.doLie = answer;
     game.markModified('doLie');
@@ -618,11 +631,11 @@ export class GameService implements GameMethods {
    * @param gameId id игры 
    */
   public async calculateLiarPoints(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId === game.liarId);
+    const liar = game.liarId ? this.findPlayerById(game, game.liarId) : null;
     if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId === game.liarId) return;
+      if(this.playerId(player) === game.liarId) return;
 
       if(player.answer == 2) liar.score += SCORE_NOT_STATED;
       else if(player.answer != (game.doLie ? 1 : 0)) liar.score += SCORE_TRICKED;
@@ -637,11 +650,11 @@ export class GameService implements GameMethods {
    * @param gameId id игры 
    */
   public async calculatePlayersPoints(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId === game.liarId);
+    const liar = game.liarId ? this.findPlayerById(game, game.liarId) : null;
     if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId === game.liarId) return;
+      if(this.playerId(player) === game.liarId) return;
 
       if(player.answer == (game.doLie ? 1 : 0)) player.score += 200;
     });
@@ -654,11 +667,11 @@ export class GameService implements GameMethods {
    * @param game mongoose-документ игры
    */
   public async calculatePlayersPointsWithLikes(game: HydratedDocument<Game>) { 
-    const liar = game.players.find(p => p.telegramId === game.liarId);
+    const liar = game.liarId ? this.findPlayerById(game, game.liarId) : null;
     if(!liar) throw new ApiError(404, 'LIAR_NOT_FOUND')
 
     game.players.forEach(player => {
-      if(player.telegramId === game.liarId) return;
+      if(this.playerId(player) === game.liarId) return;
 
       player.score += player.likes * 10;
     });
@@ -681,12 +694,12 @@ export class GameService implements GameMethods {
     if(game.stage !== GameStages.QUESTION_RESULTS) throw new ApiError(403, 'WRONG_STAGE');
     if(receiverId === game.liarId) throw new ApiError(400, 'RECEIVER_EQUALS_LIAR_IDS');
 
-    const sender = game.players.find(p => p.telegramId === senderId);
+    const sender = this.findPlayerById(game, senderId);
     
     if(!sender) throw new ApiError(404, 'SENDER_NOT_FOUND');
     if(sender.answer == 2) throw new ApiError(400, 'SENDER_DIDNT_ANSWER'); 
 
-    const receiver = game.players.find(p => p.telegramId === receiverId);
+    const receiver = this.findPlayerById(game, receiverId);
 
     if(!receiver) throw new ApiError(404, 'RECEIVER_NOT_FOUND');
     const likePair = `${senderId}:${receiverId}`;
@@ -715,9 +728,9 @@ export class GameService implements GameMethods {
 
     if(game.stage != GameStages.QUESTION_TO_LIAR) throw new ApiError(403, 'WRONG_STAGE');
 
-    const player = game.players.find(p => p.telegramId === playerId);
+    const player = this.findPlayerById(game, playerId);
     if(!player) throw new ApiError(404, 'PLAYER_NOT_FOUND');
-    if(player.telegramId === game.liarId) throw new ApiError(400, 'LIAR_CANNOT_VOTE');
+    if(game.liarId && this.playerId(player) === game.liarId) throw new ApiError(400, 'LIAR_CANNOT_VOTE');
 
     if(player.isConfirmed == true) throw new ApiError(400, 'ANSWER_ALREADY_CONFIRMED');
     
@@ -743,11 +756,11 @@ export class GameService implements GameMethods {
       throw new ApiError(403, 'WRONG_STAGE');
     }
 
-    const player = game.players.find(p => p.telegramId === playerId);
+    const player = this.findPlayerById(game, playerId);
     if(!player) throw new ApiError(404, 'PLAYER_NOT_FOUND');
 
     if (game.stage === GameStages.QUESTION_TO_LIAR) {
-      if(player.telegramId === game.liarId) throw new ApiError(400, 'LIAR_CANNOT_SECURE');
+      if(game.liarId && this.playerId(player) === game.liarId) throw new ApiError(400, 'LIAR_CANNOT_SECURE');
       if(player.answer !== 0 && player.answer !== 1) throw new ApiError(400, 'PLAYER_DIDNT_ANSWER'); 
     }
 
@@ -761,7 +774,7 @@ export class GameService implements GameMethods {
     if (game.stage === GameStages.QUESTION_TO_LIAR) {
       const liarId = game.liarId;
       const allResolversConfirmed = game.players
-        .filter((p) => p.telegramId !== liarId)
+        .filter((p) => liarId == null || this.playerId(p) !== liarId)
         .every((p) => p.answer !== null && p.isConfirmed === true);
 
       if (allResolversConfirmed) {
@@ -772,7 +785,7 @@ export class GameService implements GameMethods {
     // QUESTION_RESULTS: завершаем досрочно, когда все игроки нажали "Готово".
     if (game.stage === GameStages.QUESTION_RESULTS) {
       const allResolversConfirmed = game.players
-        .filter((p) => p.telegramId !== game.liarId)
+        .filter((p) => game.liarId == null || this.playerId(p) !== game.liarId)
         .every((p) => p.isConfirmed === true);
 
       if (allResolversConfirmed) {

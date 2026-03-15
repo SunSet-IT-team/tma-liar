@@ -5,7 +5,7 @@ import { AppRouter } from './routes/AppRouter';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './providers/Auth/AuthProvider';
 import { SessionRehydration } from './providers/SessionRehydration';
-import { NotifyProvider } from '../shared/lib/notify';
+import { NotifyProvider } from '../shared/lib/notify/notify';
 import '../shared/assets/fonts/fonts.scss';
 
 function App() {

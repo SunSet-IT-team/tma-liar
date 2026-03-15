@@ -119,14 +119,14 @@ describe('LobbyService', () => {
       findByCode: async () => ({ ...baseLobby }),
       removePlayer: async () => ({ ...baseLobby, players: [] }),
       deleteByCode: async () => baseLobby,
-    } as never).leaveLobby({ lobbyCode: 'ABC123', telegramId: 'admin' });
+    } as never).leaveLobby({ lobbyCode: 'ABC123', userId: 'admin' });
     expect(deleted.deleted).toBeTrue();
 
     const nonAdmin = await new LobbyService({
       startSession: async () => session,
       findByCode: async () => ({ ...baseLobby }),
       removePlayer: async () => ({ ...baseLobby, players: [{ ...basePlayer }] }),
-    } as never).leaveLobby({ lobbyCode: 'ABC123', telegramId: 'p2' });
+    } as never).leaveLobby({ lobbyCode: 'ABC123', userId: 'p2' });
     expect(nonAdmin.deleted).toBeFalse();
 
     const admin = await new LobbyService({
@@ -134,16 +134,16 @@ describe('LobbyService', () => {
       findByCode: async () => ({ ...baseLobby }),
       removePlayer: async () => ({ ...baseLobby, players: [{ ...basePlayer, id: 'new-admin', telegramId: 'new-admin' }] }),
       transferAdmin: async () => ({ ...baseLobby, adminId: 'new-admin', players: [{ ...basePlayer, id: 'new-admin', telegramId: 'new-admin' }] }),
-    } as never).leaveLobby({ lobbyCode: 'ABC123', telegramId: 'admin' });
+    } as never).leaveLobby({ lobbyCode: 'ABC123', userId: 'admin' });
     expect(admin.newAdminId).toBe('new-admin');
 
     await expect(
-      new LobbyService({ startSession: async () => session, findByCode: async () => null } as never).leaveLobby({ lobbyCode: 'x', telegramId: 'x' }),
+      new LobbyService({ startSession: async () => session, findByCode: async () => null } as never).leaveLobby({ lobbyCode: 'x', userId: 'x' }),
     ).rejects.toBeInstanceOf(ApiError);
 
     await expect(
       new LobbyService({ startSession: async () => session, findByCode: async () => ({ ...baseLobby }), removePlayer: async () => null } as never)
-        .leaveLobby({ lobbyCode: 'x', telegramId: 'x' }),
+        .leaveLobby({ lobbyCode: 'x', userId: 'x' }),
     ).rejects.toBeInstanceOf(ApiError);
 
     await expect(
@@ -152,7 +152,7 @@ describe('LobbyService', () => {
         findByCode: async () => ({ ...baseLobby }),
         removePlayer: async () => ({ ...baseLobby, players: [{ ...basePlayer, id: 'new-admin', telegramId: 'new-admin' }] }),
         transferAdmin: async () => null,
-      } as never).leaveLobby({ lobbyCode: 'x', telegramId: 'admin' }),
+      } as never).leaveLobby({ lobbyCode: 'x', userId: 'admin' }),
     ).rejects.toBeInstanceOf(ApiError);
   });
 });
