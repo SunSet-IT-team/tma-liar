@@ -1,3 +1,5 @@
+import type { SocketErrorPayload } from '@liar/message-types';
+
 const SOCKET_ERROR_MESSAGES: Record<string, string> = {
   WRONG_STAGE: 'Действие недоступно на текущем этапе игры.',
   GAME_NOT_FOUND: 'Игра не найдена. Обновите страницу.',
@@ -21,5 +23,3 @@ export function toUserSocketError(
   if (!code) return fallback;
   return SOCKET_ERROR_MESSAGES[code] ?? `${fallback} (${code}).`;
 }
-import type { SocketErrorPayload } from '@common/message-types';
-

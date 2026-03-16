@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
-import type { SocketErrorPayload } from '@common/message-types';
+import { GameSocketEvents } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
 import { useAppDispatch } from '@app/store/hook';
 import { PageRoutes } from '@app/routes/pages';
 import { updateTimer } from '@entities/game/model/timerSlice';

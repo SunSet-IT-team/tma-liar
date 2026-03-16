@@ -22,6 +22,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@liar/message-types": "workspace:*",
     "@tma.js/init-data-node": "^2.0.6",
     "@types/multer": "^2.0.0",
     "cors": "^2.8.5",

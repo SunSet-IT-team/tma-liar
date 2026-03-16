@@ -1,17 +1,13 @@
 services:
   mongodb-test:
     image: mongo:8.2.3
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
     volumes:
       - mongodb_data_test:/data/db
       - mongodb_config_test:/data/configdb
       - ./infra/mongo/init-replica-test.js:/docker-entrypoint-initdb.d/init-replica.js:ro
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "mongosh --quiet --eval \"db.hello().isWritablePrimary\" | grep true",
-        ]
+      test: ['CMD-SHELL', 'mongosh --quiet --eval "db.hello().isWritablePrimary" | grep true']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -26,7 +22,7 @@ services:
     working_dir: /app
     environment:
       NODE_ENV: test
-      RUN_INTEGRATION_TESTS: "1"
+      RUN_INTEGRATION_TESTS: '1'
       DB_CONN_STRING: mongodb://mongodb-test:27017/?replicaSet=rs0&directConnection=true
       DB_NAME: liar_test
       SECRET: ${SECRET:-test-secret}
@@ -46,11 +42,11 @@ services:
     depends_on:
       mongodb-test:
         condition: service_healthy
-    command: ["sh", "-c", "bun run --cwd apps/backend typecheck && bun run --cwd apps/backend test"]
+    command: ['sh', '-c', 'bun run --cwd apps/backend typecheck && bun run --cwd apps/backend test']
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/common:/app/apps/common
-      - ./packages/shared:/app/packages/shared
+      - ./packages:/app/packages
       - backend_node_modules_test:/app/apps/backend/node_modules
     networks:
       - tma-liar-network-test

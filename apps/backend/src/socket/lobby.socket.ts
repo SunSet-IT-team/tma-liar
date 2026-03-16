@@ -1,25 +1,25 @@
-import { LobbyMessageTypes } from "../../../common/message-types";
-import { SocketSystemEvents } from "../../../common/message-types";
-import type { SocketAck, SocketErrorPayload } from "../../../common/message-types";
-import { LobbyService } from "../lobby/lobby.service";
-import type { Server, Socket } from "socket.io";
-import type { JoinLobbyDto } from "../lobby/dtos/lobby-join.dto";
-import type { ToggleReadyDto } from "../lobby/dtos/lobby-toggleReady.dto";
-import { LobbyStateDtoSchema } from "../lobby/dtos/lobby-state.dto";
-import { PlayerInfoSchema } from "../game/dtos/game-init.dto";
-import { findDiff } from "../common/diff";
-import { ApiError, buildStatePayload } from "../common/response";
-import { GameMessageTypes } from "../../../common/message-types";
-import { GameStartDtoSchema } from "../game/dtos/game-start.dto";
-import type { GameStartDto } from "../game/dtos/game-start.dto";
-import { GameService } from "../game/game.service";
-import { logger } from "../observability/logger";
+import { LobbyMessageTypes } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import { GameMessageTypes } from '@liar/message-types';
+import type { SocketAck, SocketErrorPayload } from '@liar/message-types';
+import { LobbyService } from '../lobby/lobby.service';
+import type { Server, Socket } from 'socket.io';
+import type { JoinLobbyDto } from '../lobby/dtos/lobby-join.dto';
+import type { ToggleReadyDto } from '../lobby/dtos/lobby-toggleReady.dto';
+import { LobbyStateDtoSchema } from '../lobby/dtos/lobby-state.dto';
+import { PlayerInfoSchema } from '../game/dtos/game-init.dto';
+import { findDiff } from '../common/diff';
+import { ApiError, buildStatePayload } from '../common/response';
+import { GameStartDtoSchema } from '../game/dtos/game-start.dto';
+import type { GameStartDto } from '../game/dtos/game-start.dto';
+import { GameService } from '../game/game.service';
+import { logger } from '../observability/logger';
 import z from 'zod';
 import { UserService } from '../users/user.service';
 import { env } from '../config/env';
 import { SettingsSchema } from '../lobby/entities/settings.entity';
 import { GameStages, LobbyStatus } from '../lobby/entities/lobby.entity';
-import { emitToRoom, emitToRoomFromSocket, emitToSocket } from "./typed-socket";
+import { emitToRoom, emitToRoomFromSocket, emitToSocket } from './typed-socket';
 
 const LobbySubscribeDtoSchema = z.object({
   lobbyCode: z.string().min(1),
@@ -58,15 +58,15 @@ function buildLobbyState(lobby: {
   adminId: string;
   currentGameId: string | null;
   status: string;
-    players: Array<{
-      id?: string;
-      telegramId: string;
-      nickname: string;
-      profileImg?: string;
-      isReady?: boolean;
-      inGame?: boolean;
-      loserTask?: string | null;
-    }>;
+  players: Array<{
+    id?: string;
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    inGame?: boolean;
+    loserTask?: string | null;
+  }>;
 }) {
   return LobbyStateDtoSchema.parse({
     lobbyCode: lobby.lobbyCode,
@@ -91,15 +91,15 @@ function buildLobbyDiffState(lobby: {
   adminId: string;
   currentGameId: string | null;
   status: string;
-    players: Array<{
-      id?: string;
-      telegramId: string;
-      nickname: string;
-      profileImg?: string;
-      isReady?: boolean;
-      inGame?: boolean;
-      loserTask?: string | null;
-    }>;
+  players: Array<{
+    id?: string;
+    telegramId: string;
+    nickname: string;
+    profileImg?: string;
+    isReady?: boolean;
+    inGame?: boolean;
+    loserTask?: string | null;
+  }>;
 }) {
   return {
     lobbyCode: lobby.lobbyCode,
@@ -118,9 +118,9 @@ function buildLobbyDiffState(lobby: {
 }
 
 function normalizeLobbySettings(rawSettings: unknown) {
-  const source = (rawSettings && typeof rawSettings === 'object'
-    ? (rawSettings as Record<string, unknown>)
-    : {}) as Record<string, unknown>;
+  const source = (
+    rawSettings && typeof rawSettings === 'object' ? (rawSettings as Record<string, unknown>) : {}
+  ) as Record<string, unknown>;
 
   const questionCountCandidate =
     typeof source.questionCount === 'number'
@@ -196,11 +196,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (!result.success) {
         const formattedErrors = result.error.issues.map((issue) => ({
-          path: issue.path.join("."),
+          path: issue.path.join('.'),
           message: issue.message,
         }));
         logger.warn({ issues: formattedErrors }, 'Validation failed for PLAYER_JOINED');
-        throw new ApiError(422, "JOIN_LOBBY_DATA_INVALID", result.error.issues);
+        throw new ApiError(422, 'JOIN_LOBBY_DATA_INVALID', result.error.issues);
       }
 
       const socketUserId = socket.data.userId;
@@ -225,7 +225,8 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           typeof requestedNickname === 'string' && requestedNickname.trim().length > 0
             ? requestedNickname.trim()
             : user.nickname;
-        profileImg = result.data.profileImg ?? result.data.player?.profileImg ?? user.profileImg ?? '';
+        profileImg =
+          result.data.profileImg ?? result.data.player?.profileImg ?? user.profileImg ?? '';
       } catch {
         playerId = normalizedUserId;
         playerTelegramId = normalizedUserId;
@@ -281,7 +282,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       );
     } catch (error) {
       logger.error({ error }, 'Error handling player join');
-      emitSocketError(socket, "PLAYER_JOINED_ERROR", error);
+      emitSocketError(socket, 'PLAYER_JOINED_ERROR', error);
     }
   });
 
@@ -303,7 +304,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const userId = socketUserId.trim();
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
-      const leavingPlayer = lobbySnap.players.find((p) => p.id === userId || p.telegramId === userId);
+      const leavingPlayer = lobbySnap.players.find(
+        (p) => p.id === userId || p.telegramId === userId,
+      );
       const loserIdForGame = leavingPlayer?.id ?? leavingPlayer?.telegramId ?? userId;
 
       const snapForDiff = buildLobbyDiffState(lobbySnap);
@@ -336,7 +339,12 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
           }
         } catch (finishError) {
           logger.warn(
-            { lobbyCode, gameId: lobbySnap.currentGameId, loserId: loserIdForGame, error: finishError },
+            {
+              lobbyCode,
+              gameId: lobbySnap.currentGameId,
+              loserId: loserIdForGame,
+              error: finishError,
+            },
             'Failed to finish game on player leave, continuing leave flow',
           );
         }
@@ -356,7 +364,10 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         }
         logger.info({ lobbyCode }, 'Lobby deleted after player left');
       } else if (leaveResult.newAdminId) {
-        logger.info({ lobbyCode, previousAdmin: userId, newAdmin: leaveResult.newAdminId }, 'Admin transferred');
+        logger.info(
+          { lobbyCode, previousAdmin: userId, newAdmin: leaveResult.newAdminId },
+          'Admin transferred',
+        );
       } else {
         logger.info({ lobbyCode, userId }, 'Player left lobby');
       }
@@ -440,7 +451,9 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const { lobbyCode } = result.data;
       const lobbySnap = await lobbyService.findLobby({ lobbyCode });
       const userId = socketUserId.trim();
-      const playerExists = lobbySnap.players.some((player) => player.id === userId || player.telegramId === userId);
+      const playerExists = lobbySnap.players.some(
+        (player) => player.id === userId || player.telegramId === userId,
+      );
 
       if (!playerExists) {
         throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
@@ -508,7 +521,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (!result.success) {
         logger.warn({ issues: result.error.issues }, 'Validation failed for PLAYER_READY');
-        throw new ApiError(422, "TOGGLE_READY_DATA_INVALID", result.error.issues);
+        throw new ApiError(422, 'TOGGLE_READY_DATA_INVALID', result.error.issues);
       }
 
       const socketUserId = socket.data.userId;
@@ -524,7 +537,8 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (!currentPlayer && result.data.playerId) {
         const byId = lobbySnap.players.find(
-          (player) => player.id === result.data.playerId || player.telegramId === result.data.playerId,
+          (player) =>
+            player.id === result.data.playerId || player.telegramId === result.data.playerId,
         );
         if (byId) {
           // В production/normal auth не позволяем менять ready чужому игроку.
@@ -554,7 +568,10 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       const nextForDiff = buildLobbyDiffState(lobby);
 
       const roomSize = io.sockets.adapter.rooms.get(dto.lobbyCode)?.size ?? 0;
-      logger.info({ playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode }, 'Player ready toggled');
+      logger.info(
+        { playerId: dto.playerId, roomSize, lobbyCode: dto.lobbyCode },
+        'Player ready toggled',
+      );
 
       emitToRoom(
         io,
@@ -575,7 +592,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         },
         'Error handling player ready',
       );
-      emitSocketError(socket, "PLAYER_READY_ERROR", error);
+      emitSocketError(socket, 'PLAYER_READY_ERROR', error);
     }
   });
 
@@ -585,7 +602,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
 
       if (!dtoResult.success) {
         logger.warn({ issues: dtoResult.error.issues }, 'Validation failed for GAME_STARTED');
-        throw new ApiError(422, "GAME_START_DATA_INVALID", dtoResult.error.issues);
+        throw new ApiError(422, 'GAME_START_DATA_INVALID', dtoResult.error.issues);
       }
 
       const socketUserId = socket.data.userId;
@@ -625,7 +642,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
         },
         settings: normalizedSettings,
       });
-      const createdGame = await gameService.createGame({...dto});
+      const createdGame = await gameService.createGame({ ...dto });
       const gameId = createdGame.id;
 
       // Присоединяем всех игроков к игровой комнате
@@ -653,11 +670,11 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
       logger.info({ gameId, gameRoomSize }, 'Game started in LIAR_CHOOSES stage');
     } catch (error) {
       logger.error({ error }, 'Error handling game started');
-      emitSocketError(socket, "GAME_START_ERROR", error);
+      emitSocketError(socket, 'GAME_START_ERROR', error);
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on('disconnect', () => {
     logger.info({ socketId: socket.id }, 'Socket disconnected (lobby handler)');
   });
 }

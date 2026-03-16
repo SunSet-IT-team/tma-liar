@@ -1,11 +1,11 @@
-import type {
-  LobbyDiffPlayerPayload,
-  LobbyStatusChangedPayload,
-} from '@common/message-types';
+import type { LobbyDiffPlayerPayload, LobbyStatusChangedPayload } from '@liar/message-types';
 import type { LobbySession } from './lobby-session.service';
 export type ChangeGameStatusPayload = LobbyStatusChangedPayload;
 
-export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusPayload): LobbySession {
+export function applyLobbyDiff(
+  session: LobbySession,
+  payload: ChangeGameStatusPayload,
+): LobbySession {
   if (typeof payload.status === 'string' && !payload.status.startsWith('lobby:')) {
     return session;
   }
@@ -39,7 +39,8 @@ export function applyLobbyDiff(session: LobbySession, payload: ChangeGameStatusP
           player.nickname ??
           (index !== -1 ? nextPlayers[index]?.nickname : undefined) ??
           `Игрок ${playerId.slice(-4)}`,
-        profileImg: player.profileImg ?? (index !== -1 ? nextPlayers[index]?.profileImg : undefined),
+        profileImg:
+          player.profileImg ?? (index !== -1 ? nextPlayers[index]?.profileImg : undefined),
         isReady: player.isReady ?? (index !== -1 ? nextPlayers[index]?.isReady : false),
         inGame: player.inGame ?? (index !== -1 ? nextPlayers[index]?.inGame : false),
         loserTask: player.loserTask ?? (index !== -1 ? nextPlayers[index]?.loserTask : null),
@@ -68,7 +69,10 @@ export function getStageFromPayload(payload: ChangeGameStatusPayload): string | 
   return payload.stage ?? payload.diff?.stage ?? null;
 }
 
-export function getCurrentPlayerReady(payload: ChangeGameStatusPayload, userId: string): boolean | null {
+export function getCurrentPlayerReady(
+  payload: ChangeGameStatusPayload,
+  userId: string,
+): boolean | null {
   const players = payload.diff?.players as LobbyDiffPlayerPayload[] | undefined;
   if (!players) return null;
 

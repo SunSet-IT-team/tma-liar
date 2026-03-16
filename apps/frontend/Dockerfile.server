@@ -5,8 +5,8 @@ COPY package.json ./
 COPY apps/frontend/package.json ./apps/frontend/
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/deckEditor/package.json ./apps/deckEditor/
-COPY apps/common ./apps/common
-COPY packages/shared ./packages/shared
+COPY packages/shared/package.json ./packages/shared
+COPY packages/message-types/package.json ./packages/message-types
 
 RUN npm install --include-workspace-root --workspaces
 
@@ -15,8 +15,8 @@ WORKDIR /app
 
 COPY tsconfig.json ./
 COPY apps/frontend ./apps/frontend
-COPY apps/common ./apps/common
 COPY packages/shared ./packages/shared
+COPY packages/message-types ./packages/message-types
 
 RUN cd apps/frontend && npx vite build
 

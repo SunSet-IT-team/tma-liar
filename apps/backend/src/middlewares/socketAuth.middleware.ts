@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { PROTOCOL_VERSION } from '../../../common/message-types';
+import { PROTOCOL_VERSION } from '@liar/message-types';
 import type { Socket } from 'socket.io';
 import { env } from '../config/env';
 
@@ -73,9 +73,15 @@ export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void
     const userIdFromQuery = socket.handshake.query?.userId;
     const userIdFromHeader = socket.handshake.headers['x-dev-user-id'];
     const normalizedUserId =
-      (typeof userIdFromAuth === 'string' && userIdFromAuth.trim().length > 0 && userIdFromAuth.trim()) ||
-      (typeof userIdFromQuery === 'string' && userIdFromQuery.trim().length > 0 && userIdFromQuery.trim()) ||
-      (typeof userIdFromHeader === 'string' && userIdFromHeader.trim().length > 0 && userIdFromHeader.trim()) ||
+      (typeof userIdFromAuth === 'string' &&
+        userIdFromAuth.trim().length > 0 &&
+        userIdFromAuth.trim()) ||
+      (typeof userIdFromQuery === 'string' &&
+        userIdFromQuery.trim().length > 0 &&
+        userIdFromQuery.trim()) ||
+      (typeof userIdFromHeader === 'string' &&
+        userIdFromHeader.trim().length > 0 &&
+        userIdFromHeader.trim()) ||
       null;
 
     if (!normalizedUserId) {

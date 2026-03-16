@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { LobbySocketEvents } from '@common/message-types';
+import { LobbySocketEvents } from '@liar/message-types';
 import { getLobbySocket } from '@shared/services/socket/lobby.socket';
 import { emitEvent } from '@shared/services/socket/typed-socket';
 import { Button } from '../../../shared/ui/Button';

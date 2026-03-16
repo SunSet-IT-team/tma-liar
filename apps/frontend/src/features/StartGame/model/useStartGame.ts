@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
-import type { SocketErrorPayload } from '@common/message-types';
+import { GameSocketEvents } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
 import { PageRoutes } from '@app/routes/pages';
 import { preloadAllScreens } from '@app/routes/preloadScreens';
 import { getLobbySocket, subscribeLobbyRoom } from '@shared/services/socket/lobby.socket';

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameSocketEvents } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
-import type { StatusChangedPayload } from '@common/message-types';
-import { isGameStatusChangedPayload } from '@common/message-types';
-import type { SocketErrorPayload } from '@common/message-types';
+import { GameSocketEvents } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import type { StatusChangedPayload } from '@liar/message-types';
+import { isGameStatusChangedPayload } from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
 import { PageRoutes } from '@app/routes/pages';
 import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
@@ -31,9 +31,12 @@ export function useSolverAnswer() {
     if (!session?.currentStage) return;
 
     if (session.currentStage === 'liar_chooses') {
-      navigate(`/${liarId === getCurrentUserId(user) ? PageRoutes.CHOOSING_LIAR : PageRoutes.WAITING_PLAYERS}`, {
-        replace: true,
-      });
+      navigate(
+        `/${liarId === getCurrentUserId(user) ? PageRoutes.CHOOSING_LIAR : PageRoutes.WAITING_PLAYERS}`,
+        {
+          replace: true,
+        },
+      );
       return;
     }
 

@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { isGameStatusChangedPayload } from '@common/message-types';
-import { isLobbyStatusChangedPayload } from '@common/message-types';
-import type { StatusChangedPayload } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
+import { isGameStatusChangedPayload } from '@liar/message-types';
+import { isLobbyStatusChangedPayload } from '@liar/message-types';
+import type { StatusChangedPayload } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PageRoutes } from '../../routes/pages';
 import { preloadAllScreens } from '../../routes/preloadScreens';
@@ -35,7 +35,8 @@ function isLobbyMissingError(error: unknown): boolean {
     message?: string;
     response?: { status?: number; data?: { errorCode?: string; message?: string } };
   };
-  const codeFromResponse = maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
+  const codeFromResponse =
+    maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
   const message = maybeError?.message ?? '';
   const status = maybeError?.response?.status;
 
@@ -126,7 +127,10 @@ function applyGameStateToSession(session: LobbySession, gameState: GameSocketSta
   };
 }
 
-function resolveStageDuration(stage: string | null | undefined, session: LobbySession): number | null {
+function resolveStageDuration(
+  stage: string | null | undefined,
+  session: LobbySession,
+): number | null {
   // Фолбэк-длительность стадии (в секундах), если сервер не прислал тайминг.
   // Важно для плавного восстановления после перезагрузки/переподключения.
   if (!stage) return null;
@@ -244,7 +248,9 @@ export function SessionRehydration() {
 
         // Если пользователь больше не числится в лобби (например, его удалили),
         // локальную сессию считаем невалидной.
-        const meInLobby = baseSession.players.some((player) => player.id === getCurrentUserId(user));
+        const meInLobby = baseSession.players.some(
+          (player) => player.id === getCurrentUserId(user),
+        );
         if (!meInLobby) {
           throw new Error('USER_NOT_IN_LOBBY');
         }
@@ -283,12 +289,16 @@ export function SessionRehydration() {
           stageTimerRef.current = initialStageKey;
         }
 
-        const isLiar = Boolean(nextSession.currentLiarId && nextSession.currentLiarId === getCurrentUserId(user));
+        const isLiar = Boolean(
+          nextSession.currentLiarId && nextSession.currentLiarId === getCurrentUserId(user),
+        );
         const target = resolveGameRoute({
           stage: nextSession.currentStage ?? null,
           isAdmin,
           isLiar,
-          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user))),
+          isParticipant: Boolean(
+            nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user)),
+          ),
         });
         if (!target) return;
 
@@ -345,10 +355,16 @@ export function SessionRehydration() {
         const hasDiffCurrentGameId = Boolean(
           payload.diff && Object.prototype.hasOwnProperty.call(payload.diff, 'currentGameId'),
         );
-        const gameId = gamePayload?.gameId ?? (hasDiffCurrentGameId ? payload.diff?.currentGameId ?? null : session.currentGameId ?? null);
+        const gameId =
+          gamePayload?.gameId ??
+          (hasDiffCurrentGameId
+            ? (payload.diff?.currentGameId ?? null)
+            : (session.currentGameId ?? null));
         const rawStatus = payload.diff?.status ?? payload.status ?? null;
         const lobbyStatusFromPayload =
-          rawStatus === 'waiting' || rawStatus === 'started' || rawStatus === 'finished' ? rawStatus : null;
+          rawStatus === 'waiting' || rawStatus === 'started' || rawStatus === 'finished'
+            ? rawStatus
+            : null;
 
         // Частый кейс: игровое событие приходит раньше обновления лобби (особенно на старте).
         // В этом случае дополнительно сверяемся с актуальным снимком лобби:
@@ -376,17 +392,25 @@ export function SessionRehydration() {
         const nextStatus = lobbyStatusFromPayload ?? (gameId ? 'started' : session.status);
         let stage = gamePayload?.stage ?? payload.diff?.stage ?? session.currentStage ?? null;
         let stageStartedAt = gamePayload?.stageStartedAt ?? session.currentStageStartedAt ?? null;
-        let stageDurationMs = gamePayload?.stageDurationMs ?? session.currentStageDurationMs ?? null;
+        let stageDurationMs =
+          gamePayload?.stageDurationMs ?? session.currentStageDurationMs ?? null;
         let liarId = gamePayload?.liarId ?? session.currentLiarId ?? null;
         let activeQuestion =
           gamePayload?.activeQuestion ??
           gamePayload?.diff?.activeQuestion ??
           session.currentQuestionId ??
           null;
-        let activeQuestionText = gamePayload?.activeQuestionText ?? session.currentQuestionText ?? null;
-        let winnerId = gamePayload?.winnerId ?? gamePayload?.diff?.winnerId ?? session.currentWinnerId ?? null;
-        let loserId = gamePayload?.loserId ?? gamePayload?.diff?.loserId ?? session.currentLoserId ?? null;
-        let loserTask = gamePayload?.loserTask ?? gamePayload?.diff?.loserTask ?? session.currentLoserTask ?? null;
+        let activeQuestionText =
+          gamePayload?.activeQuestionText ?? session.currentQuestionText ?? null;
+        let winnerId =
+          gamePayload?.winnerId ?? gamePayload?.diff?.winnerId ?? session.currentWinnerId ?? null;
+        let loserId =
+          gamePayload?.loserId ?? gamePayload?.diff?.loserId ?? session.currentLoserId ?? null;
+        let loserTask =
+          gamePayload?.loserTask ??
+          gamePayload?.diff?.loserTask ??
+          session.currentLoserTask ??
+          null;
         let gamePlayers =
           mergeGamePlayers(session.gamePlayers, gamePayload?.players) ??
           mergeGamePlayers(session.gamePlayers, payload.diff?.players) ??
@@ -418,15 +442,15 @@ export function SessionRehydration() {
           ...session,
           adminId: payload.diff?.adminId ?? session.adminId,
           currentGameId: gameId,
-          currentStage: shouldResetGameState ? 'lobby' : stage ?? null,
-          currentStageStartedAt: shouldResetGameState ? null : stageStartedAt ?? null,
-          currentStageDurationMs: shouldResetGameState ? null : stageDurationMs ?? null,
+          currentStage: shouldResetGameState ? 'lobby' : (stage ?? null),
+          currentStageStartedAt: shouldResetGameState ? null : (stageStartedAt ?? null),
+          currentStageDurationMs: shouldResetGameState ? null : (stageDurationMs ?? null),
           currentLiarId: shouldResetGameState ? null : liarId,
-          currentQuestionId: shouldResetGameState ? null : activeQuestion ?? null,
-          currentQuestionText: shouldResetGameState ? null : activeQuestionText ?? null,
-          currentWinnerId: shouldResetGameState ? null : winnerId ?? null,
-          currentLoserId: shouldResetGameState ? null : loserId ?? null,
-          currentLoserTask: shouldResetGameState ? null : loserTask ?? null,
+          currentQuestionId: shouldResetGameState ? null : (activeQuestion ?? null),
+          currentQuestionText: shouldResetGameState ? null : (activeQuestionText ?? null),
+          currentWinnerId: shouldResetGameState ? null : (winnerId ?? null),
+          currentLoserId: shouldResetGameState ? null : (loserId ?? null),
+          currentLoserTask: shouldResetGameState ? null : (loserTask ?? null),
           gamePlayers: shouldResetGameState ? undefined : gamePlayers,
           status: nextStatus,
         };
@@ -459,7 +483,9 @@ export function SessionRehydration() {
           stage: routeStage,
           isAdmin,
           isLiar,
-          isParticipant: Boolean(nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user))),
+          isParticipant: Boolean(
+            nextSession.gamePlayers?.some((player) => player.id === getCurrentUserId(user)),
+          ),
         });
         if (!resolvedTarget) return;
 

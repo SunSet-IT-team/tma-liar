@@ -69,7 +69,6 @@ export function isGuestUser(user: Pick<CurrentTmaUser, 'telegramId'>): boolean {
 
 function getOrCreateGuestUser(): CurrentTmaUser {
   const raw = localStorage.getItem(GUEST_USER_STORAGE_KEY);
-  console.log(getOrCreateGuestUser)
 
   if (raw) {
     try {

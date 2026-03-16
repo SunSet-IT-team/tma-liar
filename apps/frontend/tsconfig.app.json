@@ -34,7 +34,8 @@
       "@features/*": ["src/features/*"],
       "@entities/*": ["src/entities/*"],
       "@shared/*": ["src/shared/*"],
-      "@common/*": ["../common/*"]
+      "@liar/message-types": ["../../packages/message-types"],
+      "@liar/message-types/*": ["../../packages/message-types/*"]
     }
   },
   "include": ["src"]

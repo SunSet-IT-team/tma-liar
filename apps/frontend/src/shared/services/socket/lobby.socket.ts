@@ -13,8 +13,8 @@ import {
   type SocketErrorPayload,
   SocketErrorPayloadSchema,
   SocketSystemEvents,
-} from '@common/message-types';
-import type { JoinLobbySocketPayload, LobbyCodePayload } from '@common/message-types';
+} from '@liar/message-types';
+import type { JoinLobbySocketPayload, LobbyCodePayload } from '@liar/message-types';
 import { authService } from '../auth.service';
 import { getCurrentUser, getCurrentUserId } from '../../lib/tma/user';
 import { emitEvent, emitEventWithAck, offEvent, onceEvent } from './typed-socket';

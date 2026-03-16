@@ -7,8 +7,9 @@ COPY package.json bun.lock* ./
 COPY tsconfig.json ./
 COPY apps/frontend/package.json ./apps/frontend/
 
-# Копируем packages/shared для workspaces
-COPY packages/shared ./packages/shared
+# Копируем packages
+COPY packages/shared/package.json ./packages/shared
+COPY packages/message-types/package.json ./packages/message-types
 
 RUN bun install
 
@@ -21,6 +22,7 @@ COPY apps/frontend/tsconfig*.json ./apps/frontend/
 # Копируем исходный код frontend
 COPY apps/frontend ./apps/frontend
 COPY packages/shared ./packages/shared
+COPY packages/message-types ./packages/message-types
 
 # Копируем зависимости из deps stage
 COPY --from=deps /app/node_modules ./node_modules

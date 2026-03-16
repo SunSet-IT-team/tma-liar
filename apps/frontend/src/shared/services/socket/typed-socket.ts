@@ -3,8 +3,8 @@ import type {
   ClientToServerAckMap,
   ClientToServerEventMap,
   ServerToClientEventMap,
-} from '@common/message-types';
-import { PROTOCOL_VERSION } from '@common/message-types';
+} from '@liar/message-types';
+import { PROTOCOL_VERSION } from '@liar/message-types';
 
 function withProtocolVersion<T>(payload: T): T {
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {

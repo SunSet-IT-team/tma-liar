@@ -10,7 +10,7 @@ import {
   PROTOCOL_VERSION,
   SocketAckPayloadSchema,
   SocketErrorPayloadSchema,
-} from '../../../../../common/message-types';
+} from '@liar/message-types';
 
 describe('message-types contracts', () => {
   it('has valid protocol version', () => {
@@ -71,4 +71,3 @@ describe('message-types contracts', () => {
     expect(LobbySocketEvents.PLAYER_READY).toBe('lobby:player:ready');
   });
 });
-

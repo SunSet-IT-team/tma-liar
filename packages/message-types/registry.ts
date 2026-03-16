@@ -12,4 +12,3 @@ export const MessageTypes = {
   /** Системные события. */
   System: SocketSystemEvents,
 };
-

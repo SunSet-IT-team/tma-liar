@@ -1,5 +1,5 @@
-import type { Server, Socket } from "socket.io";
-import type { ServerToClientEventMap } from "../../../common/message-types";
+import type { Server, Socket } from 'socket.io';
+import type { ServerToClientEventMap } from '@liar/message-types';
 
 type ServerEventName = keyof ServerToClientEventMap;
 

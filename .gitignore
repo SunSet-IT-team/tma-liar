@@ -39,3 +39,6 @@ plan.md
 # runtime uploads
 uploads/
 apps/backend/uploads/
+
+# setting editor
+.vscode/

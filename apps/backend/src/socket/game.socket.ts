@@ -1,5 +1,5 @@
-import { GameMessageTypes } from "../../../common/message-types";
-import { SocketSystemEvents } from "../../../common/message-types";
+import { GameMessageTypes } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
 import {
   GameStageValues,
   type GameMessageType,
@@ -7,36 +7,33 @@ import {
   type GameStatePayload,
   type GameStatusChangedPayload,
   type SolverVoteAnswer,
-} from "../../../common/message-types";
-import type { SocketErrorPayload } from "../../../common/message-types";
-import { GameService } from "../game/game.service";
-import type { Server, Socket } from "socket.io";
-import { findDiff } from "../common/diff";
+} from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
+import { GameService } from '../game/game.service';
+import type { Server, Socket } from 'socket.io';
+import { findDiff } from '../common/diff';
 import {
   GameLiarChoosesDtoSchema,
   type GameLiarChoosesDto,
-} from "../game/dtos/game-liar-chooses.dto";
+} from '../game/dtos/game-liar-chooses.dto';
 import {
   GamePlayerVotedDtoSchema,
   type GamePlayerVotedDto,
-} from "../game/dtos/game-player-voted.dto";
+} from '../game/dtos/game-player-voted.dto';
 import {
   GamePlayerSecuredDtoSchema,
   type GamePlayerSecuredDto,
-} from "../game/dtos/game-player-secured.dto";
+} from '../game/dtos/game-player-secured.dto';
 import {
   GamePlayerLikedDtoSchema,
   type GamePlayerLikedDto,
-} from "../game/dtos/game-player-liked.dto";
-import {
-  GameJoinDtoSchema,
-  type GameJoinDto,
-} from "../game/dtos/game-join.dto";
-import { ApiError, buildStatePayload } from "../common/response";
-import { logger } from "../observability/logger";
-import { env } from "../config/env";
-import { GameStages } from "../lobby/entities/lobby.entity";
-import { emitToRoom, emitToSocket } from "./typed-socket";
+} from '../game/dtos/game-player-liked.dto';
+import { GameJoinDtoSchema, type GameJoinDto } from '../game/dtos/game-join.dto';
+import { ApiError, buildStatePayload } from '../common/response';
+import { logger } from '../observability/logger';
+import { env } from '../config/env';
+import { GameStages } from '../lobby/entities/lobby.entity';
+import { emitToRoom, emitToSocket } from './typed-socket';
 
 /**
  * Единая отправка socket-ошибок в формате, согласованном с HTTP-ошибками.
@@ -84,19 +81,21 @@ export function registerGameHandler(io: Server, socket: Socket) {
     }
     return null;
   };
-  const serializePlayersForClient = (players: Array<{
-    id?: string;
-    telegramId: string;
-    nickname: string;
-    profileImg?: string;
-    isReady?: boolean;
-    inGame?: boolean;
-    loserTask?: string | null;
-    answer?: number | null;
-    likes?: number;
-    isConfirmed?: boolean | null;
-    score?: number;
-  }>) =>
+  const serializePlayersForClient = (
+    players: Array<{
+      id?: string;
+      telegramId: string;
+      nickname: string;
+      profileImg?: string;
+      isReady?: boolean;
+      inGame?: boolean;
+      loserTask?: string | null;
+      answer?: number | null;
+      likes?: number;
+      isConfirmed?: boolean | null;
+      score?: number;
+    }>,
+  ) =>
     players.map((player) => ({
       id: player.id ?? player.telegramId,
       nickname: player.nickname,
@@ -112,8 +111,8 @@ export function registerGameHandler(io: Server, socket: Socket) {
 
   const getAuthorizedUserId = () => {
     const socketUserId = socket.data.userId;
-    if (typeof socketUserId !== "string" || socketUserId.trim().length === 0) {
-      throw new ApiError(401, "UNAUTHORIZED");
+    if (typeof socketUserId !== 'string' || socketUserId.trim().length === 0) {
+      throw new ApiError(401, 'UNAUTHORIZED');
     }
     return socketUserId.trim();
   };
@@ -222,18 +221,18 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GameLiarChoosesDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(422, "LIAR_CHOOSES_DATA_INVALID", dtoResult.error.issues);
+        throw new ApiError(422, 'LIAR_CHOOSES_DATA_INVALID', dtoResult.error.issues);
       }
       const dto: GameLiarChoosesDto = dtoResult.data;
       const userId = getAuthorizedUserId();
-      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
-      
+      if (dto.playerId !== userId) throw new ApiError(403, 'PLAYER_ACTION_FORBIDDEN');
+
       const gameSnap = await gameService.findGame(dto.gameId);
-      
+
       await gameService.liarChooses(dto);
-      
+
       const game = await gameService.findGame(dto.gameId);
-      
+
       socket.join(dto.gameId);
       emitToRoom(
         io,
@@ -245,11 +244,11 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-      
+
       logger.info({ gameId: dto.gameId, answer: dto.answer }, 'Liar chose');
     } catch (error) {
       logger.error({ error }, 'Error handling liar choice');
-      emitSocketError(socket, "LIAR_CHOSE_ERROR", error);
+      emitSocketError(socket, 'LIAR_CHOSE_ERROR', error);
     }
   });
 
@@ -261,18 +260,18 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerVotedDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(422, "PLAYER_VOTED_DATA_INVALID", dtoResult.error.issues);
+        throw new ApiError(422, 'PLAYER_VOTED_DATA_INVALID', dtoResult.error.issues);
       }
       const dto: GamePlayerVotedDto = dtoResult.data;
       const userId = getAuthorizedUserId();
-      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
-      
+      if (dto.playerId !== userId) throw new ApiError(403, 'PLAYER_ACTION_FORBIDDEN');
+
       const gameSnap = await gameService.findGame(dto.gameId);
-      
+
       const player = await gameService.setAnswer(dto);
-      
+
       const game = await gameService.findGame(dto.gameId);
-      
+
       socket.join(dto.gameId);
       emitToRoom(
         io,
@@ -284,11 +283,14 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-      
-      logger.info({ playerId: dto.playerId, gameId: dto.gameId, answer: dto.answer }, 'Player voted');
+
+      logger.info(
+        { playerId: dto.playerId, gameId: dto.gameId, answer: dto.answer },
+        'Player voted',
+      );
     } catch (error) {
       logger.error({ error }, 'Error handling player vote');
-      emitSocketError(socket, "PLAYER_VOTED_ERROR", error);
+      emitSocketError(socket, 'PLAYER_VOTED_ERROR', error);
     }
   });
 
@@ -300,18 +302,18 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerSecuredDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(422, "PLAYER_SECURED_DATA_INVALID", dtoResult.error.issues);
+        throw new ApiError(422, 'PLAYER_SECURED_DATA_INVALID', dtoResult.error.issues);
       }
       const dto: GamePlayerSecuredDto = dtoResult.data;
       const userId = getAuthorizedUserId();
-      if (dto.playerId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
-      
+      if (dto.playerId !== userId) throw new ApiError(403, 'PLAYER_ACTION_FORBIDDEN');
+
       const gameSnap = await gameService.findGame(dto.gameId);
-      
+
       const player = await gameService.confirmAnswer(dto);
-      
+
       const game = await gameService.findGame(dto.gameId);
-      
+
       socket.join(dto.gameId);
       emitToRoom(
         io,
@@ -323,11 +325,11 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-      
+
       logger.info({ playerId: dto.playerId, gameId: dto.gameId }, 'Player secured answer');
     } catch (error) {
       logger.error({ error }, 'Error handling player secure');
-      emitSocketError(socket, "PLAYER_SECURED_ERROR", error);
+      emitSocketError(socket, 'PLAYER_SECURED_ERROR', error);
     }
   });
 
@@ -339,12 +341,12 @@ export function registerGameHandler(io: Server, socket: Socket) {
       // Валидация входящих данных через DTO схему
       const dtoResult = GamePlayerLikedDtoSchema.safeParse(data);
       if (!dtoResult.success) {
-        throw new ApiError(422, "PLAYER_LIKED_DATA_INVALID", dtoResult.error.issues);
+        throw new ApiError(422, 'PLAYER_LIKED_DATA_INVALID', dtoResult.error.issues);
       }
       const dto: GamePlayerLikedDto = dtoResult.data;
       const userId = getAuthorizedUserId();
-      if (dto.senderId !== userId) throw new ApiError(403, "PLAYER_ACTION_FORBIDDEN");
-      
+      if (dto.senderId !== userId) throw new ApiError(403, 'PLAYER_ACTION_FORBIDDEN');
+
       const gameSnap = await gameService.findGame(dto.gameId);
       await gameService.likeAnswer(dto);
       const game = await gameService.findGame(dto.gameId);
@@ -360,14 +362,14 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-      
+
       logger.info(
         { senderId: dto.senderId, receiverId: dto.receiverId, gameId: dto.gameId },
         'Player liked answer',
       );
     } catch (error) {
       logger.error({ error }, 'Error handling player like');
-      emitSocketError(socket, "PLAYER_LIKED_ERROR", error);
+      emitSocketError(socket, 'PLAYER_LIKED_ERROR', error);
     }
   });
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GameSocketEvents } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
-import type { SocketErrorPayload } from '@common/message-types';
+import { GameSocketEvents } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
 import { useAppSelector } from '@app/store/hook';
 import { getCurrentUser, getCurrentUserId } from '@shared/lib/tma/user';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
@@ -17,7 +17,9 @@ export function useRateRound() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(
-    Boolean(session?.gamePlayers?.find((player) => player.id === getCurrentUserId(user))?.isConfirmed),
+    Boolean(
+      session?.gamePlayers?.find((player) => player.id === getCurrentUserId(user))?.isConfirmed,
+    ),
   );
   const sentLikeIdsRef = useRef<Set<string>>(new Set());
   const finalizedRef = useRef(false);

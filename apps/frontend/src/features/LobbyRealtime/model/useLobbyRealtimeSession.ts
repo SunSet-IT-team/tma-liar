@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LobbySocketEvents } from '@common/message-types';
-import { SocketSystemEvents } from '@common/message-types';
-import type { LobbyStatePayload } from '@common/message-types';
-import type { SocketErrorPayload } from '@common/message-types';
+import { LobbySocketEvents } from '@liar/message-types';
+import { SocketSystemEvents } from '@liar/message-types';
+import type { LobbyStatePayload } from '@liar/message-types';
+import type { SocketErrorPayload } from '@liar/message-types';
 import { useNavigate } from 'react-router-dom';
 import { PageRoutes } from '@app/routes/pages';
 import { preloadAllScreens } from '@app/routes/preloadScreens';
@@ -35,7 +35,8 @@ function isLobbyMissingError(error: unknown): boolean {
     message?: string;
     response?: { status?: number; data?: { errorCode?: string; message?: string } };
   };
-  const codeFromResponse = maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
+  const codeFromResponse =
+    maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
   const message = maybeError?.message ?? '';
   const status = maybeError?.response?.status;
 
@@ -186,9 +187,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
           console.log('isLobbyMissingError');
           navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
         } else {
-          setReadyError(
-            'Не удалось подключиться к лобби. Обновите страницу и попробуйте ещё раз.',
-          );
+          setReadyError('Не удалось подключиться к лобби. Обновите страницу и попробуйте ещё раз.');
           notifyError('Не удалось подключиться к лобби. Попробуйте ещё раз.');
         }
       });
@@ -215,7 +214,9 @@ export function useLobbyRealtimeSession(mode: Mode) {
         setReady(currentPlayerReady);
       }
 
-      const currentPlayer = payload.diff?.players?.find((player) => player.id === getCurrentUserId(user));
+      const currentPlayer = payload.diff?.players?.find(
+        (player) => player.id === getCurrentUserId(user),
+      );
       if (typeof currentPlayer?.loserTask === 'string') {
         setLoserTask(currentPlayer.loserTask);
       }

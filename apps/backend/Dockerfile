@@ -10,6 +10,7 @@ COPY apps/backend/package.json ./apps/backend/
 
 # Копируем packages/shared для workspaces
 COPY packages/shared ./packages/shared
+COPY packages/message-types ./packages/message-types
 
 RUN bun install
 
@@ -24,6 +25,7 @@ COPY package.json ./
 COPY tsconfig.json ./
 COPY apps/backend ./apps/backend
 COPY packages/shared ./packages/shared
+COPY packages/message-types ./packages/message-types
 
 # Production образ
 FROM base AS runner
@@ -43,6 +45,7 @@ COPY --from=deps --chown=bunuser:bunuser /app/node_modules ./node_modules
 COPY --from=deps --chown=bunuser:bunuser /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder --chown=bunuser:bunuser /app/apps/backend ./apps/backend
 COPY --from=builder --chown=bunuser:bunuser /app/packages/shared ./packages/shared
+COPY --from=builder --chown=bunuser:bunuser /app/packages/message-types ./packages/message-types
 COPY --from=builder --chown=bunuser:bunuser /app/package.json ./
 COPY --from=builder --chown=bunuser:bunuser /app/tsconfig.json ./
 

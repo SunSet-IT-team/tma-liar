@@ -13,7 +13,7 @@ export default defineConfig({
       '@features': path.resolve(__dirname, 'src/features'),
       '@entities': path.resolve(__dirname, 'src/entities'),
       '@shared': path.resolve(__dirname, 'src/shared'),
-      '@common': path.resolve(__dirname, '../common'),
+      '@liar/message-types': path.resolve(__dirname, '../../packages/message-types'),
     },
   },
   server: {

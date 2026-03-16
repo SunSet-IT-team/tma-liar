@@ -42,7 +42,7 @@ services:
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/common:/app/apps/common
-      - ./packages/shared:/app/packages/shared
+      - ./packages:/app/packages
       - backend_node_modules:/app/apps/backend/node_modules
 
   frontend:
@@ -60,7 +60,7 @@ services:
     volumes:
       - ./apps/frontend:/app/apps/frontend
       - ./apps/common:/app/apps/common
-      - ./packages/shared:/app/packages/shared
+      - ./packages:/app/packages
       - frontend_node_modules:/app/apps/frontend/node_modules
 
   deck-editor:
@@ -81,7 +81,7 @@ services:
     volumes:
       - ./apps/deckEditor:/app/apps/deckEditor
       - ./apps/common:/app/apps/common
-      - ./packages/shared:/app/packages/shared
+      - ./packages:/app/packages
       - deck_editor_node_modules:/app/apps/deckEditor/node_modules
 
   # Ngrok для создания HTTPS туннеля к frontend
