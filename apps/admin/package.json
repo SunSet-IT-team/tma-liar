@@ -1,17 +1,19 @@
 {
-  "name": "deck-editor",
+  "name": "admin",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5174",
+    "dev": "vite --host 0.0.0.0 --port 5175",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 4174"
+    "preview": "vite preview --host 0.0.0.0 --port 4175"
   },
   "dependencies": {
     "axios": "^1.13.4",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-router-dom": "^7.10.1",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@types/react": "^19.1.16",

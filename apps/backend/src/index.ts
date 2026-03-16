@@ -17,6 +17,9 @@ import { lobbyRouter } from './lobby/lobby.router';
 import { deckRouter } from './decks/deck.router';
 import { deckAdminRouter } from './decks/deck-admin.router';
 import { paymentRouter } from './payments/payment.router';
+import { adminUsersRouter } from './admin/admin-users.router';
+import { adminLobbiesRouter } from './admin/admin-lobbies.router';
+import { adminStatsRouter } from './admin/admin-stats.router';
 import { createGameRouter } from './game/game.router';
 import { registerSocketHandlers } from './socket';
 import path from 'node:path';
@@ -78,6 +81,9 @@ app.get('/api/health', (_, res) =>
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/admin/decks', deckAdminRouter);
+app.use('/api/admin/users', adminUsersRouter);
+app.use('/api/admin/lobbies', adminLobbiesRouter);
+app.use('/api/admin/stats', adminStatsRouter);
 
 app.use('/api/users', authMiddleware, userRouter);
 

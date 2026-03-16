@@ -1,0 +1,33 @@
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.actions button {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.lobby-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.detail-json {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  color: var(--text-muted);
+  max-height: 200px;
+  overflow-y: auto;
+}

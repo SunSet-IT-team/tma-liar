@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
-COPY apps/deckEditor/package.json ./apps/deckEditor/
+COPY apps/admin/package.json ./apps/admin/
 COPY packages/shared ./packages/shared
 COPY packages/message-types/ ./packages/message-types/
 
