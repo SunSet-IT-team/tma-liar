@@ -30,6 +30,8 @@ export const CreateLobby: FC = () => {
     buySelectedDeck,
   } = useCreateLobby();
 
+  const maxQuestions = decks[activeDeckIndex]?.questionsCount ?? 200;
+
   return (
     <Container className={styles.container}>
       <Header />
@@ -37,7 +39,7 @@ export const CreateLobby: FC = () => {
         Лобби
       </Typography>
       <ChoiceParamsLobby
-        reusedValues={{ min: 10, max: 200, step: 5, defaultValue: questionCount }}
+        reusedValues={{ min: 1, max: maxQuestions, step: 1, defaultValue: questionCount }}
         choiceText="Кол-во вопросов"
         choiceType="В"
         onChangeValue={(value: number) => setQuestionCount(value)}

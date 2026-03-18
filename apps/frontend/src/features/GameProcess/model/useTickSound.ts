@@ -46,9 +46,14 @@ export function useTickSound({ tickSeconds, isFixed }: UseTickSoundParams) {
       return;
     }
 
-    const isResultsRoute =
-      location.pathname === `/${PageRoutes.RESULT_GAME}` || location.pathname === `/${PageRoutes.END_GAME}`;
-    if (isResultsRoute) {
+    // Звук тика нужен только на экранах, где игроки должны успеть проголосовать/зафиксировать ответ.
+    // На экранах с отображением результатов/переходами звук не должен продолжаться.
+    const isTickSoundRoute =
+      location.pathname === `/${PageRoutes.CHOOSING_LIAR}` ||
+      location.pathname === `/${PageRoutes.ANSWER_LIAR}` ||
+      location.pathname === `/${PageRoutes.ANSWER_SOLVED}`;
+
+    if (!isTickSoundRoute) {
       stopSound();
       return;
     }

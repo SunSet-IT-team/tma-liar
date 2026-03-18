@@ -3,6 +3,7 @@ import type { Question } from '../decks/entities/question.entity';
 import type { Player } from '../lobby/entities/player.entity';
 import { ApiError, buildStatePayload } from '../common/response';
 import { GameStages, LobbyStatus } from '../lobby/entities/lobby.entity';
+import type { Settings } from '../lobby/entities/settings.entity';
 import type { Game } from './entities/game.entity';
 import type { GameStartDto } from './dtos/game-start.dto';
 import type { GameNextStageDto } from './dtos/game-next-stage.dto';
@@ -101,15 +102,22 @@ export class GameService implements GameMethods {
     return question?.content ?? null;
   }
 
-  private getStageDurationMs(stage: GameStages): number | null {
+  private getStageDurationMs(
+    stage: GameStages,
+    settings?: Pick<Settings, 'answerTime'> | null,
+  ): number | null {
     if (stage === GameStages.LIAR_CHOOSES) return LIAR_CHOOSES_TIMER_MS;
-    if (
-      stage === GameStages.QUESTION_TO_LIAR ||
-      stage === GameStages.QUESTION_RESULTS ||
-      stage === GameStages.GAME_RESULTS
-    ) {
+    if (stage === GameStages.QUESTION_TO_LIAR) {
+      // Время на этапе QUESTION_TO_LIAR задается админом при создании лобби.
+      // settings.answerTime хранится в секундах.
+      const answerTimeSeconds = settings?.answerTime;
+      if (typeof answerTimeSeconds === 'number' && answerTimeSeconds > 0) {
+        return answerTimeSeconds * 1000;
+      }
+      // Фолбэк на случай непредвиденных данных.
       return GAME_STAGE_TIMER_MS;
     }
+    if (stage === GameStages.QUESTION_RESULTS || stage === GameStages.GAME_RESULTS) return GAME_STAGE_TIMER_MS;
     return null;
   }
 
@@ -350,7 +358,7 @@ export class GameService implements GameMethods {
         gameId,
         stage: nextStage,
         stageStartedAt: updatedGameobj.stageStartedAt ?? Date.now(),
-        stageDurationMs: this.getStageDurationMs(nextStage),
+        stageDurationMs: this.getStageDurationMs(nextStage, updatedGameobj.settings ?? null),
         liarId: updatedGameobj.liarId ?? null,
         players: this.serializePlayersForClient(updatedGameobj),
         activeQuestion: updatedGameobj.activeQuestion ?? null,
@@ -481,7 +489,12 @@ export class GameService implements GameMethods {
 
     game.markModified('doLie');
 
-    this.scheduleStageTimer(gameId, GAME_STAGE_TIMER_MS, async () => {
+    const questionToLiarStageMs =
+      typeof game.settings?.answerTime === 'number' && game.settings.answerTime > 0
+        ? game.settings.answerTime * 1000
+        : GAME_STAGE_TIMER_MS;
+
+    this.scheduleStageTimer(gameId, questionToLiarStageMs, async () => {
       await this.nextStage({ gameId: gameId });
     });
 
