@@ -22,6 +22,7 @@ import { adminLobbiesRouter } from './admin/admin-lobbies.router';
 import { adminStatsRouter } from './admin/admin-stats.router';
 import { createGameRouter } from './game/game.router';
 import { registerSocketHandlers } from './socket';
+import { startLobbyCleanupScheduler } from './lobby/lobby-cleanup.scheduler';
 import path from 'node:path';
 
 const app = express();
@@ -99,6 +100,7 @@ app.use(errorMiddleware);
 async function startServer() {
   try {
     await connectToDatabase();
+    startLobbyCleanupScheduler();
     httpServer.listen(env.PORT, () => logger.info({ port: env.PORT }, 'Server started'));
   } catch (error) {
     throw error;
