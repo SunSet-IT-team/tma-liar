@@ -10,10 +10,17 @@ async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games
   const hasLegacyUniquePlayersTelegramIndex = indexes.some(
     (index) => index.name === 'players.telegramId_1',
   );
+  const hasLegacyUniquePlayersIdIndex = indexes.some((index) => index.name === 'players.id_1');
 
-  if (!hasLegacyUniquePlayersTelegramIndex) return;
+  if (!hasLegacyUniquePlayersTelegramIndex && !hasLegacyUniquePlayersIdIndex) return;
 
-  await collection.dropIndex('players.telegramId_1');
+  if (hasLegacyUniquePlayersTelegramIndex) {
+    await collection.dropIndex('players.telegramId_1');
+  }
+
+  if (hasLegacyUniquePlayersIdIndex) {
+    await collection.dropIndex('players.id_1');
+  }
 }
 
 /**

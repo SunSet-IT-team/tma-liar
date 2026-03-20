@@ -1,4 +1,4 @@
-import { type FC, useEffect } from 'react';
+import { type FC, useEffect, useRef } from 'react';
 import styles from '../style/waitingLobbyStyle.module.scss';
 import { Header } from '@widgets/Header';
 import { Typography } from '@shared/ui/Typography';
@@ -9,6 +9,8 @@ import { ReadyToggle } from '@features/ReadyToggle';
 import { useLobbyRealtimeSession } from '@features/LobbyRealtime';
 import { useStartGame } from '@features/StartGame';
 import { getCurrentUserId } from '@shared/lib/tma/user';
+import { useNotify } from '@shared/lib/notify/notify';
+import { copyToClipboard } from '@shared/lib/clipboard/copyToClipboard';
 
 const MIN_PLAYERS_TO_START = 3;
 
@@ -26,6 +28,7 @@ function isValidLoserTask(task: string | null | undefined): boolean {
 export const LobbyAdmin: FC = () => {
   const { user, session, loserTask, readyError, setLoserTask, setReadyError, syncLobbyState } =
     useLobbyRealtimeSession('admin');
+  const { notifyError, notifySuccess } = useNotify();
   const { isStarting, startError, startGame } = useStartGame({
     lobbyCode: session?.lobbyCode,
     onSyncLobbyState: syncLobbyState,
@@ -40,6 +43,107 @@ export const LobbyAdmin: FC = () => {
 
   const toggleReady = () => {
     setReadyError(null);
+  };
+
+  const isTelegram = Boolean(window.Telegram?.WebApp?.initData);
+
+  const shouldShowClipboardNotify = (): boolean => {
+    try {
+      // На телефонах с тач-инпутом обычно есть системный toast при копировании.
+      // Требование: наш кастомный notify показывать только на компьютере.
+      return Boolean(window.matchMedia?.('(pointer: fine)').matches);
+    } catch {
+      return true;
+    }
+  };
+
+  const isSharingRef = useRef(false);
+
+  const handleCopyLobbyCode = async () => {
+    if (!session?.lobbyCode) return;
+    try {
+      await copyToClipboard(session.lobbyCode);
+      if (shouldShowClipboardNotify()) {
+        notifySuccess('Код лобби скопирован в буфер обмена');
+      }
+    } catch {
+      notifyError('Не удалось скопировать код лобби');
+    }
+  };
+
+  const handleLobbyCodeClick = async () => {
+    // 1) Всегда копируем код.
+    await handleCopyLobbyCode();
+    // 2) Если внутри Telegram — пытаемся поделиться ссылкой.
+    if (isTelegram) {
+      void handleShareLobby();
+    }
+  };
+
+  const handleShareLobby = async () => {
+    if (!session?.lobbyCode) return;
+    if (isSharingRef.current) return;
+    isSharingRef.current = true;
+
+    try {
+      const telegramBotUrl = import.meta.env.VITE_TELEGRAM_BOT_URL;
+      if (
+        !telegramBotUrl ||
+        telegramBotUrl === 'https://t.me/' ||
+        telegramBotUrl === 'https://t.me'
+      ) {
+        notifyError('Не задана переменная VITE_TELEGRAM_BOT_URL для шаринга');
+        return;
+      }
+
+      const normalizedBotBase = telegramBotUrl.replace(/\/$/, '');
+      const joiner = normalizedBotBase.includes('?') ? '&' : '?';
+      // Используем deep-link на бота (внутри Telegram), а payload кладем в `startapp`.
+      const lobbyBotLink = `${normalizedBotBase}${joiner}startapp=${encodeURIComponent(
+        session.lobbyCode,
+      )}`;
+
+      const shareText = 'Присоединиться к лобби';
+      const webApp = window.Telegram?.WebApp as any;
+
+      // 1) Telegram deep link (основной способ, работает и на ПК).
+      try {
+        const openTelegramLink =
+          typeof webApp?.openTelegramLink === 'function' ? webApp.openTelegramLink : null;
+        if (openTelegramLink) {
+          const deepLink = `https://t.me/share/url?url=${encodeURIComponent(
+            lobbyBotLink,
+          )}&text=${encodeURIComponent(shareText)}`;
+          openTelegramLink.call(webApp, deepLink);
+          return;
+        }
+      } catch {
+        // ignore and fall through
+      }
+
+      // 2) Telegram shareURL (если есть).
+      try {
+        const shareURL = webApp?.shareURL;
+        if (typeof shareURL === 'function') {
+          shareURL.call(webApp, lobbyBotLink, shareText);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+
+      // 4) Фолбэк: копируем ссылку.
+      try {
+        await copyToClipboard(lobbyBotLink);
+        if (shouldShowClipboardNotify()) {
+          notifySuccess('Ссылка на лобби скопирована в буфер обмена');
+        }
+      } catch {
+        notifyError('Не удалось скопировать ссылку на лобби');
+      }
+    } finally {
+      isSharingRef.current = false;
+    }
   };
 
   const startBlockReason = !enoughPlayers
@@ -67,7 +171,16 @@ export const LobbyAdmin: FC = () => {
         <Typography variant="titleLarge" as="h1" className={styles.lobbyTitle}>
           Лобби
         </Typography>
-        <Typography className={styles.lobbyCode}>#{session.lobbyCode}</Typography>
+        <button
+          type="button"
+          className={styles.lobbyCodeBtn}
+          onClick={handleLobbyCodeClick}
+          aria-label="Скопировать код лобби"
+        >
+          <Typography as="span" className={styles.lobbyCode}>
+            #{session.lobbyCode}
+          </Typography>
+        </button>
       </div>
       <LobbyUsersBadge
         playersClassName={styles.lobbyPlayers}

@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose';
 import { GameStages } from '../lobby/entities/lobby.entity';
 import type { Game } from './entities/game.entity';
 import { SettingsModel } from '../lobby/settings.model';
-import { PlayerModel } from '../lobby/player.model';
+import { GamePlayerModel } from './game-player.model';
 
 /**
  * Схема Mongoose для сущности "Игра".
@@ -26,7 +26,7 @@ export const GameSchema = new Schema<Game>(
 
     /** Участники игры */
     players: {
-      type: [PlayerModel],
+      type: [GamePlayerModel],
       default: [],
     },
 

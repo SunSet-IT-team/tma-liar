@@ -36,7 +36,10 @@ export const DecksBlock: FC<DecksProps> = ({ decks, loop = true, onChangeActiveD
         }}
       >
         {decks.map((deck, i) => (
-          <SwiperSlide key={`${deck.id ?? i}-${deck.cover ?? 'no-cover'}`} className="swiperSlide deckSwiperSlide">
+          <SwiperSlide
+            key={`${deck.id ?? i}-${deck.cover ?? 'no-cover'}`}
+            className="swiperSlide deckSwiperSlide"
+          >
             <div className="deckSlideItem">
               <img
                 src={deck.cover || fallbackDeckCover}

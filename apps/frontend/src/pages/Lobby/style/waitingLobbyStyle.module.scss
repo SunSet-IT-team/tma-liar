@@ -27,6 +27,20 @@
   margin-top: 4px;
 }
 
+.lobbyCodeBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: center;
+  width: fit-content;
+}
+
+.lobbyCodeBtn:hover .lobbyCode {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .lobbyPlayers {
   padding: 20px 0;
   width: 100%;

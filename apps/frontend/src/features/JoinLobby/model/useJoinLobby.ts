@@ -6,21 +6,22 @@ import { findLobbyRequest } from '@shared/services/lobby/lobby.api';
 import { lobbySessionService } from '@shared/services/lobby/lobby-session.service';
 import { joinLobbyBySocket } from '@shared/services/socket/lobby.socket';
 
-export function useJoinLobby() {
+export function useJoinLobby(params?: { initialLobbyCode?: string }) {
   const navigate = useNavigate();
   const user = getCurrentUser();
-  const [lobbyCode, setLobbyCode] = useState('');
+  const [lobbyCode, setLobbyCode] = useState(params?.initialLobbyCode ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
 
-  const joinLobby = async () => {
-    if (!lobbyCode.trim() || isSubmitting) return;
+  const joinLobbyWithCode = async (codeRaw: string) => {
+    const code = codeRaw.trim();
+    if (!code || isSubmitting) return;
 
     setIsSubmitting(true);
     setErrorText(null);
 
     try {
-      const normalizedCode = lobbyCode.trim().toUpperCase();
+      const normalizedCode = code.toUpperCase();
       const lobbyView = await joinLobbyBySocket({
         lobbyCode: normalizedCode,
         nickname: user.nickname,
@@ -52,6 +53,10 @@ export function useJoinLobby() {
     }
   };
 
+  const joinLobby = async () => {
+    await joinLobbyWithCode(lobbyCode);
+  };
+
   return {
     user,
     lobbyCode,
@@ -59,6 +64,7 @@ export function useJoinLobby() {
     errorText,
     setLobbyCode,
     joinLobby,
+    joinLobbyWithCode,
   };
 }
 

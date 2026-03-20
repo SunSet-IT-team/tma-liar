@@ -55,6 +55,7 @@ services:
       - '5173:5173'
     environment:
       NODE_ENV: development
+      VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL:-}
     networks:
       - tma-liar-network-dev
     volumes:
