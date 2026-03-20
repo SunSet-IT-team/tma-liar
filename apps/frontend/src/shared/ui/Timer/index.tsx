@@ -12,8 +12,8 @@ export const Timer: FC = () => {
 
   return (
     <>
-      <div className={styles.spacer} aria-hidden />
-      <div className={styles.content}>
+      <div className={styles.spacer} aria-hidden data-decor="true" />
+      <div className={styles.content} data-decor="true">
         <img src={timerCircle} alt="Timer circle" className={styles.taimerIcon} />
         <div className={styles.loaderWrapper}>
           <div className={styles.loader} style={{ animationDuration: `${time}s` }} />

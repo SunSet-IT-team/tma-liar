@@ -80,7 +80,7 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} data-relative="true">
       <input
         type="file"
         accept="image/*"

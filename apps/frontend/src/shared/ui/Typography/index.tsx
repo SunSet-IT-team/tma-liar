@@ -36,7 +36,10 @@ export const Typography: FC<TypographyProps> = ({
   children,
 }: TypographyProps) => {
   return (
-    <Component className={clsx(styles.typographyBase, styles[variant], className)}>
+    <Component
+      className={clsx(styles.typographyBase, styles[variant], className)}
+      data-relative="true"
+    >
       {children}
     </Component>
   );

@@ -6,7 +6,13 @@ game-lier.ru, www.game-lier.ru {
     reverse_proxy backend:3000
   }
 
-  handle {
-    reverse_proxy frontend:80
+  @admin path /admin* 
+  handle @admin {
+    reverse_proxy admin:5175
+  }
+
+  @frontend path_regexp ^/(?!api|admin).*$
+  handle @frontend {
+      reverse_proxy frontend:80
   }
 }

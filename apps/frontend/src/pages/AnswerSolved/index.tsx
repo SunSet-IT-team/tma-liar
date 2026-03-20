@@ -23,12 +23,12 @@ export const AnswerSolved: FC = () => {
   return (
     <Container>
       <Header className={styles.header} inGame />
-      <div className={styles.content}>
+      <div className={styles.content} data-relative="true">
         <Typography as="h1" variant="titleLarge">
           Лжец
-        <Typography as="span" variant="titleLarge" className={styles.titleItem}>
-          ?
-        </Typography>
+          <Typography as="span" variant="titleLarge" className={styles.titleItem}>
+            ?
+          </Typography>
         </Typography>
         <UserBadge
           id={Number.isNaN(liarNumericId) ? 1 : liarNumericId}

@@ -23,7 +23,7 @@ export const AnswerSolvedBlock: FC<SolvedBlockProps> = ({
 }) => {
   return (
     <>
-      <div className={styles.answersBtns}>
+      <div className={styles.answersBtns} data-relative="true">
         <Button
           className={clsx(styles.answersBtn, believe === false && styles.answersBtnActive)}
           onClick={() => !fixed && !disabled && onSelectBelieve(false)}

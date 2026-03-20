@@ -22,8 +22,12 @@ export class LobbyRepository {
   ): Promise<void> {
     if (!players || players.length === 0) return;
 
-    const ids = players.map((p) => p.id);
-    const telegramIds = players.map((p) => p.telegramId);
+    // На случай "битых" игроков/пейлоадов:
+    // не включаем null/empty в списки совпадений, но зато чистим null в целевых документах ниже.
+    const ids = players.map((p) => p.id).filter((v) => typeof v === 'string' && v.trim().length > 0);
+    const telegramIds = players
+      .map((p) => p.telegramId)
+      .filter((v) => typeof v === 'string' && v.trim().length > 0);
 
     const filter: Record<string, unknown> = {
       $or: [
@@ -38,7 +42,14 @@ export class LobbyRepository {
       {
         $pull: {
           players: {
-            $or: [{ id: { $in: ids } }, { telegramId: { $in: telegramIds } }],
+            // Пуллим "пересекающего" игрока(ов) и дополнительно чистим corrupted subdocs
+            // с null/empty telegramId, чтобы не ловить уникальный индекс `players.telegramId`.
+            $or: [
+              { id: { $in: ids } },
+              { telegramId: { $in: telegramIds } },
+              { telegramId: null },
+              { id: null },
+            ],
           },
         },
       },

@@ -1,5 +1,5 @@
 import { type FC } from 'react';
-import { LobbyUsersBadge } from '../../features/UsersBadge/ui/LobbyUsersBadge';
+import { EndGameUsersBadgeWithPoints } from '../../features/UsersBadge/ui/EndGameUsersBadgeWithPoints';
 import { Button } from '../../shared/ui/Button';
 import { Container } from '../../shared/ui/Container';
 import { Typography } from '../../shared/ui/Typography';
@@ -16,12 +16,12 @@ export const EndGame: FC = () => {
 
   return (
     <Container className={styles.container}>
-      <Header className={styles.header} inGame />
-      <LobbyUsersBadge className={styles.playerName} />
-      <Typography className={styles.playerPlace}>
+      <Header className={styles.header} inGame data-relative="true" />
+      <EndGameUsersBadgeWithPoints className={styles.playerName} data-relative="true" />
+      <Typography className={styles.playerPlace} data-relative="true">
         {myPlace > 0 ? `${myPlace} место` : 'Место не определено'}
       </Typography>
-      <div className={styles.endButtons}>
+      <div className={styles.endButtons} data-relative="true">
         <Button
           className={styles.endBtn}
           variant="buttonUnderline"

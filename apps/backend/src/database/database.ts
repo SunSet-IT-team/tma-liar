@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import { env } from "../config/env";
+import mongoose from 'mongoose';
+import { env } from '../config/env';
 
 async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games') {
   const db = mongoose.connection.db;
@@ -24,6 +24,26 @@ async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games
 }
 
 /**
+ * @Более вдуичиво разобраться
+ */
+async function cleanupNullPlayerFields(collectionName: 'lobbies' | 'games') {
+  const db = mongoose.connection.db;
+  if (!db) return;
+
+  const collection = db.collection(collectionName);
+
+  // Уникальные индексы на `players.telegramId`/`players.id` могут падать из-за уже существующих данных,
+  // где эти поля равны `null`. Удаляем такие "битые" поддокументы на старте.
+  await collection.updateMany({}, {
+    $pull: {
+      players: {
+        $or: [{ telegramId: null }, { id: null }],
+      },
+    },
+  } as any);
+}
+
+/**
  * Подключение к БД
  */
 export async function connectToDatabase(uriOverride?: string) {
@@ -35,4 +55,8 @@ export async function connectToDatabase(uriOverride?: string) {
 
   await dropLegacyPlayersTelegramIndex('lobbies');
   await dropLegacyPlayersTelegramIndex('games');
+
+  // Cleanup corrupted snapshots (null subdocs) to avoid unique-index failures.
+  await cleanupNullPlayerFields('lobbies');
+  await cleanupNullPlayerFields('games');
 }

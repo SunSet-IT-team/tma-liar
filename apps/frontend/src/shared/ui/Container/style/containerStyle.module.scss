@@ -4,10 +4,10 @@
   overflow: hidden;
 }
 
-// .container > *:not([data-decor='true']) {
-//     position: relative;
-//     z-index: 1;
-// }
+.container > [data-relative='true'] {
+  position: relative;
+  z-index: 1;
+}
 
 .container [data-decor='true'] {
   z-index: 0;
