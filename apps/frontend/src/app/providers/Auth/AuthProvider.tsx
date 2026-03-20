@@ -22,30 +22,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        let token = authService.getToken();
+        const tokenFromStorage = authService.getToken();
+        const normalizedInitData = retrieveRawInitData();
 
-        if (token) {
+        // Важно:
+        // если токен лежит в localStorage (например, из-за синка браузера),
+        // но Telegram initData относится к другому пользователю,
+        // используем текущий initData, чтобы не "прилипать" к старому пользователю.
+        if (tokenFromStorage) {
+          if (normalizedInitData) {
+            const freshToken = await fetchToken(normalizedInitData);
+            if (freshToken) authService.setToken(freshToken);
+          }
+
           setIsAuth(true);
           setMode('full');
           setRequiresTmaLogin(false);
-          void getMe();
+          await getMe();
           return;
         }
-
-        const normalizedInitData = retrieveRawInitData();
 
         if (!normalizedInitData) {
           throw new Error('INIT_DATA_NOT_FOUND');
         }
 
-        token = await fetchToken(normalizedInitData);
+        const token = await fetchToken(normalizedInitData);
         
         if (token !== null) authService.setToken(token);
 
         setIsAuth(true);
         setMode('full');
         setRequiresTmaLogin(false);
-        void getMe();
+        await getMe();
       } catch (e) {
         authService.removeToken();
         setIsAuth(false);

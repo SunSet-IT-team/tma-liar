@@ -51,10 +51,16 @@ describe('LobbyService', () => {
   });
 
   it('create/update/delete lobby branches', async () => {
-    const createOk = new LobbyService({ create: async () => baseLobby } as never);
+    const createOk = new LobbyService({
+      evictPlayersFromAllLobbies: async () => undefined,
+      create: async () => baseLobby,
+    } as never);
     expect((await createOk.createLobby({ adminId: 'admin', players: baseLobby.players, settings: baseLobby.settings } as any)).adminId).toBe('admin');
 
-    const createBad = new LobbyService({ create: async () => null } as never);
+    const createBad = new LobbyService({
+      evictPlayersFromAllLobbies: async () => undefined,
+      create: async () => null,
+    } as never);
     await expect(createBad.createLobby({ adminId: 'admin', players: baseLobby.players, settings: baseLobby.settings } as any)).rejects.toBeInstanceOf(ApiError);
 
     const updateOk = new LobbyService({ updateByCode: async () => ({ ...baseLobby, status: LobbyStatus.STARTED }) } as never);
@@ -72,20 +78,31 @@ describe('LobbyService', () => {
 
   it('joinLobby branches', async () => {
     const joinOk = new LobbyService({
+      findByCode: async () => baseLobby,
+      evictPlayersFromAllLobbies: async () => undefined,
       joinIfAllowed: async () => ({ ...baseLobby, players: [...baseLobby.players, { ...basePlayer, id: 'p2', telegramId: 'p2' }] }),
     } as never);
     expect((await joinOk.joinLobby({ lobbyCode: 'ABC123', player: { ...basePlayer, id: 'p2', telegramId: 'p2' } })).players.length).toBe(2);
 
-    const notFound = new LobbyService({ joinIfAllowed: async () => null, findByCode: async () => null } as never);
+    const notFound = new LobbyService({
+      joinIfAllowed: async () => null,
+      findByCode: async () => null,
+      evictPlayersFromAllLobbies: async () => undefined,
+    } as never);
     await expect(notFound.joinLobby({ lobbyCode: 'ABC123', player: { ...basePlayer, id: 'p2', telegramId: 'p2' } })).rejects.toBeInstanceOf(ApiError);
 
     const started = new LobbyService({
       joinIfAllowed: async () => null,
       findByCode: async () => ({ ...baseLobby, status: LobbyStatus.STARTED, currentGameId: 'g1' }),
+      evictPlayersFromAllLobbies: async () => undefined,
     } as never);
     await expect(started.joinLobby({ lobbyCode: 'ABC123', player: { ...basePlayer, id: 'p2', telegramId: 'p2' } })).rejects.toBeInstanceOf(ApiError);
 
-    const exists = new LobbyService({ joinIfAllowed: async () => null, findByCode: async () => ({ ...baseLobby }) } as never);
+    const exists = new LobbyService({
+      joinIfAllowed: async () => null,
+      findByCode: async () => ({ ...baseLobby }),
+      evictPlayersFromAllLobbies: async () => undefined,
+    } as never);
     await expect(exists.joinLobby({ lobbyCode: 'ABC123', player: { ...basePlayer } })).rejects.toBeInstanceOf(ApiError);
   });
 

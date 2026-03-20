@@ -68,6 +68,10 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Создать лобби */
   public async createLobby( param: CreateLobbyDto): Promise<Lobby> {
+    // Уникальный индекс на `players.id` / `players.telegramId` в рамках всей коллекции:
+    // если этот игрок уже есть в другом лобби — сначала выкидываем его оттуда.
+    await this.lobbyRepository.evictPlayersFromAllLobbies(param.players);
+
     const lobby = await this.lobbyRepository.create({
       lobbyCode: nanoid6(),
       ...param
@@ -119,12 +123,6 @@ export class LobbyService implements LobbyServiceMethods {
 
   /** Присоединиться к лобби */
   public async joinLobby(param: JoinLobbyDto): Promise<Lobby> {
-    const updatedLobby = await this.lobbyRepository.joinIfAllowed(param);
-
-    if (updatedLobby) {
-      return updatedLobby;
-    }
-
     const lobby = await this.lobbyRepository.findByCode(param.lobbyCode);
     if (!lobby) throw new ApiError(404, 'LOBBY_NOT_EXIST');
 
@@ -132,10 +130,19 @@ export class LobbyService implements LobbyServiceMethods {
       throw new ApiError(409, 'LOBBY_ALREADY_STARTED');
     }
 
-    const exists = lobby.players.some((p) => p.telegramId === param.player.telegramId);
+    const exists = lobby.players.some(
+      (p) => p.telegramId === param.player.telegramId || p.id === param.player.id,
+    );
     if (exists) throw new ApiError(409, 'PLAYER_ALREADY_IN_LOBBY');
 
-    throw new ApiError(409, 'LOBBY_JOIN_CONFLICT');
+    // Выкидываем игрока из других лобби перед добавлением в текущее.
+    // Так мы гарантируем, что уникальные индексы коллекции не упадут на `E11000`.
+    await this.lobbyRepository.evictPlayersFromAllLobbies([param.player], param.lobbyCode);
+
+    const updatedLobby = await this.lobbyRepository.joinIfAllowed(param);
+
+    if (!updatedLobby) throw new ApiError(409, 'LOBBY_JOIN_CONFLICT');
+    return updatedLobby;
   }
 
   /** Переключить готовность игрока */

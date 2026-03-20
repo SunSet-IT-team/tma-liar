@@ -13,6 +13,7 @@ import {
   updateUserProfileImgFile,
 } from '../../shared/services/api/user.api';
 import { AuthContext } from '../../app/providers/Auth/AuthProvider';
+import { Typography } from '@shared/ui/Typography';
 
 async function compressImageToFile(file: File): Promise<File> {
   const sourceUrl = await new Promise<string>((resolve, reject) => {
@@ -46,13 +47,17 @@ async function compressImageToFile(file: File): Promise<File> {
   ctx.drawImage(image, 0, 0, width, height);
 
   const compressedBlob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('IMAGE_COMPRESSION_ERROR'));
-        return;
-      }
-      resolve(blob);
-    }, 'image/jpeg', 0.82);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('IMAGE_COMPRESSION_ERROR'));
+          return;
+        }
+        resolve(blob);
+      },
+      'image/jpeg',
+      0.82,
+    );
   });
 
   return new File([compressedBlob], 'profile.jpg', { type: 'image/jpeg' });
@@ -71,8 +76,6 @@ export const Profile: FC = () => {
   const [displayName, setDisplayName] = useState<string>(
     profileUsername ? `@${profileUsername}` : '',
   );
-
-  console.log(user);
 
   useEffect(() => {
     if (!canUploadProfile) {
@@ -170,6 +173,9 @@ export const Profile: FC = () => {
         onChange={handleAvatarUpload}
       />
       {statusText ? <span className={styles.status}>{statusText}</span> : null}
+      <Typography variant="body1" className={styles.profileInputWrapper}>
+        {user.id}
+      </Typography>
       <TextInput
         placeholder="Username"
         value={displayName}

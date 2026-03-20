@@ -11,6 +11,41 @@ export class LobbyRepository {
     return LobbyModel.startSession();
   }
 
+  /**
+   * Removes players from all lobbies to satisfy unique index constraints (`players.id`, `players.telegramId`).
+   * This is used when a user creates or joins a lobby: the user must not exist in multiple lobbies.
+   */
+  public async evictPlayersFromAllLobbies(
+    players: Array<{ id: string; telegramId: string }>,
+    exceptLobbyCode?: string,
+    session?: ClientSession,
+  ): Promise<void> {
+    if (!players || players.length === 0) return;
+
+    const ids = players.map((p) => p.id);
+    const telegramIds = players.map((p) => p.telegramId);
+
+    const filter: Record<string, unknown> = {
+      $or: [
+        { 'players.id': { $in: ids } },
+        { 'players.telegramId': { $in: telegramIds } },
+      ],
+      ...(exceptLobbyCode ? { lobbyCode: { $ne: exceptLobbyCode } } : {}),
+    };
+
+    await LobbyModel.updateMany(
+      filter,
+      {
+        $pull: {
+          players: {
+            $or: [{ id: { $in: ids } }, { telegramId: { $in: telegramIds } }],
+          },
+        },
+      },
+      { session },
+    );
+  }
+
   public async findByCode(lobbyCode: string, session?: ClientSession): Promise<Lobby | null> {
     const query = LobbyModel.findOne({ lobbyCode });
     if (session) query.session(session);
