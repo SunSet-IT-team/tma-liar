@@ -13,7 +13,6 @@ import {
   updateUserProfileImgFile,
 } from '../../shared/services/api/user.api';
 import { AuthContext } from '../../app/providers/Auth/AuthProvider';
-import { Typography } from '@shared/ui/Typography';
 
 async function compressImageToFile(file: File): Promise<File> {
   const sourceUrl = await new Promise<string>((resolve, reject) => {
