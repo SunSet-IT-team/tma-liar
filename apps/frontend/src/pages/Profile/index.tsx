@@ -173,9 +173,7 @@ export const Profile: FC = () => {
         onChange={handleAvatarUpload}
       />
       {statusText ? <span className={styles.status}>{statusText}</span> : null}
-      <Typography variant="body1" className={styles.profileInputWrapper}>
-        {user.id}
-      </Typography>
+
       <TextInput
         placeholder="Username"
         value={displayName}
