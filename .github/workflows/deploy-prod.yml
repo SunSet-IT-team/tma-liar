@@ -26,6 +26,6 @@ jobs:
             git fetch origin main
             git checkout main
             git reset --hard origin/main
-            docker compose -f docker-compose.server.yml build --pull
-            docker compose -f docker-compose.server.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml build --pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
