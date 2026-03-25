@@ -1,4 +1,4 @@
-game-lier.ru, www.game-lier.ru {
+(app) {
   encode zstd gzip
 
   @api path /api/* /uploads/* /socket.io/*
@@ -15,6 +15,14 @@ game-lier.ru, www.game-lier.ru {
   }
 
   handle {
-      reverse_proxy frontend:80
+    reverse_proxy frontend:80
   }
+}
+
+game-lier.ru, www.game-lier.ru {
+  import app
+}
+
+http://localhost {
+  import app
 }

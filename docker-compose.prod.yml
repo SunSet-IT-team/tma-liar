@@ -1,3 +1,5 @@
+name: tma-liar-prod
+
 services:
   caddy:
     image: public.ecr.aws/docker/library/caddy:2.8

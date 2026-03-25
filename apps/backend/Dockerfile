@@ -19,7 +19,6 @@ FROM base AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/backend/node_modules ./apps/backend/node_modules
 
 COPY package.json ./
 COPY tsconfig.json ./
@@ -33,16 +32,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Устанавливаем curl для health checks
-RUN apk add --no-cache curl
-
 # Создаем непривилегированного пользователя
 RUN addgroup --system --gid 1001 bunuser && \
     adduser --system --uid 1001 bunuser
 
 # Копируем зависимости и приложение
 COPY --from=deps --chown=bunuser:bunuser /app/node_modules ./node_modules
-COPY --from=deps --chown=bunuser:bunuser /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder --chown=bunuser:bunuser /app/apps/backend ./apps/backend
 COPY --from=builder --chown=bunuser:bunuser /app/packages/shared ./packages/shared
 COPY --from=builder --chown=bunuser:bunuser /app/packages/message-types ./packages/message-types

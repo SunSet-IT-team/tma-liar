@@ -26,7 +26,6 @@ COPY packages/message-types ./packages/message-types
 
 # Копируем зависимости из deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/frontend/node_modules ./apps/frontend/node_modules
 
 WORKDIR /app/apps/frontend
 

@@ -163,6 +163,7 @@ CF_TUNNEL_TOKEN=
 Cloudflare Tunnel запускается автоматически вместе с `docker compose up`.
 
 По умолчанию используется quick tunnel:
+
 - сервис `cloudflared` выдаёт временный `https://...trycloudflare.com`
 - этого достаточно для локальной разработки и Telegram Mini App тестов
 
@@ -184,13 +185,13 @@ cloudflared tunnel run --token <CF_TUNNEL_TOKEN>
 
 ```bash
 # Сборка production образов
-docker compose -f docker-compose.server.yml build
+docker compose -f docker-compose.prod.yml build
 
 # Запуск в фоне
-docker compose -f docker-compose.server.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Остановка
-docker compose -f docker-compose.server.yml down
+docker compose -f docker-compose.prod.yml down
 ```
 
 Доступы:

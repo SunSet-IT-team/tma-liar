@@ -1,3 +1,5 @@
+name: tma-liar-dev
+
 services:
   mongodb:
     image: mongo:8.2.3
