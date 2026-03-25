@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Important: admin is served under https://<domain>/admin
+  // so static asset URLs must be generated with that prefix.
+  base: mode === 'production' ? '/admin/' : '/',
   plugins: [react()],
   server: {
     host: '0.0.0.0',
@@ -20,4 +23,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

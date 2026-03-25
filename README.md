@@ -184,18 +184,19 @@ cloudflared tunnel run --token <CF_TUNNEL_TOKEN>
 
 ```bash
 # Сборка production образов
-docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.server.yml build
 
 # Запуск в фоне
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.server.yml up -d
 
 # Остановка
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.server.yml down
 ```
 
 Доступы:
 
 - Frontend: `http://localhost` (или `http://localhost:80`)
+- Admin: `http://localhost/admin`
 - Backend API: `http://localhost:3000`
 - MongoDB: `localhost:27017`
 

@@ -1,10 +1,26 @@
 services:
-  mongodb:
-    image: mongo:8.2.3
-    container_name: tma-liar-mongodb
+  caddy:
+    image: public.ecr.aws/docker/library/caddy:2.8
+    container_name: tma-liar-caddy
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - admin
+      - frontend
+      - backend
+    networks:
+      - tma-liar-network
+
+  mongodb:
+    image: public.ecr.aws/docker/library/mongo:8.2.3
+    container_name: tma-liar-mongodb
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
@@ -14,68 +30,72 @@ services:
       - mongodb_config:/data/configdb
     networks:
       - tma-liar-network
-    healthcheck:
-      test: ['CMD-SHELL', 'mongosh --eval ''db.runCommand("ping").ok'' --quiet || exit 1']
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
-  # Backend сервис
   backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
     container_name: tma-liar-backend
     restart: unless-stopped
-    ports:
-      - '3000:3000'
     environment:
       NODE_ENV: production
       PORT: 3000
       DB_CONN_STRING: ${DB_CONN_STRING:-mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin}
       DB_NAME: ${DB_NAME:-liar}
-      SECRET: ${SECRET:-your-secret-key-change-in-production}
+      SECRET: ${SECRET:-change-me}
+      DISABLE_AUTH: ${DISABLE_AUTH:-false}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_INITDATA_EXPIRES_IN: ${TELEGRAM_INITDATA_EXPIRES_IN:-3600}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://game-lier.ru,https://www.game-lier.ru}
+      AUTH_RATE_LIMIT_WINDOW_MS: ${AUTH_RATE_LIMIT_WINDOW_MS:-60000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-30}
+      SCORE_NOT_STATED: ${SCORE_NOT_STATED:-50}
+      SCORE_TRICKED: ${SCORE_TRICKED:-100}
+      GAME_STAGE_TIMER_MS: ${GAME_STAGE_TIMER_MS:-15000}
+      HIDDEN_DURING_GAME_FIELDS: ${HIDDEN_DURING_GAME_FIELDS:-doLie,questionHistory,liarId,timerId}
+      GAME_RESULTS_FIELDS: ${GAME_RESULTS_FIELDS:-doLie,loserTask,winnerId,loserId}
+      LOBBY_CODE_ALPHABET: ${LOBBY_CODE_ALPHABET:-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}
+      LOBBY_CODE_LENGTH: ${LOBBY_CODE_LENGTH:-6}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-https://game-lier.ru/create-lobby}
+      YOOKASSA_WEBHOOK_TOKEN: ${YOOKASSA_WEBHOOK_TOKEN:-}
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - tma-liar-network
     volumes:
-      - /app/apps/backend/node_modules
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/hello || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - backend_uploads:/app/apps/backend/uploads
 
-  # Frontend сервис
   frontend:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
     container_name: tma-liar-frontend
     restart: unless-stopped
-    ports:
-      - '80:80'
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - tma-liar-network
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: tma-liar-admin
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - tma-liar-network
 
 volumes:
+  caddy_data:
+  caddy_config:
   mongodb_data:
-    driver: local
   mongodb_config:
-    driver: local
+  backend_uploads:
 
 networks:
   tma-liar-network:
