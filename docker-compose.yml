@@ -35,7 +35,7 @@ services:
       DB_NAME: ${DB_NAME:-liar}
       SECRET: ${SECRET:-dev-secret-key}
       DISABLE_AUTH: ${DISABLE_AUTH:-false}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN_DEV:-}
       TELEGRAM_INITDATA_EXPIRES_IN: ${TELEGRAM_INITDATA_EXPIRES_IN:-3600}
     depends_on:
       - mongodb
@@ -57,7 +57,7 @@ services:
       - '5173:5173'
     environment:
       NODE_ENV: development
-      VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL:-}
+      VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL_DEV:-}
     networks:
       - tma-liar-network-dev
     volumes:
