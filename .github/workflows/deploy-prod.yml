@@ -20,12 +20,17 @@ jobs:
           username: ${{ secrets.PROD_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.PROD_PORT }}
+          timeout: 30m
+          command_timeout: 60m
           script: |
-            set -e
+            set -euo pipefail
             cd "${{ secrets.PROD_PATH }}"
+            # If deploy gets interrupted (timeout/kill), free intermediate layers.
+            trap 'docker image prune -f || true' EXIT
             git fetch origin main
             git checkout main
             git reset --hard origin/main
-            docker compose -f docker-compose.prod.yml build --pull
+            # Limit concurrent builds to reduce load spikes on the server.
+            COMPOSE_BAKE=false COMPOSE_PARALLEL_LIMIT=1 docker compose -f docker-compose.prod.yml build --pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker image prune -f
+            docker image prune -f || true

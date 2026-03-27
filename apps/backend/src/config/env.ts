@@ -32,7 +32,7 @@ const envSchema = z.object({
   SECRET: z.string().min(1, 'SECRET is required'),
   DISABLE_AUTH: z.enum(['true', 'false']).default('false'),
   JWT_EXPIRES_IN: z.string().min(1).default('1d'),
-  TELEGRAM_BOT_TOKEN: z.string().min(1, 'TELEGRAM_BOT_TOKEN is required'),
+  TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_INITDATA_EXPIRES_IN: z.coerce.number().int().positive().default(3600),
   CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
   AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
@@ -62,6 +62,10 @@ if (!parsedEnv.success) {
   throw new Error(`ENV_VALIDATION_FAILED: ${formatted}`);
 }
 
+if (parsedEnv.data.DISABLE_AUTH !== 'true' && parsedEnv.data.TELEGRAM_BOT_TOKEN.trim().length === 0) {
+  throw new Error('ENV_VALIDATION_FAILED: TELEGRAM_BOT_TOKEN is required when DISABLE_AUTH=false');
+}
+
 const splitCsv = (value: string): string[] =>
   value
     .split(',')
@@ -79,6 +83,3 @@ export const env = {
   hiddenDuringGameFields: splitCsv(parsedEnv.data.HIDDEN_DURING_GAME_FIELDS),
   gameResultsFields: splitCsv(parsedEnv.data.GAME_RESULTS_FIELDS),
 } as const;
-
-console.log(env)
-console.log('env')

@@ -45,7 +45,7 @@ services:
       DB_CONN_STRING: ${DB_CONN_STRING:-mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin}
       DB_NAME: ${DB_NAME:-liar}
       SECRET: ${SECRET:-change-me}
-      DISABLE_AUTH: ${DISABLE_AUTH:-false}
+      DISABLE_AUTH: ${DISABLE_AUTH:-true}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_INITDATA_EXPIRES_IN: ${TELEGRAM_INITDATA_EXPIRES_IN:-3600}
