@@ -29,6 +29,9 @@ COPY --from=deps /app/node_modules ./node_modules
 
 WORKDIR /app/apps/frontend
 
+ARG VITE_TELEGRAM_BOT_URL
+ENV VITE_TELEGRAM_BOT_URL=$VITE_TELEGRAM_BOT_URL
+
 RUN bun run build
 
 # Production образ с Nginx

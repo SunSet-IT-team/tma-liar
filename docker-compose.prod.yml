@@ -74,6 +74,8 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL_PROD}
     container_name: tma-liar-frontend
     restart: unless-stopped
     environment:

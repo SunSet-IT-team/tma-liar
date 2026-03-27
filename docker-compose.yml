@@ -51,6 +51,8 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile.dev
+      args:
+        VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL_DEV}
     container_name: tma-liar-frontend-dev
     restart: unless-stopped
     ports:
