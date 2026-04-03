@@ -194,10 +194,6 @@ async function shouldLeaveLobbyOnInactiveDisconnect(
 async function handleInactiveLobbyDisconnect(io: Server, socket: Socket) {
   const userIdRaw = socket.data.userId;
   if (typeof userIdRaw !== 'string' || userIdRaw.trim().length === 0) {
-    logger.info(
-      { socketId: socket.id, rooms: [...socket.rooms] },
-      'Inactive disconnect: skip (no userId on socket, cannot match lobby)',
-    );
     return;
   }
   const userId = userIdRaw.trim();
@@ -205,136 +201,56 @@ async function handleInactiveLobbyDisconnect(io: Server, socket: Socket) {
   const lobbyService = new LobbyService();
   const gameService = new GameService(io);
 
-  const rooms = [...socket.rooms].filter((room) => room !== socket.id);
-  const candidateCodes = new Set<string>();
-
-  for (const room of rooms) {
-    try {
-      const lobby = await lobbyService.findLobby({ lobbyCode: room });
-      candidateCodes.add(lobby.lobbyCode);
-    } catch {
-      // Комната не код лобби (например room = gameId).
-    }
-  }
-
-  const lobbyFromDb = await lobbyService.findLobbyForPlayer(userId);
-  if (lobbyFromDb) {
-    candidateCodes.add(lobbyFromDb.lobbyCode);
-  }
-
-  const resolvedViaDbOnly =
-    lobbyFromDb && !rooms.includes(lobbyFromDb.lobbyCode);
-
-  logger.info(
-    {
-      socketId: socket.id,
-      userId,
-      socketRoomsExcludingId: rooms,
-      candidateLobbyCodes: [...candidateCodes],
-      lobbyFromDb: lobbyFromDb?.lobbyCode ?? null,
-      resolvedViaDbOnly,
-    },
-    'Inactive disconnect: lobby candidates (socket rooms + DB lookup for player)',
-  );
-
-  if (candidateCodes.size === 0) {
-    logger.info(
-      { socketId: socket.id, userId, socketRoomsExcludingId: rooms },
-      'Inactive disconnect: no lobby candidates — user not in any lobby or only non-lobby socket rooms',
-    );
+  // Источник истины — БД: игрок может не быть в socket-комнате лобби (создание по HTTP без subscribe).
+  const lobbySnap = await lobbyService.findLobbyForPlayer(userId);
+  if (!lobbySnap) {
     return;
   }
 
-  const seenLobbyCodes = new Set<string>();
+  const shouldLeave = await shouldLeaveLobbyOnInactiveDisconnect(gameService, lobbySnap);
+  if (!shouldLeave) {
+    return;
+  }
 
-  for (const lobbyCode of candidateCodes) {
-    let lobbySnap: Lobby;
-    try {
-      lobbySnap = await lobbyService.findLobby({ lobbyCode });
-    } catch {
-      logger.warn({ lobbyCode, userId }, 'Inactive disconnect: lobby vanished before leave (race)');
-      continue;
-    }
+  const snapForDiff = buildLobbyDiffState(lobbySnap);
 
-    if (seenLobbyCodes.has(lobbySnap.lobbyCode)) {
-      continue;
-    }
-    seenLobbyCodes.add(lobbySnap.lobbyCode);
+  try {
+    const leaveResult = await lobbyService.leaveLobby({ lobbyCode: lobbySnap.lobbyCode, userId });
+    const gameIdForBroadcast = lobbySnap.currentGameId;
 
-    const playerInLobby = lobbySnap.players.some((p) => p.id === userId || p.telegramId === userId);
-    if (!playerInLobby) {
-      logger.info(
-        { lobbyCode: lobbySnap.lobbyCode, userId },
-        'Inactive disconnect: skip lobby (user no longer in players, race?)',
-      );
-      continue;
-    }
-
-    const shouldLeave = await shouldLeaveLobbyOnInactiveDisconnect(gameService, lobbySnap);
-    if (!shouldLeave) {
-      logger.info(
-        { lobbyCode: lobbySnap.lobbyCode, userId, status: lobbySnap.status, gameId: lobbySnap.currentGameId },
-        'Inactive disconnect: skip leave (active round — reconnect expected)',
-      );
-      continue;
-    }
-
-    const snapForDiff = buildLobbyDiffState(lobbySnap);
-
-    try {
-      const leaveResult = await lobbyService.leaveLobby({ lobbyCode: lobbySnap.lobbyCode, userId });
-      const gameIdForBroadcast = lobbySnap.currentGameId;
-
-      if (leaveResult.deleted) {
-        emitToRoom(io, lobbySnap.lobbyCode, LobbyMessageTypes.LOBBY_DELETED, {
+    if (leaveResult.deleted) {
+      emitToRoom(io, lobbySnap.lobbyCode, LobbyMessageTypes.LOBBY_DELETED, {
+        lobbyCode: lobbySnap.lobbyCode,
+      });
+      if (gameIdForBroadcast) {
+        emitToRoom(io, gameIdForBroadcast, LobbyMessageTypes.LOBBY_DELETED, {
           lobbyCode: lobbySnap.lobbyCode,
         });
-        if (gameIdForBroadcast) {
-          emitToRoom(io, gameIdForBroadcast, LobbyMessageTypes.LOBBY_DELETED, { lobbyCode });
-        }
-        logger.info(
-          { lobbyCode: lobbySnap.lobbyCode, userId },
-          'Lobby deleted after inactive socket disconnect',
-        );
-      } else if (leaveResult.newAdminId) {
-        logger.info(
-          {
-            lobbyCode: lobbySnap.lobbyCode,
-            previousAdmin: userId,
-            newAdmin: leaveResult.newAdminId,
-          },
-          'Admin transferred after inactive socket disconnect',
-        );
-      } else {
-        logger.info(
-          { lobbyCode: lobbySnap.lobbyCode, userId },
-          'Player left lobby after inactive socket disconnect',
-        );
       }
+    }
 
-      if (leaveResult.lobby) {
-        const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
+    if (leaveResult.lobby) {
+      const nextForDiff = buildLobbyDiffState(leaveResult.lobby);
+      emitToRoom(
+        io,
+        lobbySnap.lobbyCode,
+        SocketSystemEvents.STATUS_CHANGED,
+        buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
+      );
+      if (gameIdForBroadcast) {
         emitToRoom(
           io,
-          lobbySnap.lobbyCode,
+          gameIdForBroadcast,
           SocketSystemEvents.STATUS_CHANGED,
           buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
         );
-        if (gameIdForBroadcast) {
-          emitToRoom(
-            io,
-            gameIdForBroadcast,
-            SocketSystemEvents.STATUS_CHANGED,
-            buildStatePayload(LobbyMessageTypes.PLAYER_LEFT, findDiff(snapForDiff, nextForDiff)),
-          );
-        }
       }
-    } catch (error) {
-      logger.error(
-        { error, lobbyCode: lobbySnap.lobbyCode, userId },
-        'Failed to auto-leave lobby on inactive disconnect',
-      );
     }
+  } catch (error) {
+    logger.error(
+      { error, lobbyCode: lobbySnap.lobbyCode, userId },
+      'Failed to auto-leave lobby on inactive disconnect',
+    );
   }
 }
 
@@ -851,11 +767,7 @@ export function registerLobbyHandler(io: Server, socket: Socket) {
     }
   });
 
-  socket.on('disconnect', (reason) => {
-    logger.info(
-      { socketId: socket.id, userId: socket.data.userId, reason, rooms: [...socket.rooms] },
-      'Lobby handler: socket disconnect',
-    );
+  socket.on('disconnect', () => {
     void handleInactiveLobbyDisconnect(io, socket).catch((error) => {
       logger.error({ error, socketId: socket.id }, 'handleInactiveLobbyDisconnect failed');
     });
