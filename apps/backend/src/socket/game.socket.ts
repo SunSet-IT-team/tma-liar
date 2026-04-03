@@ -206,7 +206,6 @@ export function registerGameHandler(io: Server, socket: Socket) {
       emitToSocket(socket, GameMessageTypes.GAME_STATE, statePayload);
 
       const roomSize = io.sockets.adapter.rooms.get(gameId)?.size ?? 0;
-      logger.info({ gameId, roomSize, socketId: socket.id }, 'Socket subscribed to game room');
     } catch (error) {
       logger.error({ error }, 'Error handling game subscribe');
       emitSocketError(socket, 'GAME_SUBSCRIBE_ERROR', error);
@@ -244,8 +243,6 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-
-      logger.info({ gameId: dto.gameId, answer: dto.answer }, 'Liar chose');
     } catch (error) {
       logger.error({ error }, 'Error handling liar choice');
       emitSocketError(socket, 'LIAR_CHOSE_ERROR', error);
@@ -282,11 +279,6 @@ export function registerGameHandler(io: Server, socket: Socket) {
           findDiff(gameSnap, game, game.stage),
           game,
         ),
-      );
-
-      logger.info(
-        { playerId: dto.playerId, gameId: dto.gameId, answer: dto.answer },
-        'Player voted',
       );
     } catch (error) {
       logger.error({ error }, 'Error handling player vote');
@@ -325,8 +317,6 @@ export function registerGameHandler(io: Server, socket: Socket) {
           game,
         ),
       );
-
-      logger.info({ playerId: dto.playerId, gameId: dto.gameId }, 'Player secured answer');
     } catch (error) {
       logger.error({ error }, 'Error handling player secure');
       emitSocketError(socket, 'PLAYER_SECURED_ERROR', error);
@@ -361,11 +351,6 @@ export function registerGameHandler(io: Server, socket: Socket) {
           findDiff(gameSnap, game, game.stage),
           game,
         ),
-      );
-
-      logger.info(
-        { senderId: dto.senderId, receiverId: dto.receiverId, gameId: dto.gameId },
-        'Player liked answer',
       );
     } catch (error) {
       logger.error({ error }, 'Error handling player like');

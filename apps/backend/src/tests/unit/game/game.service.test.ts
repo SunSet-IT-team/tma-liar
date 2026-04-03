@@ -26,7 +26,8 @@ function createGameDoc(overrides: Record<string, unknown> = {}) {
     },
     players: [
       { id: 'liar', telegramId: 'liar', score: 0, answer: null, likes: 0, isConfirmed: false, wasLiar: 0 },
-      { id: 'p1', telegramId: 'p1', score: 0, answer: 1, likes: 0, isConfirmed: false, wasLiar: 0 },
+      // Лжец врёт: решало не верит (0) → очки решалу; лжец за обман с p1 не получает.
+      { id: 'p1', telegramId: 'p1', score: 0, answer: 0, likes: 0, isConfirmed: false, wasLiar: 0 },
       { id: 'p2', telegramId: 'p2', score: 0, answer: 2, likes: 1, isConfirmed: false, wasLiar: 0 },
     ],
     markModified: () => undefined,
