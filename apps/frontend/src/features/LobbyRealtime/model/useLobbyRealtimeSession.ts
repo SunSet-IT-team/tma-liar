@@ -141,7 +141,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
         if (isLobbyMissingError(error)) {
           lobbySessionService.clear();
           console.log('isLobbyMissingError 2');
-          navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
+          navigate('/', { replace: true });
         } else {
           setReadyError(
             'Не удалось синхронизировать лобби. Обновите страницу и попробуйте ещё раз.',
@@ -185,7 +185,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
         if (isLobbyMissingError(error)) {
           lobbySessionService.clear();
           console.log('isLobbyMissingError');
-          navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
+          navigate('/', { replace: true });
         } else {
           setReadyError('Не удалось подключиться к лобби. Обновите страницу и попробуйте ещё раз.');
           notifyError('Не удалось подключиться к лобби. Попробуйте ещё раз.');
@@ -231,7 +231,7 @@ export function useLobbyRealtimeSession(mode: Mode) {
     const onLobbyDeleted = () => {
       lobbySessionService.clear();
       console.log('onLobbyDeleted');
-      navigate(`/${PageRoutes.NOT_FOUND}`, { replace: true });
+      navigate('/', { replace: true });
     };
 
     const onSocketError = (error: SocketErrorPayload) => {

@@ -1,3 +1,4 @@
+import type { ClientSession } from 'mongoose';
 import { customAlphabet } from 'nanoid';
 import { type Lobby } from './entities/lobby.entity';
 import { ApiError } from '../common/response';
@@ -9,6 +10,7 @@ import type { DeleteLobbyDto } from './dtos/lobby-delete.dto';
 import type { ToggleReadyDto } from './dtos/lobby-toggleReady.dto';
 import { env } from '../config/env';
 import { LobbyStatus, type Lobby as LobbyEntity } from './entities/lobby.entity';
+import { planLeaveAfterPlayerRemoved } from './guest.util';
 import { LobbyRepository } from './lobby.repository';
 
 const LOBBY_CODE_ALPHABET = env.LOBBY_CODE_ALPHABET;
@@ -19,6 +21,7 @@ const LOBBY_CODE_LENGTH = env.LOBBY_CODE_LENGTH;
  */
 export interface LobbyServiceMethods {
   findLobby: (param: FindLobbyDto) => Promise<Lobby>;
+  findLobbyForPlayer: (userId: string) => Promise<Lobby | null>;
   findLobbies: () => Promise<Lobby[]>;
   createLobby: (param: CreateLobbyDto) => Promise<Lobby>;
   updateLobby: (param: UpdateLobbyDto) => Promise<Lobby>;
@@ -57,6 +60,13 @@ export class LobbyService implements LobbyServiceMethods {
 
       return lobby.toObject();
     }
+
+  /** Лобби, в котором пользователь есть в списке игроков (по серверному id или telegramId). */
+  public async findLobbyForPlayer(userId: string): Promise<Lobby | null> {
+    const trimmed = userId.trim();
+    if (!trimmed) return null;
+    return this.lobbyRepository.findByPlayerUserId(trimmed);
+  }
 
   /** Найти несколько лобби */
   public async findLobbies(): Promise<Lobby[]> {
@@ -196,6 +206,44 @@ export class LobbyService implements LobbyServiceMethods {
     return updatedLobby;
   }
 
+  private async finalizeLeaveLobby(
+    lobbySnap: LobbyEntity,
+    updatedLobby: LobbyEntity,
+    isAdmin: boolean,
+    lobbyCode: string,
+    userId: string,
+    session?: ClientSession,
+  ): Promise<{
+    lobby: LobbyEntity | null;
+    deleted: boolean;
+    newAdminId: string | null;
+  }> {
+    const plan = planLeaveAfterPlayerRemoved(lobbySnap, updatedLobby.players, isAdmin);
+
+    if (plan.kind === 'delete') {
+      await this.lobbyRepository.deleteByCode(lobbyCode, session);
+      return { lobby: null, deleted: true, newAdminId: null };
+    }
+
+    if (plan.kind === 'keep') {
+      return { lobby: updatedLobby, deleted: false, newAdminId: null };
+    }
+
+    const transferredLobby = await this.lobbyRepository.transferAdmin(
+      lobbyCode,
+      userId,
+      plan.nextAdminId,
+      session,
+    );
+    if (!transferredLobby) throw new ApiError(409, 'ADMIN_TRANSFER_CONFLICT');
+
+    return {
+      lobby: transferredLobby,
+      deleted: false,
+      newAdminId: plan.nextAdminId,
+    };
+  }
+
   /** Игрок выходит из лобби с атомарным обновлением админа/удалением лобби. userId — серверный id или telegramId (гости). */
   public async leaveLobby(param: { lobbyCode: string; userId: string }): Promise<{
     lobby: LobbyEntity | null;
@@ -218,50 +266,7 @@ export class LobbyService implements LobbyServiceMethods {
         throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
       }
 
-      if (updatedLobby.players.length === 0) {
-        await this.lobbyRepository.deleteByCode(lobbyCode);
-        return {
-          lobby: null,
-          deleted: true,
-          newAdminId: null,
-        };
-      }
-
-      if (!isAdmin) {
-        return {
-          lobby: updatedLobby,
-          deleted: false,
-          newAdminId: null,
-        };
-      }
-
-      if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
-        const nextAdmin = updatedLobby.players[0];
-        if (!nextAdmin) {
-          throw new ApiError(500, 'NEXT_ADMIN_NOT_FOUND');
-        }
-
-        const nextAdminId = nextAdmin.id ?? nextAdmin.telegramId;
-        const transferredLobby = await this.lobbyRepository.transferAdmin(
-          lobbyCode,
-          userId,
-          nextAdminId,
-        );
-        if (!transferredLobby) throw new ApiError(409, 'ADMIN_TRANSFER_CONFLICT');
-
-        return {
-          lobby: transferredLobby,
-          deleted: false,
-          newAdminId: nextAdminId,
-        };
-      }
-
-      await this.lobbyRepository.deleteByCode(lobbyCode);
-      return {
-        lobby: null,
-        deleted: true,
-        newAdminId: null,
-      };
+      return this.finalizeLeaveLobby(lobbySnap, updatedLobby, isAdmin, lobbyCode, userId, undefined);
     };
 
     try {
@@ -279,51 +284,7 @@ export class LobbyService implements LobbyServiceMethods {
           throw new ApiError(404, 'PLAYER_NOT_IN_LOBBY');
         }
 
-        if (updatedLobby.players.length === 0) {
-          await this.lobbyRepository.deleteByCode(lobbyCode, session);
-          return {
-            lobby: null,
-            deleted: true,
-            newAdminId: null,
-          };
-        }
-
-        if (!isAdmin) {
-          return {
-            lobby: updatedLobby,
-            deleted: false,
-            newAdminId: null,
-          };
-        }
-
-        if (lobbySnap.status === LobbyStatus.STARTED && lobbySnap.currentGameId) {
-          const nextAdmin = updatedLobby.players[0];
-          if (!nextAdmin) {
-            throw new ApiError(500, 'NEXT_ADMIN_NOT_FOUND');
-          }
-
-          const nextAdminId = nextAdmin.id ?? nextAdmin.telegramId;
-          const transferredLobby = await this.lobbyRepository.transferAdmin(
-            lobbyCode,
-            userId,
-            nextAdminId,
-            session,
-          );
-          if (!transferredLobby) throw new ApiError(409, 'ADMIN_TRANSFER_CONFLICT');
-
-          return {
-            lobby: transferredLobby,
-            deleted: false,
-            newAdminId: nextAdminId,
-          };
-        }
-
-        await this.lobbyRepository.deleteByCode(lobbyCode, session);
-        return {
-          lobby: null,
-          deleted: true,
-          newAdminId: null,
-        };
+        return this.finalizeLeaveLobby(lobbySnap, updatedLobby, isAdmin, lobbyCode, userId, session);
       }) as {
         lobby: LobbyEntity | null;
         deleted: boolean;

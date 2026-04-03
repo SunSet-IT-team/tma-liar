@@ -4,6 +4,10 @@ import { registerLobbyHandler } from "./lobby.socket";
 import { registerGameHandler } from "./game.socket";
 import { logger } from '../observability/logger';
 
+/**
+ * Точка входа Socket.IO: auth, регистрация обработчиков по доменам (lobby / game).
+ * События лобби и логика выхода при disconnect — в `lobby.socket.ts`; игровые — в `game.socket.ts`.
+ */
 export function registerSocketHandlers(io: Server) {
   io.use(socketAuthMiddleware);
 
@@ -13,8 +17,8 @@ export function registerSocketHandlers(io: Server) {
     registerLobbyHandler(io, socket);
     registerGameHandler(io, socket);  
 
-    socket.on("disconnect", () => {
-      logger.info({ socketId: socket.id, userId: socket.data.userId }, 'Socket disconnected');
+    socket.on("disconnect", (reason) => {
+      logger.info({ socketId: socket.id, userId: socket.data.userId, reason }, 'Socket.IO disconnect (global)');
     });
   });
 }

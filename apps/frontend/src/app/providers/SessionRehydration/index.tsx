@@ -30,24 +30,6 @@ type RouteTarget = {
 // Снимок одного игрока внутри игрового состояния, которое хранится в сессии лобби.
 type GamePlayerState = NonNullable<LobbySession['gamePlayers']>[number];
 
-function isLobbyMissingError(error: unknown): boolean {
-  const maybeError = error as {
-    message?: string;
-    response?: { status?: number; data?: { errorCode?: string; message?: string } };
-  };
-  const codeFromResponse =
-    maybeError?.response?.data?.errorCode ?? maybeError?.response?.data?.message;
-  const message = maybeError?.message ?? '';
-  const status = maybeError?.response?.status;
-
-  return (
-    status === 404 ||
-    codeFromResponse === 'LOBBY_NOT_FOUND' ||
-    message.includes('LOBBY_NOT_FOUND') ||
-    message.includes('LOBBY_SUBSCRIBE_ERROR')
-  );
-}
-
 function mergeGamePlayers(
   currentPlayers: LobbySession['gamePlayers'] | undefined,
   incomingPlayers:
@@ -306,11 +288,10 @@ export function SessionRehydration() {
           navigate(target.path, { replace: true, state: target.state });
         }
       } catch (error) {
-        // Если лобби удалено/не найдено — уводим на 404, иначе на главный экран.
+        // Устаревшая сессия / удалённое лобби или игра: не показываем экран 404, возвращаем на главную.
         lobbySessionService.clear();
-        const targetPath = isLobbyMissingError(error) ? `/${PageRoutes.NOT_FOUND}` : '/';
-        if (location.pathname !== targetPath) {
-          navigate(targetPath, { replace: true });
+        if (location.pathname !== '/') {
+          navigate('/', { replace: true });
         }
       }
     };

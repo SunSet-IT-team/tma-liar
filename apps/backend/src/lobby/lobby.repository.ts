@@ -64,6 +64,16 @@ export class LobbyRepository {
     return (lobby as Lobby | null) ?? null;
   }
 
+  /** Лобби, где есть игрок с данным id или telegramId (гость/серверный id). */
+  public async findByPlayerUserId(userId: string, session?: ClientSession): Promise<Lobby | null> {
+    const query = LobbyModel.findOne({
+      $or: [{ 'players.id': userId }, { 'players.telegramId': userId }],
+    });
+    if (session) query.session(session);
+    const lobby = await query.lean();
+    return (lobby as Lobby | null) ?? null;
+  }
+
   public async findByCodeDocument(lobbyCode: string, session?: ClientSession) {
     const query = LobbyModel.findOne({ lobbyCode });
     if (session) query.session(session);
