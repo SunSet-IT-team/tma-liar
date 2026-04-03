@@ -6,17 +6,30 @@ import { Typography } from '../../shared/ui/Typography';
 import { Container } from '../../shared/ui/Container';
 import { GameProcess } from '../../features/GameProcess';
 import { useChooseLiar } from '@features/ChooseLiar';
+import { useLiarQuestion } from '@features/LiarQuestion';
 
 /**
  * Страница с выбором вранья лжеца
  */
 export const ChoosingLiar: FC = () => {
+  const { questionText } = useLiarQuestion();
   const { isSubmitting, errorText, chooseStrategy } = useChooseLiar();
 
   return (
     <Container className={styles.container}>
       <div className={styles.content}>
-        <Typography className={styles.title} variant="titleLarge" as="h1">
+        <div className={styles.questionBlock}>
+          <Typography variant="text" as="h2" className={styles.questionTitle}>
+            Вопрос
+            <Typography as="span" className={styles.questionTitleAccent} variant="caption">
+              ,
+            </Typography>
+          </Typography>
+          <Typography className={styles.questionText} variant="text">
+            {questionText}
+          </Typography>
+        </div>
+        <Typography className={styles.title} variant="titleMedium" as="h1">
           Будешь врать?
         </Typography>
         <div className={styles.choosingBtns}>
