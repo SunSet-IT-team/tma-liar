@@ -1,49 +1,49 @@
 .container {
-    background-color: var(--red-color);
+  background-color: var(--red-color);
 }
 
 .header {
-    padding-top: 10px;
+  padding-top: 10px;
 }
 
 .title {
-    color: var(--white-main-color);
+  color: var(--white-main-color);
 }
 
 .waitingIcon {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 295px;
-    height: 490px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 295px;
+  height: 490px;
 }
 
 .waitingCircle {
-    position: absolute;
-    bottom: 80px;
-    right: -5px;
+  position: absolute;
+  bottom: 80px;
+  right: -5px;
 }
 
 .waitingText {
-    position: absolute;
-    bottom: 50px;
-    right: 65px;
-    color: var(--white-main-color);
-    max-width: 120px;
+  position: absolute;
+  bottom: clamp(30px, 3.2vw, 50px);
+  right: clamp(40px, 4.2vw, 65px);
+  color: var(--white-main-color);
+  max-width: clamp(100px, 8vw, 120px);
 }
 
 @media (max-width: 470px) {
-    .waitingIcon {
-        width: 200px;
-        height: 332px;
-    }
+  .waitingIcon {
+    width: 200px;
+    height: 332px;
+  }
 
-    .waitingCircle {
-        width: 133px;
-        height: 300px;
-    }
+  .waitingCircle {
+    width: 133px;
+    height: 300px;
+  }
 
-    .waitingText {
-        right: 35px;
-    }
+  .waitingText {
+    right: 35px;
+  }
 }

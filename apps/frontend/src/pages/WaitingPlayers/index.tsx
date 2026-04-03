@@ -19,7 +19,9 @@ export const WaitingPlayers: FC = () => {
       <Typography>Других игроков</Typography>
       <img src={waitingIcon} alt="" className={styles.waitingIcon} data-decor="true" />
       <img src={waitingCircle} alt="" className={styles.waitingCircle} data-decor="true" />
-      <Typography className={styles.waitingText}>Уже скоро?</Typography>
+      <Typography className={styles.waitingText} relative={false}>
+        Уже скоро?
+      </Typography>
     </Container>
   );
 };

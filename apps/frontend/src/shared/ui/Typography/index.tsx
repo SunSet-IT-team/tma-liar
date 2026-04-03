@@ -24,6 +24,11 @@ export interface TypographyProps {
    */
   as?: keyof JSX.IntrinsicElements;
   children: ReactNode;
+
+  /**
+   * Относительное позиционирование
+   */
+  relative?: boolean;
 }
 
 /**
@@ -32,13 +37,14 @@ export interface TypographyProps {
 export const Typography: FC<TypographyProps> = ({
   className,
   variant = 'body',
+  relative = true,
   as: Component = 'p',
   children,
 }: TypographyProps) => {
   return (
     <Component
       className={clsx(styles.typographyBase, styles[variant], className)}
-      data-relative="true"
+      data-relative={relative}
     >
       {children}
     </Component>
