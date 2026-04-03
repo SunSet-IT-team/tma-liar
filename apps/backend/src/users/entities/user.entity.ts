@@ -11,6 +11,8 @@ export interface User {
   profileImg?: string;
   passwordHash?: string;
   token?: string;
+  /** Последняя отметка активности клиента (heartbeat), если включена аналитика присутствия */
+  lastActiveAt?: Date;
 }
 
 /**Схема сущности "Пользователь" */

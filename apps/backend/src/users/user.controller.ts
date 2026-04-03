@@ -34,6 +34,16 @@ export class UserController {
     return res.status(200).json(success(user));
   };
 
+  /** Heartbeat «пользователь открыл сайт» для аналитики активных в админке. */
+  postPresence = async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    if (!authReq.userId) {
+      throw new ApiError(401, 'UNAUTHORIZED');
+    }
+    await this.userService.touchPresence({ authUserId: authReq.userId });
+    return res.status(204).send();
+  };
+
   /**
    * Контроллер поиска одного пользователя
    */

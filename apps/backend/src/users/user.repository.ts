@@ -52,4 +52,16 @@ export class UserRepository {
     const deletedUser = await UserModel.findOneAndDelete({ telegramId }).lean();
     return leanUserWithId(deletedUser as User | null);
   }
+
+  /**
+   * Обновляет время последней активности по идентификатору из JWT (Mongo id или telegramId).
+   */
+  public async touchLastActiveAt(authUserId: string): Promise<void> {
+    const now = new Date();
+    if (isValidObjectId(authUserId)) {
+      const byId = await UserModel.findByIdAndUpdate(authUserId, { $set: { lastActiveAt: now } });
+      if (byId) return;
+    }
+    await UserModel.findOneAndUpdate({ telegramId: authUserId }, { $set: { lastActiveAt: now } });
+  }
 }

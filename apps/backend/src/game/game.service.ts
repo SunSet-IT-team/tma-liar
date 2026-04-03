@@ -18,6 +18,7 @@ import { SocketSystemEvents } from '@liar/message-types';
 import type { SolverVoteAnswer } from '@liar/message-types';
 import { env } from '../config/env';
 import { GameRepository } from './game.repository';
+import { GamePlayEventRepository } from './game-play-event.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
 import { logger } from '../observability/logger';
 import { emitToRoom } from '../socket/typed-socket';
@@ -44,7 +45,22 @@ export class GameService implements GameMethods {
     private io: Server,
     private readonly gameRepository: GameRepository = new GameRepository(),
     private readonly lobbyRepository: LobbyRepository = new LobbyRepository(),
+    private readonly gamePlayEventRepository: GamePlayEventRepository = new GamePlayEventRepository(),
   ) {}
+
+  private async recordGamePlayAnalytics(game: Game): Promise<void> {
+    try {
+      await this.gamePlayEventRepository.recordGameStarted({
+        deckId: game.settings.deckId,
+        lobbyCode: game.lobbyCode,
+      });
+    } catch (error) {
+      logger.warn(
+        { err: error, lobbyCode: game.lobbyCode },
+        'Failed to record game play analytics',
+      );
+    }
+  }
 
   private isValidLoserTask(task: string | null | undefined): boolean {
     if (typeof task !== 'string') return false;
@@ -212,6 +228,7 @@ export class GameService implements GameMethods {
         players: playersInGame,
       });
 
+      await this.recordGamePlayAnalytics(game);
       return game;
     };
 
@@ -269,6 +286,7 @@ export class GameService implements GameMethods {
       });
 
       if (!createdGame) throw new ApiError(500, 'GAME_NOT_CREATED');
+      await this.recordGamePlayAnalytics(createdGame);
       return createdGame;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -20,9 +20,11 @@ import { paymentRouter } from './payments/payment.router';
 import { adminUsersRouter } from './admin/admin-users.router';
 import { adminLobbiesRouter } from './admin/admin-lobbies.router';
 import { adminStatsRouter } from './admin/admin-stats.router';
+import { presenceRouter } from './presence/presence.router';
 import { createGameRouter } from './game/game.router';
 import { registerSocketHandlers } from './socket';
 import { startLobbyCleanupScheduler } from './lobby/lobby-cleanup.scheduler';
+import { startPresenceCleanupScheduler } from './presence/presence-cleanup.scheduler';
 import path from 'node:path';
 
 const app = express();
@@ -80,6 +82,7 @@ app.get('/api/health', (_, res) =>
 
 /** Роуты без авторизации */
 app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/presence', presenceRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/admin/decks', deckAdminRouter);
 app.use('/api/admin/users', adminUsersRouter);
@@ -101,6 +104,7 @@ async function startServer() {
   try {
     await connectToDatabase();
     startLobbyCleanupScheduler();
+    startPresenceCleanupScheduler();
     httpServer.listen(env.PORT, () => logger.info({ port: env.PORT }, 'Server started'));
   } catch (error) {
     throw error;

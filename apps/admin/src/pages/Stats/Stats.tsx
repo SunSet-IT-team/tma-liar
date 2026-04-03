@@ -13,15 +13,33 @@ import { PageHeader } from '../../components/PageHeader';
 import { StatusMessage } from '../../components/StatusMessage';
 import './Stats.css';
 
+interface ActiveUserRow {
+  id: string;
+  telegramId: string;
+  nickname: string;
+  profileImg: string | null;
+  lastActiveAt: string | null;
+  isGuest?: boolean;
+}
+
+interface DeckUsageRow {
+  deckId: string;
+  deckName: string;
+  count: number;
+}
+
 interface StatsData {
   totalUsers: number;
   activeUsersNow: number;
+  activeUsers: ActiveUserRow[];
   totalGames: number;
   totalSubscriptions: number;
+  deckUsage: DeckUsageRow[];
 }
 
 interface DeckPurchaseItem {
-  _id: string;
+  deckId: string;
+  deckName: string;
   count: number;
 }
 
@@ -62,7 +80,7 @@ export function StatsPage() {
     async (deckId: string) => {
       const data = await request<{ deckId: string; perDay: DeckDayPoint[] }>({
         method: 'GET',
-        url: `/api/admin/stats/deck-purchases?deckId=${deckId}`,
+        url: `/api/admin/stats/deck-purchases?deckId=${encodeURIComponent(deckId)}`,
       });
       if (data?.perDay) setDeckDayData(data.perDay);
     },
@@ -141,17 +159,11 @@ export function StatsPage() {
         </div>
         <div className="card stat-card">
           <span className="stat-label">Активных сейчас</span>
-          <span className="stat-value stub">
-            {stats?.activeUsersNow ?? '—'}
-            <small className="stub-badge">заглушка</small>
-          </span>
+          <span className="stat-value">{stats?.activeUsersNow ?? '—'}</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">Сыгранных игр</span>
-          <span className="stat-value stub">
-            {stats?.totalGames ?? '—'}
-            <small className="stub-badge">заглушка</small>
-          </span>
+          <span className="stat-value">{stats?.totalGames ?? '—'}</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">Купленных подписок</span>
@@ -164,6 +176,82 @@ export function StatsPage() {
           <span className="stat-label">Купленных колод</span>
           <span className="stat-value">{totalDeckPurchases}</span>
         </div>
+      </div>
+
+      {/* Active users */}
+      <div className="card chart-section">
+        <div className="chart-header">
+          <h3>Кто на сайте сейчас</h3>
+        </div>
+        {!stats?.activeUsers?.length ? (
+          <div className="chart-empty">
+            <p className="muted">Никого нет или клиенты ещё не отправили heartbeat</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Ник</th>
+                  <th>Тип</th>
+                  <th>Telegram ID</th>
+                  <th>Активность</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.activeUsers.map((u) => (
+                  <tr key={`${u.isGuest ? 'g' : 'u'}:${u.telegramId}`}>
+                    <td>{u.nickname}</td>
+                    <td>{u.isGuest ? 'Гость' : 'Пользователь'}</td>
+                    <td>
+                      <code>{u.telegramId}</code>
+                    </td>
+                    <td className="muted">
+                      {u.lastActiveAt
+                        ? new Date(u.lastActiveAt).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Deck usage (games started) */}
+      <div className="card chart-section">
+        <div className="chart-header">
+          <h3>Статистика по колодам</h3>
+        </div>
+        {!stats?.deckUsage?.length ? (
+          <div className="chart-empty">
+            <p className="muted">Пока нет данных о запущенных играх</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Колода</th>
+                  <th>ID</th>
+                  <th>Запусков игры</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.deckUsage.map((row) => (
+                  <tr key={row.deckId}>
+                    <td>{row.deckName}</td>
+                    <td>
+                      <code>{row.deckId}</code>
+                    </td>
+                    <td>{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Subscriptions chart (stub) */}
@@ -214,8 +302,8 @@ export function StatsPage() {
             >
               <option value="">Все колоды</option>
               {deckPurchases.map((dp) => (
-                <option key={dp._id} value={dp._id}>
-                  {dp._id} ({dp.count})
+                <option key={dp.deckId} value={dp.deckId}>
+                  {dp.deckName} ({dp.count})
                 </option>
               ))}
             </select>
@@ -232,19 +320,21 @@ export function StatsPage() {
               <table style={{ marginTop: 12 }}>
                 <thead>
                   <tr>
-                    <th>Deck ID</th>
+                    <th>Колода</th>
+                    <th>ID</th>
                     <th>Покупок</th>
                   </tr>
                 </thead>
                 <tbody>
                   {deckPurchases.map((dp) => (
                     <tr
-                      key={dp._id}
+                      key={dp.deckId}
                       style={{ cursor: 'pointer' }}
-                      onClick={() => setSelectedDeckId(dp._id)}
+                      onClick={() => setSelectedDeckId(dp.deckId)}
                     >
+                      <td>{dp.deckName}</td>
                       <td>
-                        <code>{dp._id}</code>
+                        <code>{dp.deckId}</code>
                       </td>
                       <td>{dp.count}</td>
                     </tr>

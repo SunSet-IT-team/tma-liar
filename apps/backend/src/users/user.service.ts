@@ -20,6 +20,7 @@ export interface UserServiceMethods {
   createUser: (param: CreateUserDto) => Promise<User>;
   updateUser: (param: UpdateUserDto) => Promise<User>;
   deleteUser: (param: DeleteUserDto) => Promise<User>;
+  touchPresence: (param: { authUserId: string }) => Promise<void>;
 }
 
 /**
@@ -104,5 +105,9 @@ export class UserService implements UserServiceMethods {
     if (!deletedUser) throw new ApiError(404, 'USER_NOT_FOUND');
 
     return deletedUser;
+  }
+
+  public async touchPresence(param: { authUserId: string }): Promise<void> {
+    await this.userRepository.touchLastActiveAt(param.authUserId);
   }
 }

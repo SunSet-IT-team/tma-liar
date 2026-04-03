@@ -21,6 +21,11 @@ userRouter.get('/me', asyncHandler(async (req: Request, res: Response) => {
   await userController.getMe(req, res);
 }));
 
+/** Отметка активности на сайте (для «активных сейчас» в админке). */
+userRouter.post('/me/presence', asyncHandler(async (req: Request, res: Response) => {
+  await userController.postPresence(req, res);
+}));
+
 /** Маршрут для получения нескольких пользователей (query: telegramIds — строка через запятую или массив) */
 userRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   await userController.findUsers(req, res);

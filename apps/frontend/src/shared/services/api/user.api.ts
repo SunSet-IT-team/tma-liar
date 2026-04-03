@@ -17,6 +17,13 @@ type UpdateUserResponse = UserResponse;
 /**
  * Текущий пользователь по auth (источник правды — сервер). Для гостей — 404.
  */
+/**
+ * Отметка присутствия на сайте (для админ-аналитики).
+ */
+export const postPresence = async (): Promise<void> => {
+  await apiClient.post('/api/users/me/presence');
+};
+
 export const getMe = async (): Promise<UserPayload | null> => {
   try {
     const response = await apiClient.get<UserResponse>('/api/users/me');

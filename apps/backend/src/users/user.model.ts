@@ -8,6 +8,7 @@ const UserSchema = new Schema<User>(
     profileImg: { type: String },
     passwordHash: { type: String },
     token: { type: String },
+    lastActiveAt: { type: Date },
   },
   {
     timestamps: true,
