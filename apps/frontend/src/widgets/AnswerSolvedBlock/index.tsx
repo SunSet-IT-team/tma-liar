@@ -22,8 +22,8 @@ export const AnswerSolvedBlock: FC<SolvedBlockProps> = ({
   disabled = false,
 }) => {
   return (
-    <>
-      <div className={styles.answersBtns} data-relative="true">
+    <div className={styles.substrate} data-relative="true">
+      <div className={styles.answersBtns}>
         <Button
           className={clsx(styles.answersBtn, believe === false && styles.answersBtnActive)}
           onClick={() => !fixed && !disabled && onSelectBelieve(false)}
@@ -44,6 +44,6 @@ export const AnswerSolvedBlock: FC<SolvedBlockProps> = ({
           {fixed ? 'Ответ зафиксирован' : 'Зафиксировать'}
         </Button>
       ) : null}
-    </>
+    </div>
   );
 };

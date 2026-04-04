@@ -1,22 +1,43 @@
+.substrate {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 16px 20px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Как раньше у отдельного flex-ребёнка: заполняем место над таймером, пока видна «Зафиксировать» */
+.substrate:has(.fixAnswerBtn) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .answersBtns {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 5vh;
+  display: flex;
+  gap: 30px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .answersBtn {
-    padding: 2vh 4vh;
-    border: 3px solid var(--black-main-color);
-    border-radius: 8px;
-    transition: color .3s ease-in-out, background-color .3s ease-in-out;
+  padding: 2vh 4vh;
+  border: 3px solid var(--black-main-color);
+  border-radius: 8px;
+  transition:
+    color 0.3s ease-in-out,
+    background-color 0.3s ease-in-out;
 }
 
 .answersBtnActive {
-    background-color: var(--black-main-color);
-    color: var(--white-main-color);
+  background-color: var(--black-main-color);
+  color: var(--white-main-color);
 }
 
 .fixAnswerBtn {
-    color: var(--red-color);
-    margin-bottom: auto;
+  color: var(--red-color);
+  margin-bottom: auto;
+  margin-top: 5vh;
 }

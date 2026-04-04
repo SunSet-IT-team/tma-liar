@@ -196,6 +196,37 @@ export function SessionRehydration() {
   const hydratedRef = useRef(false);
   // Не даем повторно перезапускать таймер для одного и того же снимка стадии.
   const stageTimerRef = useRef<string | null>(null);
+  // Первый pathname обрабатывает одноразовая гидрация; дальше — только навигация.
+  const routeTimerSyncSkipRef = useRef(true);
+
+  /**
+   * На игровых экранах секундный тик идёт через GameProcess. На других маршрутах (например, настройки)
+   * тик останавливается — Redux «замирает». При возврате пересчитываем остаток от stageStartedAt/stageDurationMs.
+   * Не трогаем первый монт: старт таймера уже задаёт эффект гидрации / сокет.
+   */
+  useEffect(() => {
+    if (routeTimerSyncSkipRef.current) {
+      routeTimerSyncSkipRef.current = false;
+      return;
+    }
+
+    const session = lobbySessionService.get();
+    if (!session?.lobbyCode || session.status !== 'started' || !session.currentGameId) {
+      return;
+    }
+
+    const stage = session.currentStage ?? null;
+    const fallbackSeconds = resolveStageDuration(stage, session);
+    const remainingSeconds = resolveRemainingSeconds({
+      stageDurationMs: session.currentStageDurationMs,
+      stageStartedAt: session.currentStageStartedAt,
+      fallbackSeconds,
+    });
+
+    if (remainingSeconds !== null) {
+      store.dispatch(startTimer(remainingSeconds));
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     // Гарантируем одноразовое восстановление при старте приложения.
