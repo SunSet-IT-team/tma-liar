@@ -625,12 +625,17 @@ export class GameService implements GameMethods {
   }
 
   /**
-   * Выбор следующего вопроса
+   * Выбор следующего вопроса — случайно из ещё не разыгранных (не из истории текущей игры).
    * @param game mongoose-документ игры
    * @returns объект следующего вопроса
    */
   public pickNextQuestion(game: HydratedDocument<Game>): Question | undefined {
-    return game.settings.deck.questions.find((q) => !game.questionHistory.includes(q.id));
+    const pool = game.settings.deck.questions.filter((q) => !game.questionHistory.includes(q.id));
+    if (pool.length === 0) {
+      return undefined;
+    }
+    const idx = Math.floor(Math.random() * pool.length);
+    return pool[idx];
   }
 
   /**

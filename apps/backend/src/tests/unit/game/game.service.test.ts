@@ -59,7 +59,30 @@ describe('GameService', () => {
     await expect(bad.service.findGame('game-1')).rejects.toBeInstanceOf(ApiError);
   });
 
-  it('pickNextQuestion returns first unanswered question', () => {
+  it('pickNextQuestion returns a random unanswered question from the pool', () => {
+    const { service } = createService(createGameDoc());
+    const game = createGameDoc({
+      questionHistory: [],
+      settings: {
+        questionCount: 5,
+        deck: {
+          questions: [
+            { id: 'q1', content: 'Q1' },
+            { id: 'q2', content: 'Q2' },
+            { id: 'q3', content: 'Q3' },
+          ],
+        },
+      },
+    });
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    expect(service.pickNextQuestion(game)?.id).toBe('q1');
+    Math.random = () => 0.999;
+    expect(service.pickNextQuestion(game)?.id).toBe('q3');
+    Math.random = originalRandom;
+  });
+
+  it('pickNextQuestion returns the only remaining question when one is left', () => {
     const { service } = createService(createGameDoc());
     const game = createGameDoc({ questionHistory: ['q1'] });
     const question = service.pickNextQuestion(game);
