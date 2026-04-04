@@ -3,7 +3,7 @@ import redArrow from '../../../shared/ui/icons/redArrow.svg';
 import blackArrow from '../../../shared/ui/icons/blackArrow.svg';
 import styles from './style/arrowStyle.module.scss';
 import type { ButtonHTMLAttributes, FC } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
 
 export type BackArrowVariant = 'white' | 'red' | 'black';
@@ -45,6 +45,7 @@ export const BackArrow: FC<BackArrowProps> = ({
   ...rest
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const src = srcMap[variant];
   const playSound = usePlaySound();
   const toLeave = (value: boolean) => {
@@ -55,9 +56,18 @@ export const BackArrow: FC<BackArrowProps> = ({
     }
   };
 
+  if (location.pathname === '/') {
+    return <div className={styles.backArrowSpacer} aria-hidden />;
+  }
+
   return (
-    <button onPointerDown={() => playSound()} onClick={() => toLeave(true)} {...rest}>
-      <img src={src} className={styles.backArrow} />
+    <button
+      type="button"
+      onPointerDown={() => playSound()}
+      onClick={() => toLeave(true)}
+      {...rest}
+    >
+      <img src={src} alt="" className={styles.backArrow} />
     </button>
   );
 };

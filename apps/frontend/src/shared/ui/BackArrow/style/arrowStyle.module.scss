@@ -1,4 +1,12 @@
+.backArrowSpacer {
+    width: 60px;
+    height: 17px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
 .backArrow {
     width: 60px;
     height: 17px;
+    display: block;
 }

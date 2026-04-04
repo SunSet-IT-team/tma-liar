@@ -60,10 +60,14 @@ export const AppRouter = () => {
   const withTransition = (element: ReactElement) => (
     <motion.div
       className={styles.routeTransition}
-      initial={{ opacity: 0, y: 12, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.985 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
+      initial={{ opacity: 0, y: 12, scale: 0.985, pointerEvents: 'none' }}
+      animate={{ opacity: 1, y: 0, scale: 1, pointerEvents: 'auto' }}
+      exit={{ opacity: 0, y: -10, scale: 0.985, pointerEvents: 'none' }}
+      transition={{
+        duration: 0.22,
+        ease: 'easeOut',
+        pointerEvents: { duration: 0 },
+      }}
     >
       {element}
     </motion.div>
