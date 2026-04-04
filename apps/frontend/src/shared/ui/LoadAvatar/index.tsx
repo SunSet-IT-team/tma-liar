@@ -4,6 +4,7 @@ import styles from './style/loadAvatarStyle.module.scss';
 import noPhoto from '/icons/blackPhoto.svg';
 import { Typography } from '../Typography';
 import { usePlaySound } from '../../lib/sound/usePlaySound';
+import { resolveMediaUrl } from '../../lib/resolveMediaUrl';
 
 type LoadAvatarProps = {
   initialImage?: string;
@@ -91,7 +92,7 @@ export const LoadAvatar: FC<LoadAvatarProps> = ({
 
       {/* Кликабельный аватар */}
       <img
-        src={preview || noPhoto}
+        src={preview ? resolveMediaUrl(preview) : noPhoto}
         alt="avatar"
         className={styles.avatar}
         onPointerDown={() => playSound()}

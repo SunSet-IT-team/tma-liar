@@ -1,6 +1,7 @@
 import { type FC } from 'react';
 import styles from '../../style/userStyle.module.scss';
 import noPhoto from '/icons/blackPhoto.svg';
+import { resolveMediaUrl } from '@shared/lib/resolveMediaUrl';
 import { Typography } from '@shared/ui/Typography';
 import clsx from 'clsx';
 import hornsIcon from '/icons/hornsIcon.svg';
@@ -27,7 +28,7 @@ export const UserBadge: FC<UserBadgeProps> = ({
     <div className={clsx(styles.content, styles[variant], className)}>
       <div className={styles.userPhotoBlock}>
         <img
-          src={photo ? photo : noPhoto}
+          src={photo ? resolveMediaUrl(photo) : noPhoto}
           alt=""
           className={clsx(styles.userPhoto, currentPlayer && styles.userPhotoOutline)}
         />

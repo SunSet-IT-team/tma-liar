@@ -25,6 +25,8 @@ import { createGameRouter } from './game/game.router';
 import { registerSocketHandlers } from './socket';
 import { startLobbyCleanupScheduler } from './lobby/lobby-cleanup.scheduler';
 import { startPresenceCleanupScheduler } from './presence/presence-cleanup.scheduler';
+import { guestAvatarRouter } from './guest-avatar/guest-avatar.router';
+import { startGuestAvatarCleanupScheduler } from './guest-avatar/guest-avatar-cleanup.scheduler';
 import path from 'node:path';
 
 const app = express();
@@ -83,6 +85,7 @@ app.get('/api/health', (_, res) =>
 /** Роуты без авторизации */
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/presence', presenceRouter);
+app.use('/api/guest-avatar', guestAvatarRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/admin/decks', deckAdminRouter);
 app.use('/api/admin/users', adminUsersRouter);
@@ -105,6 +108,7 @@ async function startServer() {
     await connectToDatabase();
     startLobbyCleanupScheduler();
     startPresenceCleanupScheduler();
+    startGuestAvatarCleanupScheduler();
     httpServer.listen(env.PORT, () => logger.info({ port: env.PORT }, 'Server started'));
   } catch (error) {
     throw error;

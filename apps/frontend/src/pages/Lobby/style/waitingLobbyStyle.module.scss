@@ -1,6 +1,18 @@
 .container {
   justify-content: flex-start;
   gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.container:global(.container) {
+  align-items: stretch;
+  min-height: 0;
+}
+
+.header {
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .lobbyBlock {
@@ -8,6 +20,16 @@
   margin-bottom: 4px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+}
+
+.playersScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .lobbyTitle {
@@ -42,7 +64,7 @@
 }
 
 .lobbyPlayers {
-  padding: 20px 0;
+  padding: 12px 0 16px;
   width: 100%;
 }
 
@@ -53,6 +75,7 @@
   align-items: center;
   padding: 10px 10px 12px;
   border-radius: 18px;
+  flex-shrink: 0;
 }
 
 .taskLoserText {
@@ -93,6 +116,7 @@
   gap: 4px;
   margin-top: auto;
   padding-bottom: 2px;
+  flex-shrink: 0;
 }
 
 .secondaryAction {
@@ -111,6 +135,7 @@
   text-align: center;
   font-size: 12px;
   opacity: 0.75;
+  flex-shrink: 0;
 }
 
 @media (max-width: 440px) {

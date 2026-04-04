@@ -51,6 +51,10 @@ const envSchema = z.object({
   YOOKASSA_SECRET_KEY: z.string().optional(),
   YOOKASSA_RETURN_URL: z.string().url().optional(),
   YOOKASSA_WEBHOOK_TOKEN: z.string().optional(),
+  /** Удалять файлы аватаров гостей из uploads/guest-avatars старше N дней. */
+  GUEST_AVATAR_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  /** Интервал фоновой очистки старых аватаров гостей (мс). */
+  GUEST_AVATAR_CLEANUP_INTERVAL_MS: z.coerce.number().int().positive().default(86_400_000),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

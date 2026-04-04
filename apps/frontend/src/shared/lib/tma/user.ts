@@ -43,6 +43,16 @@ function getUserOverrides(telegramId: string): TmaUserOverrides {
   }
 }
 
+function applyOverridesToUser(user: CurrentTmaUser): CurrentTmaUser {
+  const overrides = getUserOverrides(user.telegramId);
+  return {
+    ...user,
+    nickname: overrides.nickname ?? user.nickname,
+    username: overrides.username ?? user.username,
+    profileImg: overrides.profileImg ?? user.profileImg,
+  };
+}
+
 export function setTmaUserOverrides(telegramId: string, patch: TmaUserOverrides) {
   const raw = localStorage.getItem(TMA_USER_OVERRIDES_STORAGE_KEY);
   let parsed: Record<string, TmaUserOverrides> = {};
@@ -116,14 +126,14 @@ export function getCurrentTmaUser(): CurrentTmaUser {
       profileImg: overrides.profileImg ?? user.photo_url,
     };
   } catch {
-    return getOrCreateGuestUser();
+    return applyOverridesToUser(getOrCreateGuestUser());
   }
 }
 
 /** Текущий пользователь: с сервера (id + telegramId), если уже загружен, иначе из TMA/гость. */
 export function getCurrentUser(): CurrentTmaUser {
   if (cachedServerUser) {
-    return cachedServerUser;
+    return applyOverridesToUser(cachedServerUser);
   }
   return getCurrentTmaUser();
 }

@@ -134,11 +134,13 @@ export const LobbyPlayer: FC = () => {
         </button>
 
       </div>
-      <LobbyUsersBadge
-        playersClassName={styles.lobbyPlayers}
-        players={session.players}
-        currentUserId={getCurrentUserId(user)}
-      />
+      <div className={styles.playersScroll}>
+        <LobbyUsersBadge
+          playersClassName={styles.lobbyPlayers}
+          players={session.players}
+          currentUserId={getCurrentUserId(user)}
+        />
+      </div>
       <div className={styles.taskBlock}>
         <Typography className={styles.taskLoserText}>Задание проигравшему</Typography>
         <TextInput

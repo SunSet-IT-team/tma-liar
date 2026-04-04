@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type FC } from 'react';
+import { useContext, useEffect, useRef, useState, type FC } from 'react';
 import styles from './style/profileStyle.module.scss';
 import circleIcon from '/icons/profileCircle.svg';
 import { TextInput } from '../../shared/ui/TextInput';
@@ -6,12 +6,17 @@ import logo from '/icons/homeIcon-lzhets.svg';
 import { Header } from '../../widgets/Header';
 import { Container } from '../../shared/ui/Container';
 import { LoadAvatar } from '../../shared/ui/LoadAvatar';
-import { getCurrentUser, isGuestUser, setTmaUserOverrides } from '../../shared/lib/tma/user';
+import {
+  getCurrentUser,
+  isGuestUser,
+  setTmaUserOverrides,
+} from '../../shared/lib/tma/user';
 import {
   findUserByTelegramId,
   updateUserNickname,
   updateUserProfileImgFile,
 } from '../../shared/services/api/user.api';
+import { uploadGuestAvatarFile } from '../../shared/services/api/guest-avatar.api';
 import { AuthContext } from '../../app/providers/Auth/AuthProvider';
 
 async function compressImageToFile(file: File): Promise<File> {
@@ -69,21 +74,29 @@ export const Profile: FC = () => {
   const { mode } = useContext(AuthContext);
   const user = getCurrentUser();
   const profileUsername = user.username ?? user.nickname;
-  const canUploadProfile = mode === 'full' && !isGuestUser(user);
+  const canSyncToServer = mode === 'full' && !isGuestUser(user);
   const [avatarSrc, setAvatarSrc] = useState<string>(user.profileImg ?? '');
   const [statusText, setStatusText] = useState<string>('');
-  const [displayName, setDisplayName] = useState<string>(
-    profileUsername ? `@${profileUsername}` : '',
-  );
+  const [displayName, setDisplayName] = useState<string>(profileUsername ?? '');
+
+  const displayNameRef = useRef(displayName);
+  displayNameRef.current = displayName;
+
+  const initialNicknameRef = useRef<string | null>(null);
+  if (initialNicknameRef.current === null) {
+    initialNicknameRef.current = (user.username ?? user.nickname) || '';
+  }
+
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   useEffect(() => {
-    if (!canUploadProfile) {
+    if (!canSyncToServer) {
       return;
     }
 
     void findUserByTelegramId(user.telegramId)
       .then((serverUser) => {
-        console.log(serverUser);
         const nextProfileImg = serverUser.profileImg ?? '';
         setAvatarSrc(nextProfileImg);
         setTmaUserOverrides(user.telegramId, { profileImg: nextProfileImg });
@@ -91,36 +104,48 @@ export const Profile: FC = () => {
       .catch(() => {
         // silently ignore: fallback to local profile image
       });
-  }, [canUploadProfile, user.telegramId]);
+  }, [canSyncToServer, user.telegramId]);
 
   useEffect(() => {
     return () => {
-      const raw = displayName.trim();
+      const raw = displayNameRef.current.trim();
       const normalized = raw.replace(/^@+/, '');
+      const initial = initialNicknameRef.current ?? '';
 
-      if (!normalized || normalized === profileUsername) {
+      if (!normalized || normalized === initial) {
         return;
       }
 
-      setTmaUserOverrides(user.telegramId, {
+      const u = getCurrentUser();
+      setTmaUserOverrides(u.telegramId, {
         nickname: normalized,
         username: normalized,
       });
 
-      if (canUploadProfile) {
-        void updateUserNickname(user.telegramId, normalized).catch(() => {
-          // ignore nickname update errors here, локальный override уже применён
+      if (modeRef.current === 'full' && !isGuestUser(u)) {
+        void updateUserNickname(u.telegramId, normalized).catch(() => {
+          // локальный override уже применён
         });
       }
     };
-  }, [canUploadProfile, displayName, profileUsername, user.telegramId]);
+  }, []);
 
   const handleAvatarUpload = async (file: File | null) => {
     if (!file) return;
 
-    if (!canUploadProfile) {
-      setStatusText('Загрузка фото доступна только после входа через Telegram');
-      throw new Error('TELEGRAM_AUTH_REQUIRED');
+    if (!canSyncToServer) {
+      try {
+        const compressedFile = await compressImageToFile(file);
+        const u = getCurrentUser();
+        const profileImgPath = await uploadGuestAvatarFile(u.telegramId, compressedFile);
+        setAvatarSrc(profileImgPath);
+        setTmaUserOverrides(u.telegramId, { profileImg: profileImgPath });
+        setStatusText('Фото профиля обновлено');
+      } catch {
+        setStatusText('Не удалось обновить фото профиля');
+        throw new Error('GUEST_AVATAR_UPDATE_FAILED');
+      }
+      return;
     }
 
     try {
@@ -164,11 +189,7 @@ export const Profile: FC = () => {
       <Header className={styles.header} />
       <LoadAvatar
         initialImage={avatarSrc}
-        helperText={
-          canUploadProfile
-            ? 'Нажмите на аватар, чтобы загрузить новое фото'
-            : 'Чтобы изменить фото профиля, войдите через Telegram'
-        }
+        helperText="Нажмите на аватар, чтобы загрузить новое фото"
         onChange={handleAvatarUpload}
       />
       {statusText ? (
@@ -178,7 +199,7 @@ export const Profile: FC = () => {
       ) : null}
 
       <TextInput
-        placeholder="Username"
+        placeholder="Имя"
         value={displayName}
         onChange={(event) => setDisplayName(event.target.value)}
         className={styles.profileInputWrapper}

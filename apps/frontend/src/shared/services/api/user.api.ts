@@ -28,8 +28,6 @@ export const getMe = async (): Promise<UserPayload | null> => {
   try {
     const response = await apiClient.get<UserResponse>('/api/users/me');
     const user = response.data.payload;
-    console.log('getMe')
-    console.log(user)
     if (user?.telegramId) {
       const id = user.id ?? user.telegramId;
       setCachedServerUser({
