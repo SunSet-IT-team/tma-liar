@@ -1,4 +1,4 @@
-import { type FC, useState } from 'react';
+import { type FC } from 'react';
 import styles from './style/settingsStyle.module.scss';
 import clsx from 'clsx';
 import { BackArrow } from '../../shared/ui/BackArrow';
@@ -9,14 +9,28 @@ import { SettingsTouches } from '../../features/SettingsSounds/ui/SettingsTouche
 import { SettingsMusic } from '../../features/SettingsSounds/ui/SettingsMusic';
 import { Container } from '../../shared/ui/Container';
 import { Typography } from '../../shared/ui/Typography';
-import { DevelopersPopup } from '../../entities/popups/ui/DevelopersPopup';
+
+const SUNSET_IT_AGENCY_URL = 'https://sunset-it.agency/';
+
+function openSunsetItAgency() {
+  try {
+    const webApp = window.Telegram?.WebApp as
+      | { openLink?: (url: string) => void }
+      | undefined;
+    if (typeof webApp?.openLink === 'function') {
+      webApp.openLink(SUNSET_IT_AGENCY_URL);
+      return;
+    }
+  } catch {
+    // ignore
+  }
+  window.open(SUNSET_IT_AGENCY_URL, '_blank', 'noopener,noreferrer');
+}
 
 /**
  * Страница настроек игры
  */
 export const Settings: FC = () => {
-  const [showPopup, setShowPopup] = useState<boolean>(false);
-
   return (
     <Container className={styles.container}>
       <div className={styles.header}>
@@ -35,13 +49,14 @@ export const Settings: FC = () => {
           <Typography className={styles.settingsText}>Язык</Typography>
           <Range />
         </div>
-        <Button className={clsx(styles.settingsText, styles.helpBtn)}>Тех. Поддержка</Button>
-        <Button className={styles.settingsText} onClick={() => setShowPopup(true)}>
+        <Button className={clsx(styles.settingsText, styles.helpBtn)} onClick={openSunsetItAgency}>
+          Тех. Поддержка
+        </Button>
+        <Button className={styles.settingsText} onClick={openSunsetItAgency}>
           Разработчики
         </Button>
       </div>
       <img src={settingsBg} alt="" className={styles.settingsBg} data-decor="true" />
-      {showPopup && <DevelopersPopup changeShow={(show: boolean) => setShowPopup(show)} />}
     </Container>
   );
 };
