@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FC, ReactNode } from 'react';
+import type { FC, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 
@@ -55,6 +55,7 @@ export const ValueScroller: FC<ScrollerProps> = ({
   const lastReportedIndexRef = useRef<number | null>(null);
   const suppressSlideSoundRef = useRef(false);
   const userInteractionRef = useRef(false);
+  const tapStartRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
   const normalizedMin = Math.min(min, max);
   const normalizedMax = Math.max(min, max);
   const values = useMemo(() => {
@@ -108,47 +109,83 @@ export const ValueScroller: FC<ScrollerProps> = ({
     }
   }, [swiperInstance, values, initialValue, isLoopEnabled]);
 
+  const TAP_MOVE_THRESHOLD_PX = 12;
+
+  const handleTapPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    tapStartRef.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId };
+  };
+
+  const handleTapPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const start = tapStartRef.current;
+    tapStartRef.current = null;
+    if (!start || start.pointerId !== e.pointerId || !swiperInstance || values.length < 2) return;
+
+    const dx = Math.abs(e.clientX - start.x);
+    const dy = Math.abs(e.clientY - start.y);
+    if (dx > TAP_MOVE_THRESHOLD_PX || dy > TAP_MOVE_THRESHOLD_PX) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    userInteractionRef.current = true;
+    if (relY < rect.height / 2) {
+      swiperInstance.slidePrev();
+    } else {
+      swiperInstance.slideNext();
+    }
+  };
+
+  const handleTapPointerCancel = () => {
+    tapStartRef.current = null;
+  };
+
   return (
     <div className="scrollerContent">
-      <Swiper
-        onMouseDown={() => {
-          userInteractionRef.current = true;
-        }}
-        direction={'vertical'}
-        className="swiper scrollerSwiper"
-        initialSlide={initialValue}
-        slidesPerView={1}
-        centeredSlides={true}
-        speed={250}
-        loop={isLoopEnabled}
-        onSwiper={setSwiperInstance}
-        onSlideChange={(swiper: SwiperType) => {
-          const index = swiper.realIndex;
-          if (lastReportedIndexRef.current === index) return;
-          const selected = values[index];
-          if (selected === undefined) return;
-          lastReportedIndexRef.current = index;
-          onChangeRef.current?.(selected); // realIndex — индекс с учётом loop
-          if (!suppressSlideSoundRef.current && userInteractionRef.current) {
-            playSound();
-            userInteractionRef.current = false;
-          }
-        }}
-        onTouchStart={() => {
-          userInteractionRef.current = true;
-        }}
-        onSliderMove={() => {
-          userInteractionRef.current = true;
-        }}
+      <div
+        className="scrollerSwiperTapWrapper"
+        onPointerDown={handleTapPointerDown}
+        onPointerUp={handleTapPointerUp}
+        onPointerCancel={handleTapPointerCancel}
       >
-        {values.map((value, i) => (
-          <SwiperSlide key={i} className="swiperSlide scrollerSwiperSlide">
-            <Typography variant="titleMiniLarge" className="scrollerValue">
-              {value}
-            </Typography>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+        <Swiper
+          onMouseDown={() => {
+            userInteractionRef.current = true;
+          }}
+          direction={'vertical'}
+          className="swiper scrollerSwiper"
+          initialSlide={initialValue}
+          slidesPerView={1}
+          centeredSlides={true}
+          speed={250}
+          loop={isLoopEnabled}
+          onSwiper={setSwiperInstance}
+          onSlideChange={(swiper: SwiperType) => {
+            const index = swiper.realIndex;
+            if (lastReportedIndexRef.current === index) return;
+            const selected = values[index];
+            if (selected === undefined) return;
+            lastReportedIndexRef.current = index;
+            onChangeRef.current?.(selected); // realIndex — индекс с учётом loop
+            if (!suppressSlideSoundRef.current && userInteractionRef.current) {
+              playSound();
+              userInteractionRef.current = false;
+            }
+          }}
+          onTouchStart={() => {
+            userInteractionRef.current = true;
+          }}
+          onSliderMove={() => {
+            userInteractionRef.current = true;
+          }}
+        >
+          {values.map((value, i) => (
+            <SwiperSlide key={i} className="swiperSlide scrollerSwiperSlide">
+              <Typography variant="titleMiniLarge" className="scrollerValue">
+                {value}
+              </Typography>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
       {children}
     </div>
   );

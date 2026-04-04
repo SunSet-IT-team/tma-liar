@@ -45,7 +45,7 @@ export const CreateLobby: FC = () => {
         onChangeValue={(value: number) => setQuestionCount(value)}
       />
       <ChoiceParamsLobby
-        reusedValues={{ min: 5, max: 60, step: 5, defaultValue: answerTime }}
+        reusedValues={{ min: 5, max: 180, step: 5, defaultValue: answerTime }}
         choiceText="Таймер"
         choiceType="С"
         onChangeValue={(value: number) => setAnswerTime(value)}
