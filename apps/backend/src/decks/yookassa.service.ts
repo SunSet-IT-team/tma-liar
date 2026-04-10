@@ -5,6 +5,10 @@ import { env } from '../config/env';
 type YooKassaPaymentResponse = {
   id: string;
   status: string;
+  amount?: {
+    value?: string;
+    currency?: string;
+  };
   confirmation?: {
     confirmation_url?: string;
   };

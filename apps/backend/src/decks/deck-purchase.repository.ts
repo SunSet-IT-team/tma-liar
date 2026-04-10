@@ -1,4 +1,4 @@
-import { DeckPurchaseModel } from './deck-purchase.model';
+import { DeckPurchaseModel, type DeckPurchasePaymentMethod } from './deck-purchase.model';
 
 export class DeckPurchaseRepository {
   public async isPurchased(deckId: string, telegramId: string): Promise<boolean> {
@@ -6,12 +6,19 @@ export class DeckPurchaseRepository {
     return Boolean(exists);
   }
 
-  public async markPurchased(deckId: string, telegramId: string): Promise<void> {
+  public async markPurchased(
+    deckId: string,
+    telegramId: string,
+    meta?: { amountRub: number; paymentMethod: DeckPurchasePaymentMethod },
+  ): Promise<void> {
     await DeckPurchaseModel.updateOne(
       { deckId, telegramId },
       {
         $set: {
           purchasedAt: new Date(),
+          ...(meta
+            ? { amountRub: meta.amountRub, paymentMethod: meta.paymentMethod }
+            : {}),
         },
       },
       { upsert: true },

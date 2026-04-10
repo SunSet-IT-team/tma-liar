@@ -13,7 +13,21 @@ export interface User {
   token?: string;
   /** Последняя отметка активности клиента (heartbeat), если включена аналитика присутствия */
   lastActiveAt?: Date;
+  balanceRub?: number;
+  subscriptionUntil?: Date;
 }
+
+/** Поля пользователя, отдаваемые клиенту (профиль / me). */
+export type PublicUserProfile = {
+  id: string;
+  nickname: string;
+  telegramId: string;
+  profileImg?: string;
+  lastActiveAt?: Date;
+  balanceRub: number;
+  subscriptionUntil: string | null;
+  hasActiveSubscription: boolean;
+};
 
 /**Схема сущности "Пользователь" */
 export const UserSchema = z.object({
@@ -23,4 +37,6 @@ export const UserSchema = z.object({
   profileImg: z.string().optional(),
   passwordHash: z.string().optional(),
   token: z.string().optional(),
+  balanceRub: z.number().optional(),
+  subscriptionUntil: z.coerce.date().optional(),
 })

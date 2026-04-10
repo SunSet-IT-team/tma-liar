@@ -1,5 +1,10 @@
 import { apiClient } from './client';
-import type { Deck, DeckPurchaseConfirmResponse, DeckPurchaseCreateResponse } from '../../types/deck';
+import type {
+  Deck,
+  DeckPurchaseConfirmResponse,
+  DeckPurchaseCreateResponse,
+  DeckPurchaseWithBalanceResponse,
+} from '../../types/deck';
 
 type ApiEnvelope<T> = {
   status: 'success' | 'error';
@@ -51,6 +56,13 @@ export async function confirmDeckPurchaseRequest(deckId: string, paymentId: stri
   const response = await apiClient.post<ApiEnvelope<DeckPurchaseConfirmResponse>>(
     `/api/decks/${deckId}/purchase/confirm`,
     { paymentId },
+  );
+  return response.data.payload;
+}
+
+export async function purchaseDeckWithBalanceRequest(deckId: string) {
+  const response = await apiClient.post<ApiEnvelope<DeckPurchaseWithBalanceResponse>>(
+    `/api/decks/${deckId}/purchase/balance`,
   );
   return response.data.payload;
 }

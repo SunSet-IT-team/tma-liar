@@ -8,6 +8,7 @@ import { DeckPurchaseModel } from '../decks/deck-purchase.model';
 import { DeckModel } from '../decks/deck.model';
 import { success } from '../common/response';
 import { GamePlayEventRepository } from '../game/game-play-event.repository';
+import { SubscriptionPurchaseModel } from '../billing/subscription-purchase.model';
 
 export const adminStatsRouter = Router();
 
@@ -94,13 +95,15 @@ adminStatsRouter.get(
       count: row.count,
     }));
 
+    const totalSubscriptions = await SubscriptionPurchaseModel.countDocuments();
+
     res.json(
       success({
         totalUsers,
         activeUsersNow: activeUsers.length,
         activeUsers,
         totalGames,
-        totalSubscriptions: 0,
+        totalSubscriptions,
         deckUsage,
       }),
     );
@@ -110,7 +113,17 @@ adminStatsRouter.get(
 adminStatsRouter.get(
   '/subscriptions-by-day',
   asyncHandler(async (_req, res) => {
-    res.json(success({ points: [] }));
+    const rows = await SubscriptionPurchaseModel.aggregate<{ _id: string; count: number }>([
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$purchasedAt' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const points = rows.map((r) => ({ date: r._id, count: r.count }));
+    res.json(success({ points }));
   }),
 );
 
@@ -148,5 +161,58 @@ adminStatsRouter.get(
     ]);
 
     res.json(success({ deckId, perDay }));
+  }),
+);
+
+adminStatsRouter.get(
+  '/deck-purchase-events',
+  asyncHandler(async (req, res) => {
+    const rawLimit = Number((req.query as { limit?: string }).limit);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(500, Math.max(1, rawLimit))
+      : 150;
+
+    const rows = await DeckPurchaseModel.find()
+      .sort({ purchasedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const deckIds = [...new Set(rows.map((r) => r.deckId))];
+    const nameMap = await deckNameMapForIds(deckIds);
+
+    const items = rows.map((r) => ({
+      deckId: r.deckId,
+      deckName: nameMap.get(r.deckId) ?? r.deckId,
+      telegramId: r.telegramId,
+      purchasedAt: r.purchasedAt ? new Date(r.purchasedAt).toISOString() : null,
+      amountRub: typeof r.amountRub === 'number' ? r.amountRub : null,
+      paymentMethod: r.paymentMethod ?? null,
+    }));
+
+    res.json(success({ items }));
+  }),
+);
+
+adminStatsRouter.get(
+  '/subscription-events',
+  asyncHandler(async (req, res) => {
+    const rawLimit = Number((req.query as { limit?: string }).limit);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(500, Math.max(1, rawLimit))
+      : 150;
+
+    const rows = await SubscriptionPurchaseModel.find()
+      .sort({ purchasedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const items = rows.map((r) => ({
+      telegramId: r.telegramId,
+      purchasedAt: r.purchasedAt ? new Date(r.purchasedAt).toISOString() : null,
+      amountRub: r.amountRub,
+      validUntil: r.validUntil ? new Date(r.validUntil).toISOString() : null,
+    }));
+
+    res.json(success({ items }));
   }),
 );

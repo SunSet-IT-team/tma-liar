@@ -32,3 +32,24 @@
 .logo {
     max-width: 40vh;
 }
+
+.economyBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 3vh;
+    text-align: center;
+}
+
+.balanceLine,
+.subscriptionLine {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.economyStatus {
+    font-size: 13px;
+    color: var(--primary-color);
+    opacity: 0.9;
+}

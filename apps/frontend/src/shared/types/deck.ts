@@ -29,3 +29,8 @@ export type DeckPurchaseCreateResponse = {
 export type DeckPurchaseConfirmResponse = {
   purchased: boolean;
 };
+
+export type DeckPurchaseWithBalanceResponse = {
+  purchased: boolean;
+  balanceRub: number;
+};

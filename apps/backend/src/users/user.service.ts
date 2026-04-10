@@ -1,4 +1,4 @@
-import type { User } from './entities/user.entity';
+import type { PublicUserProfile, User } from './entities/user.entity';
 import { ApiError } from '../common/response';
 import type { FindUserDto } from './dtos/user-find.dto';
 import type { FindUsersDto } from './dtos/user-findUsers.dto';
@@ -8,6 +8,11 @@ import type { DeleteUserDto } from './dtos/user-delete.dto';
 import { UserRepository } from './user.repository';
 import { LobbyRepository } from '../lobby/lobby.repository';
 import { logger } from '../observability/logger';
+import { SubscriptionPurchaseModel } from '../billing/subscription-purchase.model';
+import {
+  SUBSCRIPTION_PRICE_RUB,
+  WELCOME_BALANCE_RUB,
+} from '../billing/billing.constants';
 
 /**
  * Интерфейс для сервиса пользователей
@@ -21,6 +26,8 @@ export interface UserServiceMethods {
   updateUser: (param: UpdateUserDto) => Promise<User>;
   deleteUser: (param: DeleteUserDto) => Promise<User>;
   touchPresence: (param: { authUserId: string }) => Promise<void>;
+  mapPublicUser: (user: User) => PublicUserProfile;
+  purchaseSubscription: (param: { authUserId: string }) => Promise<PublicUserProfile>;
 }
 
 /**
@@ -109,5 +116,49 @@ export class UserService implements UserServiceMethods {
 
   public async touchPresence(param: { authUserId: string }): Promise<void> {
     await this.userRepository.touchLastActiveAt(param.authUserId);
+  }
+
+  public mapPublicUser(user: User): PublicUserProfile {
+    const balanceRub = Math.max(0, Math.round(user.balanceRub ?? WELCOME_BALANCE_RUB));
+    const subRaw = user.subscriptionUntil;
+    const subscriptionUntil = subRaw ? new Date(subRaw).toISOString() : null;
+    const hasActiveSubscription = Boolean(
+      subRaw && new Date(subRaw).getTime() > Date.now(),
+    );
+    return {
+      id: user.id,
+      nickname: user.nickname,
+      telegramId: user.telegramId,
+      profileImg: user.profileImg,
+      lastActiveAt: user.lastActiveAt,
+      balanceRub,
+      subscriptionUntil,
+      hasActiveSubscription,
+    };
+  }
+
+  public async purchaseSubscription(param: { authUserId: string }): Promise<PublicUserProfile> {
+    const current = await this.findUserByAuthId(param);
+    const updated = await this.userRepository.purchaseSubscriptionMonth(
+      current.telegramId,
+      SUBSCRIPTION_PRICE_RUB,
+    );
+
+    if (!updated) {
+      throw new ApiError(402, 'INSUFFICIENT_BALANCE');
+    }
+
+    const validUntil = updated.subscriptionUntil;
+    if (!validUntil) {
+      throw new ApiError(500, 'SUBSCRIPTION_STATE_INVALID');
+    }
+
+    await SubscriptionPurchaseModel.create({
+      telegramId: current.telegramId,
+      amountRub: SUBSCRIPTION_PRICE_RUB,
+      validUntil: new Date(validUntil),
+    });
+
+    return this.mapPublicUser(updated as User);
   }
 }

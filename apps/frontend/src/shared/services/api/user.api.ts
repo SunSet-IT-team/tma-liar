@@ -6,6 +6,9 @@ type UserPayload = {
   telegramId: string;
   nickname: string;
   profileImg?: string;
+  balanceRub: number;
+  subscriptionUntil: string | null;
+  hasActiveSubscription: boolean;
 };
 
 type UserResponse = {
@@ -42,6 +45,20 @@ export const getMe = async (): Promise<UserPayload | null> => {
   } catch {
     return null;
   }
+};
+
+/** Месяц подписки за 75 ₽ с внутреннего баланса. */
+export const purchaseSubscription = async (): Promise<UserPayload> => {
+  const response = await apiClient.post<UserResponse>('/api/users/me/subscription');
+  const user = response.data.payload;
+  const id = user.id ?? user.telegramId;
+  setCachedServerUser({
+    id,
+    telegramId: user.telegramId,
+    nickname: user.nickname,
+    profileImg: user.profileImg,
+  });
+  return { ...user, id };
 };
 
 /**

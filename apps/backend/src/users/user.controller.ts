@@ -31,7 +31,19 @@ export class UserController {
       throw new ApiError(401, 'UNAUTHORIZED');
     }
     const user = await this.userService.findUserByAuthId({ authUserId: authReq.userId });
-    return res.status(200).json(success(user));
+    return res.status(200).json(success(this.userService.mapPublicUser(user)));
+  };
+
+  /** Купить месяц подписки за внутренний баланс (75 ₽). */
+  postSubscriptionPurchase = async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    if (!authReq.userId) {
+      throw new ApiError(401, 'UNAUTHORIZED');
+    }
+    const profile = await this.userService.purchaseSubscription({
+      authUserId: authReq.userId,
+    });
+    return res.status(200).json(success(profile));
   };
 
   /** Heartbeat «пользователь открыл сайт» для аналитики активных в админке. */
@@ -59,7 +71,7 @@ export class UserController {
 
     if (!user) throw new ApiError(404, "USER_NOT_FOUND");
 
-    return res.status(200).json(success(user));
+    return res.status(200).json(success(this.userService.mapPublicUser(user)));
   };
 
   /**
@@ -82,7 +94,7 @@ export class UserController {
     const dto: FindUsersDto = result.data;
     const users = await this.userService.findUsers(dto);
 
-    return res.status(200).json(success(users));
+    return res.status(200).json(success(users.map((u) => this.userService.mapPublicUser(u))));
   };
 
   /**
@@ -98,7 +110,7 @@ export class UserController {
     const dto: CreateUserDto = result.data;
     const user = await this.userService.createUser(dto);
 
-    return res.status(200).json(success(user));
+    return res.status(200).json(success(this.userService.mapPublicUser(user)));
   };
 
   /**
@@ -145,7 +157,7 @@ export class UserController {
       const dto: UpdateUserDto = bodyResult.data;
       const user = await this.userService.updateUser(dto);
 
-      return res.status(200).json(success(user));
+      return res.status(200).json(success(this.userService.mapPublicUser(user)));
     } catch (error) {
       logger.error(
         {
@@ -173,6 +185,6 @@ export class UserController {
     const dto: DeleteUserDto = result.data;
     const user = await this.userService.deleteUser(dto);
 
-    return res.status(200).json(success(user));
+    return res.status(200).json(success(this.userService.mapPublicUser(user)));
   };
 }

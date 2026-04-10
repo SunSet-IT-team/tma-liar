@@ -56,9 +56,29 @@ export function StatsPage() {
   const [deckPurchases, setDeckPurchases] = useState<DeckPurchaseItem[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [deckDayData, setDeckDayData] = useState<DeckDayPoint[]>([]);
-  const [subscriptionData] = useState<{ date: string; count: number }[]>([]);
+  const [subscriptionData, setSubscriptionData] = useState<{ date: string; count: number }[]>(
+    [],
+  );
   const [subScale, setSubScale] = useState<TimeScale>('30d');
   const [deckScale, setDeckScale] = useState<TimeScale>('30d');
+  const [deckPurchaseEvents, setDeckPurchaseEvents] = useState<
+    {
+      deckId: string;
+      deckName: string;
+      telegramId: string;
+      purchasedAt: string | null;
+      amountRub: number | null;
+      paymentMethod: string | null;
+    }[]
+  >([]);
+  const [subscriptionEvents, setSubscriptionEvents] = useState<
+    {
+      telegramId: string;
+      purchasedAt: string | null;
+      amountRub: number;
+      validUntil: string | null;
+    }[]
+  >([]);
 
   const loadStats = useCallback(async () => {
     const data = await request<StatsData>({
@@ -76,6 +96,46 @@ export function StatsPage() {
     if (data?.items) setDeckPurchases(data.items);
   }, [request]);
 
+  const loadSubscriptionsByDay = useCallback(async () => {
+    const data = await request<{ points: { date: string; count: number }[] }>({
+      method: 'GET',
+      url: '/api/admin/stats/subscriptions-by-day',
+    });
+    if (data?.points) setSubscriptionData(data.points);
+  }, [request]);
+
+  const loadDeckPurchaseEvents = useCallback(async () => {
+    const data = await request<{
+      items: {
+        deckId: string;
+        deckName: string;
+        telegramId: string;
+        purchasedAt: string | null;
+        amountRub: number | null;
+        paymentMethod: string | null;
+      }[];
+    }>({
+      method: 'GET',
+      url: '/api/admin/stats/deck-purchase-events?limit=200',
+    });
+    if (data?.items) setDeckPurchaseEvents(data.items);
+  }, [request]);
+
+  const loadSubscriptionEvents = useCallback(async () => {
+    const data = await request<{
+      items: {
+        telegramId: string;
+        purchasedAt: string | null;
+        amountRub: number;
+        validUntil: string | null;
+      }[];
+    }>({
+      method: 'GET',
+      url: '/api/admin/stats/subscription-events?limit=200',
+    });
+    if (data?.items) setSubscriptionEvents(data.items);
+  }, [request]);
+
   const loadDeckDetail = useCallback(
     async (deckId: string) => {
       const data = await request<{ deckId: string; perDay: DeckDayPoint[] }>({
@@ -90,7 +150,16 @@ export function StatsPage() {
   useEffect(() => {
     void loadStats();
     void loadDeckPurchases();
-  }, [loadStats, loadDeckPurchases]);
+    void loadSubscriptionsByDay();
+    void loadDeckPurchaseEvents();
+    void loadSubscriptionEvents();
+  }, [
+    loadStats,
+    loadDeckPurchases,
+    loadSubscriptionsByDay,
+    loadDeckPurchaseEvents,
+    loadSubscriptionEvents,
+  ]);
 
   useEffect(() => {
     if (selectedDeckId) {
@@ -142,6 +211,9 @@ export function StatsPage() {
           onClick={() => {
             void loadStats();
             void loadDeckPurchases();
+            void loadSubscriptionsByDay();
+            void loadDeckPurchaseEvents();
+            void loadSubscriptionEvents();
           }}
           disabled={loading}
         >
@@ -167,10 +239,7 @@ export function StatsPage() {
         </div>
         <div className="card stat-card">
           <span className="stat-label">Купленных подписок</span>
-          <span className="stat-value stub">
-            {stats?.totalSubscriptions ?? 0}
-            <small className="stub-badge">заглушка</small>
-          </span>
+          <span className="stat-value">{stats?.totalSubscriptions ?? '—'}</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">Купленных колод</span>
@@ -254,13 +323,10 @@ export function StatsPage() {
         )}
       </div>
 
-      {/* Subscriptions chart (stub) */}
+      {/* Subscriptions chart */}
       <div className="card chart-section">
         <div className="chart-header">
-          <h3>
-            Покупки подписок по дням
-            <small className="stub-badge">заглушка</small>
-          </h3>
+          <h3>Покупки подписок по дням</h3>
           {scaleButtons(subScale, setSubScale)}
         </div>
         {subscriptionData.length === 0 ? (
@@ -288,6 +354,99 @@ export function StatsPage() {
               />
             </AreaChart>
           </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Лента покупок подписок */}
+      <div className="card chart-section">
+        <div className="chart-header">
+          <h3>Лента покупок подписок</h3>
+        </div>
+        {!subscriptionEvents.length ? (
+          <div className="chart-empty">
+            <p className="muted">Пока нет записей</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Telegram ID</th>
+                  <th>Оплачено</th>
+                  <th>Сумма ₽</th>
+                  <th>Действует до</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptionEvents.map((row, idx) => (
+                  <tr key={`sub-${idx}-${row.telegramId}-${row.purchasedAt ?? ''}`}>
+                    <td>
+                      <code>{row.telegramId}</code>
+                    </td>
+                    <td className="muted">
+                      {row.purchasedAt
+                        ? new Date(row.purchasedAt).toLocaleString()
+                        : '—'}
+                    </td>
+                    <td>{row.amountRub}</td>
+                    <td className="muted">
+                      {row.validUntil
+                        ? new Date(row.validUntil).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Лента покупок колод (аналитика) */}
+      <div className="card chart-section">
+        <div className="chart-header">
+          <h3>Лента покупок колод</h3>
+        </div>
+        {!deckPurchaseEvents.length ? (
+          <div className="chart-empty">
+            <p className="muted">Пока нет записей с детализацией</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Колода</th>
+                  <th>Telegram ID</th>
+                  <th>Время</th>
+                  <th>Сумма ₽</th>
+                  <th>Способ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deckPurchaseEvents.map((row, idx) => (
+                  <tr
+                    key={`deck-buy-${idx}-${row.deckId}-${row.telegramId}-${row.purchasedAt ?? ''}`}
+                  >
+                    <td>
+                      {row.deckName}{' '}
+                      <code className="muted">{row.deckId}</code>
+                    </td>
+                    <td>
+                      <code>{row.telegramId}</code>
+                    </td>
+                    <td className="muted">
+                      {row.purchasedAt
+                        ? new Date(row.purchasedAt).toLocaleString()
+                        : '—'}
+                    </td>
+                    <td>{row.amountRub ?? '—'}</td>
+                    <td>{row.paymentMethod ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

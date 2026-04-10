@@ -8,6 +8,7 @@ export const CreateUserDtoSchema = z.object({
   nickname: z.string().min(1),
   profileImg: z.string().optional(),
   passwordHash: z.string().optional(),
+  balanceRub: z.number().nonnegative().optional(),
 });
 
 /**

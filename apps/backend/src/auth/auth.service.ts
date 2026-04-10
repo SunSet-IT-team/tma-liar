@@ -4,6 +4,7 @@ import { ApiError } from "../common/response";
 import { TelegramAuthService } from './telegram-auth.service';
 import { env } from "../config/env";
 import { UserRepository } from "../users/user.repository";
+import { WELCOME_BALANCE_RUB } from "../billing/billing.constants";
 
 /*
  * Интерфейс для сервиса авторизации
@@ -32,6 +33,7 @@ export class AuthService implements AuthServiceMethods {
           telegramId: telegramUser.telegramId,
           nickname: telegramUser.nickname,
           profileImg: telegramUser.profileImg,
+          balanceRub: WELCOME_BALANCE_RUB,
         });
       } catch (error) {
         // Concurrent auth requests may race on unique telegramId index.

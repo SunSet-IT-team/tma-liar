@@ -19,6 +19,8 @@ export const CreateLobby: FC = () => {
     activeDeckIndex,
     isDecksLoading,
     isBuyingDeck,
+    isBuyingDeckWithBalance,
+    balanceRub,
     isSubmitting,
     isGuest,
     isSelectedDeckLocked,
@@ -28,9 +30,13 @@ export const CreateLobby: FC = () => {
     setActiveDeckIndex,
     createLobby,
     buySelectedDeck,
+    buySelectedDeckWithBalance,
   } = useCreateLobby();
 
   const maxQuestions = decks[activeDeckIndex]?.questionsCount ?? 200;
+  const deckPriceRub = Math.max(0, Math.round(decks[activeDeckIndex]?.priceRub ?? 0));
+  const canPayFromBalance =
+    balanceRub !== null && deckPriceRub > 0 && balanceRub >= deckPriceRub;
 
   return (
     <Container className={styles.container}>
@@ -69,20 +75,47 @@ export const CreateLobby: FC = () => {
             Войти
           </Button>
         </div>
+      ) : isSelectedDeckLocked ? (
+        <div className={styles.purchaseActions}>
+          {balanceRub !== null ? (
+            <Typography className={styles.balanceHint}>Баланс: {balanceRub} ₽</Typography>
+          ) : null}
+          <Button
+            variant="buttonUnderline"
+            soundTrigger="click"
+            onClick={buySelectedDeckWithBalance}
+            disabled={
+              isSubmitting ||
+              isDecksLoading ||
+              decks.length === 0 ||
+              isBuyingDeck ||
+              isBuyingDeckWithBalance ||
+              !canPayFromBalance
+            }
+          >
+            {isBuyingDeckWithBalance
+              ? 'Покупаем...'
+              : `С баланса — ${deckPriceRub} ₽`}
+          </Button>
+          <Button
+            variant="buttonUnderline"
+            soundTrigger="click"
+            onClick={buySelectedDeck}
+            disabled={
+              isSubmitting || isDecksLoading || decks.length === 0 || isBuyingDeck || isBuyingDeckWithBalance
+            }
+          >
+            {isBuyingDeck ? 'Переходим к оплате...' : `Картой (ЮKassa) — ${deckPriceRub} ₽`}
+          </Button>
+        </div>
       ) : (
         <Button
           variant="buttonUnderline"
           soundTrigger="click"
-          onClick={isSelectedDeckLocked ? buySelectedDeck : createLobby}
-          disabled={isSubmitting || isDecksLoading || decks.length === 0 || isBuyingDeck}
+          onClick={createLobby}
+          disabled={isSubmitting || isDecksLoading || decks.length === 0}
         >
-          {isSelectedDeckLocked
-            ? isBuyingDeck
-              ? 'Переходим к оплате...'
-              : `Купить колоду за ${decks[activeDeckIndex]?.priceRub ?? 0} ₽`
-            : isSubmitting
-              ? 'Создаю...'
-              : 'Создать'}
+          {isSubmitting ? 'Создаю...' : 'Создать'}
         </Button>
       )}
       <div className={styles.lobbyCircle} data-decor="true" />

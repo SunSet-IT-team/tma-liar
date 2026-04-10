@@ -1,10 +1,15 @@
 import { Schema, model } from 'mongoose';
 
+export type DeckPurchasePaymentMethod = 'yookassa' | 'balance';
+
 export interface DeckPurchase {
   id: string;
   deckId: string;
   telegramId: string;
   purchasedAt: Date;
+  /** Фактически уплаченная сумма (для аналитики). */
+  amountRub?: number;
+  paymentMethod?: DeckPurchasePaymentMethod;
 }
 
 const DeckPurchaseSchema = new Schema<DeckPurchase>(
@@ -12,6 +17,8 @@ const DeckPurchaseSchema = new Schema<DeckPurchase>(
     deckId: { type: String, required: true, index: true },
     telegramId: { type: String, required: true, index: true },
     purchasedAt: { type: Date, default: Date.now, required: true },
+    amountRub: { type: Number },
+    paymentMethod: { type: String, enum: ['yookassa', 'balance'] },
   },
   {
     timestamps: true,

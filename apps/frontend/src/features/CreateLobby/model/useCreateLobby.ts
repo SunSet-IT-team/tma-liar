@@ -10,7 +10,9 @@ import {
   confirmDeckPurchaseRequest,
   createDeckPurchaseRequest,
   fetchDecksRequest,
+  purchaseDeckWithBalanceRequest,
 } from '@shared/services/api/decks.api';
+import { getMe } from '@shared/services/api/user.api';
 import { useNotify } from '@shared/lib/notify/notify';
 
 const PENDING_DECK_PURCHASE_KEY = 'pending_deck_purchase';
@@ -38,6 +40,8 @@ export function useCreateLobby() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isDecksLoading, setIsDecksLoading] = useState(false);
   const [isBuyingDeck, setIsBuyingDeck] = useState(false);
+  const [isBuyingDeckWithBalance, setIsBuyingDeckWithBalance] = useState(false);
+  const [balanceRub, setBalanceRub] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const user = getCurrentUser();
   const isGuest = isGuestUser(user);
@@ -53,7 +57,7 @@ export function useCreateLobby() {
     let isMounted = true;
 
     const loadDecks = async () => {
-      if(isGuest ) return; // Гость не может создать лобби
+      if (isGuest) return; // Гость не может создать лобби
 
       setIsDecksLoading(true);
       try {
@@ -75,7 +79,17 @@ export function useCreateLobby() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isGuest, notifyError]);
+
+  useEffect(() => {
+    if (isGuest) {
+      setBalanceRub(null);
+      return;
+    }
+    void getMe().then((u) => {
+      if (u) setBalanceRub(u.balanceRub);
+    });
+  }, [isGuest]);
 
   useEffect(() => {
     if(isGuest ) return; // Гость не может создать лобби
@@ -214,6 +228,42 @@ export function useCreateLobby() {
     }
   };
 
+  const buySelectedDeckWithBalance = async () => {
+    if (!selectedDeck || !selectedDeck.isPaid || selectedDeck.isPurchased || isBuyingDeckWithBalance) {
+      return;
+    }
+
+    const price = Math.max(0, Math.round(selectedDeck.priceRub ?? 0));
+    if (balanceRub !== null && balanceRub < price) {
+      notifyError('Недостаточно средств на балансе');
+      return;
+    }
+
+    setIsBuyingDeckWithBalance(true);
+
+    try {
+      const result = await purchaseDeckWithBalanceRequest(selectedDeck.id);
+      setBalanceRub(result.balanceRub);
+      const fetchedDecks = await fetchDecksRequest();
+      setDecks(fetchedDecks);
+    } catch (error) {
+      const status = (error as { response?: { status?: number; data?: { errorCode?: string } } })
+        .response?.status;
+      const code = (error as { response?: { data?: { errorCode?: string } } }).response?.data
+        ?.errorCode;
+      if (status === 402 || code === 'INSUFFICIENT_BALANCE') {
+        notifyError('Недостаточно средств на балансе');
+        void getMe().then((u) => {
+          if (u) setBalanceRub(u.balanceRub);
+        });
+        return;
+      }
+      notifyError('Не удалось купить колоду с баланса');
+    } finally {
+      setIsBuyingDeckWithBalance(false);
+    }
+  };
+
   return {
     questionCount,
     answerTime,
@@ -222,6 +272,8 @@ export function useCreateLobby() {
     decks,
     isDecksLoading,
     isBuyingDeck,
+    isBuyingDeckWithBalance,
+    balanceRub,
     isSubmitting,
     isGuest,
     telegramBotUrl,
@@ -231,5 +283,6 @@ export function useCreateLobby() {
     setActiveDeckIndex,
     createLobby,
     buySelectedDeck,
+    buySelectedDeckWithBalance,
   };
 }

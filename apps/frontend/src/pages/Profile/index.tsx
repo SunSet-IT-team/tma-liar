@@ -13,11 +13,15 @@ import {
 } from '../../shared/lib/tma/user';
 import {
   findUserByTelegramId,
+  purchaseSubscription,
   updateUserNickname,
   updateUserProfileImgFile,
 } from '../../shared/services/api/user.api';
 import { uploadGuestAvatarFile } from '../../shared/services/api/guest-avatar.api';
 import { AuthContext } from '../../app/providers/Auth/AuthProvider';
+import { Button } from '../../shared/ui/Button';
+
+const SUBSCRIPTION_PRICE_RUB = 75;
 
 async function compressImageToFile(file: File): Promise<File> {
   const sourceUrl = await new Promise<string>((resolve, reject) => {
@@ -77,6 +81,11 @@ export const Profile: FC = () => {
   const canSyncToServer = mode === 'full' && !isGuestUser(user);
   const [avatarSrc, setAvatarSrc] = useState<string>(user.profileImg ?? '');
   const [statusText, setStatusText] = useState<string>('');
+  const [economyStatus, setEconomyStatus] = useState<string>('');
+  const [balanceRub, setBalanceRub] = useState<number | null>(null);
+  const [subscriptionUntilIso, setSubscriptionUntilIso] = useState<string | null>(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionBusy, setSubscriptionBusy] = useState(false);
   const [displayName, setDisplayName] = useState<string>(profileUsername ?? '');
 
   const displayNameRef = useRef(displayName);
@@ -100,11 +109,39 @@ export const Profile: FC = () => {
         const nextProfileImg = serverUser.profileImg ?? '';
         setAvatarSrc(nextProfileImg);
         setTmaUserOverrides(user.telegramId, { profileImg: nextProfileImg });
+        setBalanceRub(serverUser.balanceRub);
+        setSubscriptionUntilIso(serverUser.subscriptionUntil);
+        setHasActiveSubscription(serverUser.hasActiveSubscription);
       })
       .catch(() => {
         // silently ignore: fallback to local profile image
       });
   }, [canSyncToServer, user.telegramId]);
+
+  const handleBuySubscription = async () => {
+    if (!canSyncToServer || subscriptionBusy) return;
+    setEconomyStatus('');
+    setSubscriptionBusy(true);
+    try {
+      const next = await purchaseSubscription();
+      setBalanceRub(next.balanceRub);
+      setSubscriptionUntilIso(next.subscriptionUntil);
+      setHasActiveSubscription(next.hasActiveSubscription);
+      setEconomyStatus('Подписка оформлена на месяц');
+    } catch (error) {
+      const status = (error as { response?: { status?: number; data?: { errorCode?: string } } })
+        .response?.status;
+      const code = (error as { response?: { data?: { errorCode?: string } } }).response?.data
+        ?.errorCode;
+      if (status === 402 || code === 'INSUFFICIENT_BALANCE') {
+        setEconomyStatus(`Недостаточно средств (нужно ${SUBSCRIPTION_PRICE_RUB} ₽)`);
+      } else {
+        setEconomyStatus('Не удалось оформить подписку');
+      }
+    } finally {
+      setSubscriptionBusy(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -196,6 +233,28 @@ export const Profile: FC = () => {
         <span className={styles.status} data-relative="true">
           {statusText}
         </span>
+      ) : null}
+
+      {canSyncToServer && balanceRub !== null ? (
+        <div className={styles.economyBlock}>
+          <span className={styles.balanceLine}>Баланс: {balanceRub} ₽</span>
+          <span className={styles.subscriptionLine}>
+            Подписка:{' '}
+            {hasActiveSubscription && subscriptionUntilIso
+              ? `активна до ${new Date(subscriptionUntilIso).toLocaleString()}`
+              : 'нет'}
+          </span>
+          <Button
+            variant="buttonUnderline"
+            onClick={() => void handleBuySubscription()}
+            disabled={subscriptionBusy || balanceRub < SUBSCRIPTION_PRICE_RUB}
+          >
+            {subscriptionBusy
+              ? 'Оформляем...'
+              : `Купить подписку (${SUBSCRIPTION_PRICE_RUB} ₽ / мес.)`}
+          </Button>
+          {economyStatus ? <span className={styles.economyStatus}>{economyStatus}</span> : null}
+        </div>
       ) : null}
 
       <TextInput

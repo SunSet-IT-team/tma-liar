@@ -1,4 +1,5 @@
 import { UserModel } from './user.model';
+import { SUBSCRIPTION_PERIOD_MS } from '../billing/billing.constants';
 import type { User } from './entities/user.entity';
 import type { FindUsersDto } from './dtos/user-findUsers.dto';
 import type { CreateUserDto } from './dtos/user-create.dto';
@@ -63,5 +64,69 @@ export class UserRepository {
       if (byId) return;
     }
     await UserModel.findOneAndUpdate({ telegramId: authUserId }, { $set: { lastActiveAt: now } });
+  }
+
+  /**
+   * Списать сумму с баланса, если его хватает (одна атомарная операция).
+   */
+  public async tryDebitBalance(telegramId: string, amountRub: number): Promise<User | null> {
+    if (amountRub <= 0) {
+      return null;
+    }
+    const updated = await UserModel.findOneAndUpdate(
+      { telegramId, balanceRub: { $gte: amountRub } },
+      { $inc: { balanceRub: -amountRub } },
+      { new: true },
+    ).lean();
+    return leanUserWithId(updated as User | null);
+  }
+
+  /** Вернуть средства на баланс (например откат при ошибке после списания). */
+  public async creditBalance(telegramId: string, amountRub: number): Promise<void> {
+    if (amountRub <= 0) {
+      return;
+    }
+    await UserModel.updateOne({ telegramId }, { $inc: { balanceRub: amountRub } });
+  }
+
+  /**
+   * Списать стоимость подписки и продлить subscriptionUntil на 30 дней от max(сейчас, текущий конец).
+   * Несколько попыток при гонке обновлений баланса.
+   */
+  public async purchaseSubscriptionMonth(
+    telegramId: string,
+    priceRub: number,
+  ): Promise<User | null> {
+    if (priceRub <= 0) {
+      return null;
+    }
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const current = await UserModel.findOne({ telegramId }).lean();
+      if (!current) {
+        return null;
+      }
+      const balance = Math.max(0, Math.round((current as { balanceRub?: number }).balanceRub ?? 0));
+      if (balance < priceRub) {
+        return null;
+      }
+
+      const now = Date.now();
+      const rawUntil = (current as { subscriptionUntil?: Date }).subscriptionUntil;
+      const prevEnd = rawUntil ? new Date(rawUntil).getTime() : 0;
+      const base = Math.max(now, prevEnd);
+      const newUntil = new Date(base + SUBSCRIPTION_PERIOD_MS);
+      const nextBalance = balance - priceRub;
+
+      const updated = await UserModel.findOneAndUpdate(
+        { telegramId, balanceRub: (current as { balanceRub?: number }).balanceRub },
+        { $set: { balanceRub: nextBalance, subscriptionUntil: newUntil } },
+        { new: true },
+      ).lean();
+
+      if (updated) {
+        return leanUserWithId(updated as User | null);
+      }
+    }
+    return null;
   }
 }

@@ -19,6 +19,11 @@ deckRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   await deckController.findDecks(req, res);
 }));
 
+/** Покупка платной колоды за внутренний баланс */
+deckRouter.post('/:id/purchase/balance', asyncHandler(async (req: Request, res: Response) => {
+  await deckController.purchaseWithBalance(req, res);
+}));
+
 /** Маршрут создания платежа за платную колоду */
 deckRouter.post('/:id/purchase', asyncHandler(async (req: Request, res: Response) => {
   await deckController.createPurchase(req, res);

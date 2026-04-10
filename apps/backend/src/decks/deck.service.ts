@@ -9,6 +9,8 @@ import { YooKassaService } from './yookassa.service';
 import { env } from '../config/env';
 import { logger } from '../observability/logger';
 import { DeckPurchaseRepository } from './deck-purchase.repository';
+import { UserRepository } from '../users/user.repository';
+import type { DeckPurchasePaymentMethod } from './deck-purchase.model';
 
 /**
  * Интерфейс для сервиса колод
@@ -23,6 +25,7 @@ export interface DeckServiceMethods {
   deleteDeck: (param: DeleteDeckDto) => Promise<Deck>;
   createDeckPurchase: (param: { deckId: string; telegramId: string }) => Promise<{ paymentId: string; confirmationUrl: string; alreadyPurchased: boolean }>;
   confirmDeckPurchase: (param: { deckId: string; telegramId: string; paymentId: string }) => Promise<{ purchased: boolean }>;
+  purchaseDeckWithBalance: (param: { deckId: string; telegramId: string }) => Promise<{ purchased: boolean; balanceRub: number }>;
 }
 
 /**
@@ -33,6 +36,7 @@ export class DeckService implements DeckServiceMethods {
     private readonly deckRepository: DeckRepository = new DeckRepository(),
     private readonly yooKassaService: YooKassaService = new YooKassaService(),
     private readonly deckPurchaseRepository: DeckPurchaseRepository = new DeckPurchaseRepository(),
+    private readonly userRepository: UserRepository = new UserRepository(),
   ) {}
 
   private resolveDeckId(deck: Deck): string {
@@ -47,6 +51,26 @@ export class DeckService implements DeckServiceMethods {
       return (rawDeck._id as { toString: () => string }).toString();
     }
     return '';
+  }
+
+  private async grantDeckAccess(
+    deckId: string,
+    telegramId: string,
+    amountRub: number,
+    paymentMethod: DeckPurchasePaymentMethod,
+  ): Promise<void> {
+    await this.deckPurchaseRepository.markPurchased(deckId, telegramId, {
+      amountRub,
+      paymentMethod,
+    });
+
+    const updatedDeck = await this.deckRepository.addPurchaser(deckId, telegramId);
+    if (!updatedDeck) {
+      logger.warn(
+        { deckId, telegramId, paymentMethod },
+        'Deck purchase recorded, but deck not found when merging purchasedBy',
+      );
+    }
   }
 
   private async toDeckView(deck: Deck, viewerTelegramId?: string | null): Promise<Deck> {
@@ -212,16 +236,64 @@ export class DeckService implements DeckServiceMethods {
       return { purchased: false };
     }
 
-    await this.deckPurchaseRepository.markPurchased(param.deckId, param.telegramId);
+    const deck = await this.deckRepository.findById(param.deckId);
+    const fallbackPrice = deck?.priceRub ?? 0;
+    const rawAmount = payment.amount?.value;
+    const amountRub = rawAmount
+      ? Math.round(Number.parseFloat(rawAmount))
+      : Math.max(0, Math.round(fallbackPrice));
 
-    const updatedDeck = await this.deckRepository.addPurchaser(param.deckId, param.telegramId);
-    if (!updatedDeck) {
-      logger.warn(
-        { deckId: param.deckId, telegramId: param.telegramId, paymentId: param.paymentId },
-        'Payment succeeded, but deck not found when persisting purchase',
-      );
-    }
+    await this.grantDeckAccess(param.deckId, param.telegramId, amountRub, 'yookassa');
 
     return { purchased: true };
+  }
+
+  public async purchaseDeckWithBalance(param: {
+    deckId: string;
+    telegramId: string;
+  }): Promise<{ purchased: boolean; balanceRub: number }> {
+    const deck = await this.deckRepository.findById(param.deckId);
+
+    if (!deck) {
+      throw new ApiError(404, 'DECK_NOT_FOUND');
+    }
+
+    const deckId = this.resolveDeckId(deck);
+    const priceRub = Math.max(0, Math.round(deck.priceRub ?? 0));
+
+    if (priceRub <= 0) {
+      throw new ApiError(400, 'DECK_NOT_PAID');
+    }
+
+    if (await this.deckPurchaseRepository.isPurchased(deckId, param.telegramId)) {
+      const userAfter = await this.userRepository.findByTelegramId(param.telegramId);
+      const balanceRub = Math.max(0, Math.round(userAfter?.balanceRub ?? 0));
+      return { purchased: true, balanceRub };
+    }
+
+    const afterDebit = await this.userRepository.tryDebitBalance(param.telegramId, priceRub);
+
+    if (!afterDebit) {
+      throw new ApiError(402, 'INSUFFICIENT_BALANCE');
+    }
+
+    if (await this.deckPurchaseRepository.isPurchased(deckId, param.telegramId)) {
+      await this.userRepository.creditBalance(param.telegramId, priceRub);
+      const userAfter = await this.userRepository.findByTelegramId(param.telegramId);
+      return {
+        purchased: true,
+        balanceRub: Math.max(0, Math.round(userAfter?.balanceRub ?? 0)),
+      };
+    }
+
+    try {
+      await this.grantDeckAccess(deckId, param.telegramId, priceRub, 'balance');
+    } catch (error) {
+      await this.userRepository.creditBalance(param.telegramId, priceRub);
+      throw error;
+    }
+
+    const balanceRub = Math.max(0, Math.round(afterDebit.balanceRub ?? 0));
+    return { purchased: true, balanceRub };
   }
 }

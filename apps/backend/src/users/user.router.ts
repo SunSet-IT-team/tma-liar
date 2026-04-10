@@ -26,6 +26,11 @@ userRouter.post('/me/presence', asyncHandler(async (req: Request, res: Response)
   await userController.postPresence(req, res);
 }));
 
+/** Покупка подписки на месяц за баланс. */
+userRouter.post('/me/subscription', asyncHandler(async (req: Request, res: Response) => {
+  await userController.postSubscriptionPurchase(req, res);
+}));
+
 /** Маршрут для получения нескольких пользователей (query: telegramIds — строка через запятую или массив) */
 userRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   await userController.findUsers(req, res);

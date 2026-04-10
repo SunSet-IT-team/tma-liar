@@ -9,6 +9,10 @@ const UserSchema = new Schema<User>(
     passwordHash: { type: String },
     token: { type: String },
     lastActiveAt: { type: Date },
+    /** Внутриигровой баланс в рублях (списания без внешней кассы). */
+    balanceRub: { type: Number, default: 100 },
+    /** Подписка активна до этой даты (включительно по смыслу «до конца дня» задаётся клиентом). */
+    subscriptionUntil: { type: Date },
   },
   {
     timestamps: true,

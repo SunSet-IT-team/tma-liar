@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import { env } from '../config/env';
+import { UserModel } from '../users/user.model';
+import { WELCOME_BALANCE_RUB } from '../billing/billing.constants';
 
 async function dropLegacyPlayersTelegramIndex(collectionName: 'lobbies' | 'games') {
   const db = mongoose.connection.db;
@@ -69,4 +71,11 @@ export async function connectToDatabase(uriOverride?: string) {
   // Cleanup corrupted snapshots (null subdocs) to avoid unique-index failures.
   await cleanupNullPlayerFields('lobbies');
   await cleanupNullPlayerFields('games');
+
+  await UserModel.updateMany(
+    { balanceRub: { $exists: false } },
+    { $set: { balanceRub: WELCOME_BALANCE_RUB } },
+  ).catch(() => {
+    /* ignore if collection missing */
+  });
 }

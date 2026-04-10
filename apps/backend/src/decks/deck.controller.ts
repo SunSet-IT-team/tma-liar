@@ -167,6 +167,21 @@ export class DeckController {
     return res.status(200).json(success(result));
   };
 
+  purchaseWithBalance = async (req: Request, res: Response) => {
+    const deckResult = FindDeckDtoSchema.safeParse({ id: req.params.id });
+    if (!deckResult.success) {
+      throw new ApiError(422, 'DECK_PURCHASE_DATA_INVALID');
+    }
+
+    const telegramId = await this.resolveTelegramId(req);
+    const result = await this.deckService.purchaseDeckWithBalance({
+      deckId: deckResult.data.id,
+      telegramId,
+    });
+
+    return res.status(200).json(success(result));
+  };
+
   confirmPurchase = async (req: Request, res: Response) => {
     const deckResult = FindDeckDtoSchema.safeParse({ id: req.params.id });
     const paymentResult = DeckPurchaseSchema.safeParse(req.body);
